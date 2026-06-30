@@ -226,6 +226,7 @@ export async function createInvoice(data: CreateInvoiceData) {
   revalidatePath("/");
   revalidatePath("/inventory");
   revalidatePath("/customers");
+  revalidatePath("/reports");
   return invoice;
 }
 

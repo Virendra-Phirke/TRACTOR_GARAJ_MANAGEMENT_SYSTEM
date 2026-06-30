@@ -1,0 +1,177 @@
+[
+  {
+    "id": 1,
+    "category": "General Maintenance",
+    "name": "General Service"
+  },
+  {
+    "id": 2,
+    "category": "General Maintenance",
+    "name": "Periodic Maintenance"
+  },
+  {
+    "id": 3,
+    "category": "Engine",
+    "name": "Engine Oil Change"
+  },
+  {
+    "id": 4,
+    "category": "Engine",
+    "name": "Oil Filter Replacement"
+  },
+  {
+    "id": 5,
+    "category": "Engine",
+    "name": "Air Filter Cleaning"
+  },
+  {
+    "id": 6,
+    "category": "Engine",
+    "name": "Air Filter Replacement"
+  },
+  {
+    "id": 7,
+    "category": "Engine",
+    "name": "Fuel Filter Replacement"
+  },
+  {
+    "id": 8,
+    "category": "Engine",
+    "name": "Injector Cleaning"
+  },
+  {
+    "id": 9,
+    "category": "Engine",
+    "name": "Injector Replacement"
+  },
+  {
+    "id": 10,
+    "category": "Engine",
+    "name": "Cylinder Head Repair"
+  },
+  {
+    "id": 11,
+    "category": "Engine",
+    "name": "Valve Adjustment"
+  },
+  {
+    "id": 12,
+    "category": "Engine",
+    "name": "Piston Replacement"
+  },
+  {
+    "id": 13,
+    "category": "Engine",
+    "name": "Engine Overhaul"
+  },
+  {
+    "id": 14,
+    "category": "Cooling",
+    "name": "Radiator Cleaning"
+  },
+  {
+    "id": 15,
+    "category": "Cooling",
+    "name": "Radiator Replacement"
+  },
+  {
+    "id": 16,
+    "category": "Cooling",
+    "name": "Coolant Replacement"
+  },
+  {
+    "id": 17,
+    "category": "Cooling",
+    "name": "Water Pump Replacement"
+  },
+  {
+    "id": 18,
+    "category": "Transmission",
+    "name": "Clutch Plate Replacement"
+  },
+  {
+    "id": 19,
+    "category": "Transmission",
+    "name": "Pressure Plate Replacement"
+  },
+  {
+    "id": 20,
+    "category": "Transmission",
+    "name": "Release Bearing Replacement"
+  },
+  {
+    "id": 21,
+    "category": "Transmission",
+    "name": "Gearbox Repair"
+  },
+  {
+    "id": 22,
+    "category": "Transmission",
+    "name": "Differential Repair"
+  },
+  {
+    "id": 23,
+    "category": "Hydraulics",
+    "name": "Hydraulic Oil Change"
+  },
+  {
+    "id": 24,
+    "category": "Hydraulics",
+    "name": "Hydraulic Pump Repair"
+  },
+  {
+    "id": 25,
+    "category": "Hydraulics",
+    "name": "Hydraulic Lift Repair"
+  },
+  {
+    "id": 26,
+    "category": "Brakes",
+    "name": "Brake Shoe Replacement"
+  },
+  {
+    "id": 27,
+    "category": "Brakes",
+    "name": "Brake Oil Replacement"
+  },
+  {
+    "id": 28,
+    "category": "Steering",
+    "name": "Steering Box Repair"
+  },
+  {
+    "id": 29,
+    "category": "Steering",
+    "name": "Tie Rod Replacement"
+  },
+  {
+    "id": 30,
+    "category": "Electrical",
+    "name": "Battery Replacement"
+  },
+  {
+    "id": 31,
+    "category": "Electrical",
+    "name": "Starter Motor Repair"
+  },
+  {
+    "id": 32,
+    "category": "Electrical",
+    "name": "Alternator Repair"
+  },
+  {
+    "id": 33,
+    "category": "PTO",
+    "name": "PTO Shaft Repair"
+  },
+  {
+    "id": 34,
+    "category": "Axle",
+    "name": "Wheel Bearing Replacement"
+  },
+  {
+    "id": 35,
+    "category": "Axle",
+    "name": "Front Axle Repair"
+  }
+]

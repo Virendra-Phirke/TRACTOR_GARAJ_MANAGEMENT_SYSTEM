@@ -2,7 +2,6 @@
 
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { DataTable } from "@/components/ui/data-table";
 import { ColumnDef } from "@tanstack/react-table";
 import { Badge } from "@/components/ui/badge";
@@ -73,9 +72,9 @@ export function InvoicesClient({ invoices }: { invoices: Invoice[] }) {
   };
 
   const statusColor = (s: string) => {
-    if (s === "paid") return "border-emerald-400/30 text-emerald-400";
-    if (s === "partial") return "border-blue-400/30 text-blue-400";
-    return "border-amber-400/30 text-amber-400";
+    if (s === "paid") return "border-emerald-400/30 text-emerald-400 bg-emerald-400/5";
+    if (s === "partial") return "border-blue-400/30 text-blue-400 bg-blue-400/5";
+    return "border-amber-400/30 text-amber-400 bg-amber-400/5";
   };
 
   const columns: ColumnDef<Invoice>[] = [
@@ -166,7 +165,8 @@ export function InvoicesClient({ invoices }: { invoices: Invoice[] }) {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+      {/* Header */}
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Invoices</h1>
           <p className="text-muted-foreground text-sm mt-1">
@@ -174,57 +174,53 @@ export function InvoicesClient({ invoices }: { invoices: Invoice[] }) {
           </p>
         </div>
         
-        {/* Filters and Actions */}
-        <div className="flex flex-wrap items-center gap-3">
-          <div className="flex items-center gap-2">
-            <DatePickerWithRange date={date} setDate={handleDateChange} onClear={handleClearFilters} />
-            <Select value={sortDir} onValueChange={(v) => handleSortChange(v || "desc")}>
-              <SelectTrigger className="w-[140px] h-9 bg-card/50">
-                <SelectValue placeholder="Sort by date" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="desc">Newest First</SelectItem>
-                <SelectItem value="asc">Oldest First</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select value={limit} onValueChange={(v) => handleLimitChange(v || "100")}>
-              <SelectTrigger className="w-[100px] h-9 bg-card/50">
-                <SelectValue placeholder="Limit" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="20">20 items</SelectItem>
-                <SelectItem value="50">50 items</SelectItem>
-                <SelectItem value="100">100 items</SelectItem>
-                <SelectItem value="200">200 items</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <DatePickerWithRange date={date} setDate={handleDateChange} onClear={handleClearFilters} />
+          <Select value={sortDir} onValueChange={(v) => handleSortChange(v || "desc")}>
+            <SelectTrigger className="w-[130px] h-8 text-xs bg-transparent border-border/40">
+              <SelectValue placeholder="Sort by date" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="desc">Newest First</SelectItem>
+              <SelectItem value="asc">Oldest First</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select value={limit} onValueChange={(v) => handleLimitChange(v || "100")}>
+            <SelectTrigger className="w-[90px] h-8 text-xs bg-transparent border-border/40">
+              <SelectValue placeholder="Limit" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="20">20 items</SelectItem>
+              <SelectItem value="50">50 items</SelectItem>
+              <SelectItem value="100">100 items</SelectItem>
+              <SelectItem value="200">200 items</SelectItem>
+            </SelectContent>
+          </Select>
           <Link href="/invoices/new">
-            <Button className="gap-2 cursor-pointer h-9">
+            <Button className="gap-2 cursor-pointer h-8 text-sm">
               <Plus className="w-4 h-4" />
-              Create Invoice
+              New Invoice
             </Button>
           </Link>
         </div>
       </div>
 
-      <Card className="bg-card/50">
-        <CardContent className="p-4 sm:p-6">
-          <DataTable 
-            columns={columns} 
-            data={invoices} 
-            searchKey="customerName"
-            searchPlaceholder="Search customer..."
-            filterKey="paymentStatus"
-            filterPlaceholder="Payment Status"
-            filterOptions={[
-              { label: "Paid", value: "paid" },
-              { label: "Unpaid", value: "unpaid" },
-              { label: "Partial", value: "partial" },
-            ]}
-          />
-        </CardContent>
-      </Card>
+      {/* Table Block */}
+      <div className="block-section">
+        <DataTable 
+          columns={columns} 
+          data={invoices} 
+          searchKey="customerName"
+          searchPlaceholder="Search customer..."
+          filterKey="paymentStatus"
+          filterPlaceholder="Payment Status"
+          filterOptions={[
+            { label: "Paid", value: "paid" },
+            { label: "Unpaid", value: "unpaid" },
+            { label: "Partial", value: "partial" },
+          ]}
+        />
+      </div>
     </div>
   );
 }

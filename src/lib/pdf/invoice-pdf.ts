@@ -244,19 +244,47 @@ export async function generateInvoicePdf(
   page.drawText("GRAND TOTAL", { x: lblX, y: totY, size: 12, font: fontBold, color: primaryColor });
   drawRightText(formatCurrency(data.grandTotal), valX, totY, 12, fontBold, primaryColor);
 
-  // Status Stamp
+  // ── Payment Status Stamp ────────────────────────────────────────────
+  // Track the y position for the left column (status + QR below totals)
+  let leftY = y;
+
   if (data.paymentStatus === "paid") {
-    page.drawText("PAID IN FULL", { x: margin, y: y - 40, size: 24, font: fontBold, color: rgb(0.2, 0.7, 0.3) });
-  } else if (data.amountPaid > 0) {
-    page.drawText(`Paid: ${formatCurrency(data.amountPaid)}`, { x: margin, y: y - 30, size: 11, font: fontBold, color: textColor });
-    page.drawText(`Due: ${formatCurrency(data.grandTotal - data.amountPaid)}`, { x: margin, y: y - 50, size: 12, font: fontBold, color: rgb(0.8, 0.2, 0.2) });
+    page.drawText("PAID IN FULL", { x: margin, y: leftY - 15, size: 22, font: fontBold, color: rgb(0.2, 0.7, 0.3) });
+    leftY -= 40;
+  } else if (data.paymentStatus === "partial" && data.amountPaid > 0) {
+    const balanceDue = data.grandTotal - data.amountPaid;
+
+    // Paid amount
+    page.drawText("PARTIALLY PAID", { x: margin, y: leftY - 15, size: 14, font: fontBold, color: rgb(0.9, 0.55, 0.1) });
+    leftY -= 35;
+
+    // Paid row
+    page.drawRectangle({ x: margin, y: leftY - 8, width: 200, height: 22, color: rgb(0.95, 0.98, 0.95) });
+    page.drawText("Paid:", { x: margin + 10, y: leftY - 2, size: 10, font: fontRegular, color: textColor });
+    drawRightText(formatCurrency(data.amountPaid), margin + 190, leftY - 2, 10, fontBold, rgb(0.15, 0.55, 0.3));
+    leftY -= 24;
+
+    // Balance row
+    page.drawRectangle({ x: margin, y: leftY - 8, width: 200, height: 22, color: rgb(1, 0.95, 0.95) });
+    page.drawText("Balance Due:", { x: margin + 10, y: leftY - 2, size: 10, font: fontBold, color: rgb(0.7, 0.15, 0.15) });
+    drawRightText(formatCurrency(balanceDue), margin + 190, leftY - 2, 10, fontBold, rgb(0.7, 0.15, 0.15));
+    leftY -= 30;
+  } else if (data.paymentStatus === "unpaid") {
+    page.drawText("UNPAID", { x: margin, y: leftY - 15, size: 16, font: fontBold, color: rgb(0.8, 0.2, 0.2) });
+    leftY -= 40;
   }
 
-  // ─── UPI QR Code ───────────────────────────────────────────────────
+  // ─── UPI QR Code (below payment status) ────────────────────────────
   if (data.upiQrDataUrl && data.upiVpa && data.paymentStatus !== "paid") {
     const qrSize = 80;
     const qrX = margin;
-    const qrY = y - 110;
+    const qrY = leftY - qrSize - 5;
+    const qrTextX = qrX + qrSize + 15;
+
+    // Calculate the amount to show on QR (balance for partial, full for unpaid)
+    const qrAmount = data.paymentStatus === "partial" && data.amountPaid > 0
+      ? data.grandTotal - data.amountPaid
+      : data.grandTotal;
 
     try {
       const base64Data = data.upiQrDataUrl.split(",")[1];
@@ -269,9 +297,14 @@ export async function generateInvoicePdf(
       // Ignore QR errors
     }
 
-    page.drawText("Scan to Pay", { x: qrX + qrSize + 15, y: qrY + 60, size: 10, font: fontBold, color: textColor });
-    page.drawText(formatCurrency(data.grandTotal), { x: qrX + qrSize + 15, y: qrY + 42, size: 14, font: fontBold, color: primaryColor });
-    page.drawText(`UPI ID: ${data.upiVpa}`, { x: qrX + qrSize + 15, y: qrY + 26, size: 9, font: fontRegular, color: mutedColor });
+    page.drawText("Scan to Pay", { x: qrTextX, y: qrY + qrSize - 15, size: 10, font: fontBold, color: textColor });
+    page.drawText(formatCurrency(qrAmount), { x: qrTextX, y: qrY + qrSize - 35, size: 14, font: fontBold, color: primaryColor });
+    if (data.paymentStatus === "partial") {
+      page.drawText("(Balance Due)", { x: qrTextX, y: qrY + qrSize - 50, size: 8, font: fontRegular, color: rgb(0.9, 0.55, 0.1) });
+      page.drawText(`UPI ID: ${data.upiVpa}`, { x: qrTextX, y: qrY + qrSize - 64, size: 9, font: fontRegular, color: mutedColor });
+    } else {
+      page.drawText(`UPI ID: ${data.upiVpa}`, { x: qrTextX, y: qrY + qrSize - 50, size: 9, font: fontRegular, color: mutedColor });
+    }
   }
 
   // ─── Footer ────────────────────────────────────────────────────────

@@ -1,12 +1,10 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Download, Printer, QrCode, CheckCircle } from "lucide-react";
+import { Download, Printer, QrCode, CheckCircle, X } from "lucide-react";
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -68,65 +66,91 @@ export function InvoiceDetailClient({
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
   const [status, setStatus] = useState(invoice.paymentStatus);
   const [payMethod, setPayMethod] = useState(invoice.paymentMethod || "cash");
-  const [cashAmount, setCashAmount] = useState("");
-  const [upiAmount, setUpiAmount] = useState("");
   const [isPayDialogOpen, setIsPayDialogOpen] = useState(false);
 
+  // Draft state for the payment dialog — isolated from the real status
+  const [draftStatus, setDraftStatus] = useState(invoice.paymentStatus);
+  const [draftPayMethod, setDraftPayMethod] = useState(invoice.paymentMethod || "cash");
+  const [draftCash, setDraftCash] = useState("");
+  const [draftUpi, setDraftUpi] = useState("");
+
+  // PDF viewer state
+  const [pdfViewerUrl, setPdfViewerUrl] = useState<string | null>(null);
+  const [isPdfViewerOpen, setIsPdfViewerOpen] = useState(false);
+  const [isPdfLoading, setIsPdfLoading] = useState(false);
+
+  // Calculate the remaining balance for partial payments
+  const balanceAmount = status === "partial" && (invoice.amountPaid || 0) > 0
+    ? (invoice.grandTotal || 0) - (invoice.amountPaid || 0)
+    : (invoice.grandTotal || 0);
+
   useEffect(() => {
-    if (upi.isEnabled && upi.vpa && invoice.grandTotal) {
+    const qrAmount = status === "partial" && (invoice.amountPaid || 0) > 0
+      ? (invoice.grandTotal || 0) - (invoice.amountPaid || 0)
+      : (invoice.grandTotal || 0);
+    if (upi.isEnabled && upi.vpa && qrAmount > 0) {
       generateUpiQrDataUrl({
         vpa: upi.vpa,
         payeeName: upi.payeeName,
-        amount: invoice.grandTotal,
+        amount: qrAmount,
         transactionNote: invoice.invoiceNumber,
         merchantCode: upi.merchantCode || undefined,
       }).then(setQrDataUrl);
     }
-  }, [upi, invoice]);
+  }, [upi, invoice, status]);
+
+  // Open the dialog and seed draft state from the real state
+  const openPayDialog = () => {
+    setDraftStatus(status);
+    setDraftPayMethod(payMethod);
+    setDraftCash("");
+    setDraftUpi("");
+    setIsPayDialogOpen(true);
+  };
 
   const handleSavePayment = async () => {
     let finalAmount = 0;
     let cAmt = 0;
     let uAmt = 0;
-    
-    if (status === "paid") {
+
+    if (draftStatus === "paid") {
       finalAmount = invoice.grandTotal || 0;
-    } else if (status === "partial") {
-      if (payMethod === "split") {
-        cAmt = Number(cashAmount) || 0;
-        uAmt = Number(upiAmount) || 0;
+    } else if (draftStatus === "partial") {
+      if (draftPayMethod === "split") {
+        cAmt = Number(draftCash) || 0;
+        uAmt = Number(draftUpi) || 0;
         finalAmount = cAmt + uAmt;
       } else {
-        finalAmount = Number(cashAmount) || 0;
-        if (payMethod === "cash") cAmt = finalAmount;
-        if (payMethod === "upi") uAmt = finalAmount;
+        finalAmount = Number(draftCash) || 0;
+        if (draftPayMethod === "cash") cAmt = finalAmount;
+        if (draftPayMethod === "upi") uAmt = finalAmount;
       }
     } else {
       finalAmount = 0;
-      setPayMethod("cash");
     }
 
-    if (status === "paid" && payMethod === "split") {
-      cAmt = Number(cashAmount) || 0;
-      uAmt = Number(upiAmount) || 0;
+    if (draftStatus === "paid" && draftPayMethod === "split") {
+      cAmt = Number(draftCash) || 0;
+      uAmt = Number(draftUpi) || 0;
       finalAmount = cAmt + uAmt;
-      // ensure it equals grandTotal if they selected paid, or just trust their inputs?
-      // we'll use their inputs but they should sum to grandTotal ideally
-    } else if (status === "paid") {
-      if (payMethod === "cash") cAmt = finalAmount;
-      if (payMethod === "upi") uAmt = finalAmount;
+    } else if (draftStatus === "paid") {
+      if (draftPayMethod === "cash") cAmt = finalAmount;
+      if (draftPayMethod === "upi") uAmt = finalAmount;
     }
 
     await updateInvoicePayment(invoice.id, {
-      paymentStatus: status,
-      paymentMethod: payMethod,
+      paymentStatus: draftStatus,
+      paymentMethod: draftPayMethod,
       amountPaid: finalAmount,
       cashAmount: cAmt,
       upiAmount: uAmt,
     });
-    
+
+    // Only NOW commit the draft to real state
+    setStatus(draftStatus);
+    setPayMethod(draftPayMethod);
     setIsPayDialogOpen(false);
-    toast.success(`Payment recorded as ${status}`);
+    toast.success(`Payment recorded as ${draftStatus}`);
   };
 
   const handleDownloadPdf = async () => {
@@ -145,6 +169,29 @@ export function InvoiceDetailClient({
     }
   };
 
+  const handlePrintPdf = async () => {
+    setIsPdfLoading(true);
+    try {
+      const res = await fetch(`/api/invoices/${invoice.id}/pdf`);
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      setPdfViewerUrl(url);
+      setIsPdfViewerOpen(true);
+    } catch {
+      toast.error("Failed to load PDF");
+    } finally {
+      setIsPdfLoading(false);
+    }
+  };
+
+  const closePdfViewer = () => {
+    setIsPdfViewerOpen(false);
+    if (pdfViewerUrl) {
+      URL.revokeObjectURL(pdfViewerUrl);
+      setPdfViewerUrl(null);
+    }
+  };
+
   const statusColor = (s: string) => {
     if (s === "paid") return "border-emerald-400/30 text-emerald-400 bg-emerald-400/10";
     if (s === "partial") return "border-blue-400/30 text-blue-400 bg-blue-400/10";
@@ -152,27 +199,30 @@ export function InvoiceDetailClient({
   };
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
-      {/* Header Actions */}
-      <div className="flex items-center justify-between flex-wrap gap-4">
-        <div>
-          <h1 className="text-xl font-bold font-mono">{invoice.invoiceNumber}</h1>
-          <p className="text-sm text-muted-foreground">
-            Created: {format(new Date(invoice.createdAt), "dd MMM yyyy, hh:mm a")}
-          </p>
-          {invoice.paymentDoneAt && invoice.paymentStatus === "paid" && (
-            <p className="text-sm text-emerald-500/80 font-medium mt-0.5">
-              Paid At: {format(new Date(invoice.paymentDoneAt), "dd MMM yyyy, hh:mm a")}
+    <div className="max-w-4xl mx-auto space-y-6 block-stagger">
+      {/* ── Header ──────────────────────────────────────────────────── */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex items-center gap-4">
+          <div>
+            <h1 className="text-xl font-bold font-mono tracking-tight">{invoice.invoiceNumber}</h1>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              {format(new Date(invoice.createdAt), "dd MMM yyyy, hh:mm a")}
             </p>
-          )}
-        </div>
-        <div className="flex items-center gap-2">
-          <Badge className={`text-sm px-3 py-1 ${statusColor(status)}`}>
+            {invoice.paymentDoneAt && invoice.paymentStatus === "paid" && (
+              <p className="text-xs text-emerald-500/80 font-medium mt-0.5">
+                Paid: {format(new Date(invoice.paymentDoneAt), "dd MMM yyyy, hh:mm a")}
+              </p>
+            )}
+          </div>
+          <Badge className={`text-xs px-2.5 py-0.5 ${statusColor(status)}`}>
             {status === "paid" && <CheckCircle className="w-3 h-3 mr-1" />}
             {status.toUpperCase()}
           </Badge>
+        </div>
+
+        <div className="flex items-center gap-2">
           <Dialog open={isPayDialogOpen} onOpenChange={setIsPayDialogOpen}>
-            <DialogTrigger render={<Button variant="outline" className="gap-2 cursor-pointer" />}>
+            <DialogTrigger render={<Button variant="outline" size="sm" className="gap-1.5 cursor-pointer text-xs" onClick={openPayDialog} />}>
               Record Payment
             </DialogTrigger>
             <DialogContent className="sm:max-w-[30vw] w-full">
@@ -182,7 +232,7 @@ export function InvoiceDetailClient({
               <div className="space-y-4 py-4">
                 <div className="space-y-2">
                   <Label>Payment Status</Label>
-                  <Select value={status} onValueChange={(v) => setStatus(v || "unpaid")}>
+                  <Select value={draftStatus} onValueChange={(v) => setDraftStatus(v || "unpaid")}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="paid">Paid</SelectItem>
@@ -191,11 +241,11 @@ export function InvoiceDetailClient({
                     </SelectContent>
                   </Select>
                 </div>
-                
-                {status !== "unpaid" && (
+
+                {draftStatus !== "unpaid" && (
                   <div className="space-y-2">
                     <Label>Payment Method</Label>
-                    <Select value={payMethod} onValueChange={(v) => setPayMethod(v || "cash")}>
+                    <Select value={draftPayMethod} onValueChange={(v) => setDraftPayMethod(v || "cash")}>
                       <SelectTrigger><SelectValue /></SelectTrigger>
                       <SelectContent>
                         <SelectItem value="cash">Cash</SelectItem>
@@ -207,23 +257,23 @@ export function InvoiceDetailClient({
                   </div>
                 )}
 
-                {status !== "unpaid" && payMethod === "split" && (
+                {draftStatus !== "unpaid" && draftPayMethod === "split" && (
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label>Cash Amount (₹)</Label>
-                      <Input type="number" placeholder="0" value={cashAmount} onChange={(e) => setCashAmount(e.target.value)} />
+                      <Input type="number" placeholder="0" value={draftCash} onChange={(e) => setDraftCash(e.target.value)} />
                     </div>
                     <div className="space-y-2">
                       <Label>UPI Amount (₹)</Label>
-                      <Input type="number" placeholder="0" value={upiAmount} onChange={(e) => setUpiAmount(e.target.value)} />
+                      <Input type="number" placeholder="0" value={draftUpi} onChange={(e) => setDraftUpi(e.target.value)} />
                     </div>
                   </div>
                 )}
-                
-                {status === "partial" && payMethod !== "split" && (
+
+                {draftStatus === "partial" && draftPayMethod !== "split" && (
                   <div className="space-y-2">
                     <Label>Amount Paid (₹)</Label>
-                    <Input type="number" placeholder="0" value={cashAmount} onChange={(e) => setCashAmount(e.target.value)} />
+                    <Input type="number" placeholder="0" value={draftCash} onChange={(e) => setDraftCash(e.target.value)} />
                   </div>
                 )}
               </div>
@@ -233,129 +283,196 @@ export function InvoiceDetailClient({
               </DialogFooter>
             </DialogContent>
           </Dialog>
-          <Button variant="outline" className="gap-2 cursor-pointer" onClick={handleDownloadPdf}>
-            <Download className="w-4 h-4" />PDF
+          <Button variant="ghost" size="sm" className="gap-1.5 cursor-pointer text-xs text-muted-foreground" onClick={handleDownloadPdf}>
+            <Download className="w-3.5 h-3.5" />PDF
           </Button>
-          <Button variant="outline" className="gap-2 cursor-pointer" onClick={() => window.print()}>
-            <Printer className="w-4 h-4" />Print
+          <Button variant="ghost" size="sm" className="gap-1.5 cursor-pointer text-xs text-muted-foreground" onClick={handlePrintPdf} disabled={isPdfLoading}>
+            <Printer className="w-3.5 h-3.5" />{isPdfLoading ? "Loading..." : "Print"}
           </Button>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Main Invoice Content */}
-        <div className="lg:col-span-2 space-y-4">
-          {/* Customer & Vehicle */}
-          <div className="grid grid-cols-2 gap-4">
-            <Card className="bg-card/50">
-              <CardContent className="p-4">
-                <p className="text-xs text-muted-foreground uppercase mb-1">Customer</p>
-                <p className="font-semibold">{invoice.customerName}</p>
-                <p className="text-sm text-muted-foreground">{invoice.customerPhone}</p>
-                {invoice.customerAddress && <p className="text-xs text-muted-foreground mt-1">{invoice.customerAddress}</p>}
-              </CardContent>
-            </Card>
-            <Card className="bg-card/50">
-              <CardContent className="p-4">
-                <p className="text-xs text-muted-foreground uppercase mb-1">Vehicle</p>
-                <p className="font-mono font-semibold">{invoice.vehicleReg || "—"}</p>
-                <p className="text-sm text-muted-foreground">{invoice.vehicleBrand} {invoice.vehicleModel || ""}</p>
-              </CardContent>
-            </Card>
+      {/* ── Customer & Vehicle ──────────────────────────────────────── */}
+      <div className="block-section">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+          <div>
+            <div className="block-label">Customer</div>
+            <p className="text-sm font-semibold">{invoice.customerName}</p>
+            <p className="text-xs text-muted-foreground mt-0.5">{invoice.customerPhone}</p>
+            {invoice.customerAddress && <p className="text-xs text-muted-foreground mt-0.5">{invoice.customerAddress}</p>}
+          </div>
+          <div>
+            <div className="block-label">Vehicle</div>
+            <p className="text-sm font-mono font-semibold">{invoice.vehicleReg || "—"}</p>
+            <p className="text-xs text-muted-foreground mt-0.5">{invoice.vehicleBrand} {invoice.vehicleModel || ""}</p>
+          </div>
+        </div>
+      </div>
+
+      {/* ── Line Items ──────────────────────────────────────────────── */}
+      <div className="block-section">
+        <div className="block-label">Line Items</div>
+
+        {/* Labor */}
+        {invoice.laborItems.length > 0 && (
+          <div className="mb-4">
+            <p className="text-xs font-medium text-muted-foreground mb-2">
+              Labor Charges
+              <span className="text-foreground/40 ml-1">({invoice.laborItems.length})</span>
+            </p>
+            <div className="space-y-0.5">
+              {invoice.laborItems.map((item) => (
+                <div key={item.id} className="item-row flex justify-between">
+                  <span className="text-sm">{item.description}</span>
+                  <span className="text-sm font-medium tabular-nums">₹{item.total.toLocaleString("en-IN")}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Parts */}
+        {invoice.partItems.length > 0 && (
+          <div>
+            {invoice.laborItems.length > 0 && <div className="block-divider" />}
+            <p className="text-xs font-medium text-muted-foreground mb-2">
+              Spare Parts
+              <span className="text-foreground/40 ml-1">({invoice.partItems.length})</span>
+            </p>
+            <div className="space-y-0.5">
+              {invoice.partItems.map((item) => (
+                <div key={item.id} className="item-row flex justify-between">
+                  <span className="text-sm">
+                    {item.partName}
+                    <span className="text-muted-foreground ml-1 text-xs">({item.quantity} × ₹{item.unitPrice})</span>
+                  </span>
+                  <span className="text-sm font-medium tabular-nums">₹{item.total.toLocaleString("en-IN")}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* ── Notes ───────────────────────────────────────────────────── */}
+      {invoice.notes && (
+        <div className="block-section">
+          <div className="block-label">Notes</div>
+          <p className="text-sm text-muted-foreground">{invoice.notes}</p>
+        </div>
+      )}
+
+      {/* ── Bill Summary + QR ───────────────────────────────────────── */}
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
+        {/* Summary */}
+        <div className={`block-section-elevated ${qrDataUrl && status !== "paid" ? "lg:col-span-3" : "lg:col-span-5"}`}>
+          <div className="block-label">Bill Summary</div>
+
+          <div className="space-y-0.5">
+            <div className="summary-row">
+              <span className="summary-row-label">Labor</span>
+              <span>₹{(invoice.laborTotal || 0).toLocaleString("en-IN")}</span>
+            </div>
+            <div className="summary-row">
+              <span className="summary-row-label">Parts</span>
+              <span>₹{(invoice.partsTotal || 0).toLocaleString("en-IN")}</span>
+            </div>
+            <div className="summary-row">
+              <span className="summary-row-label">Subtotal</span>
+              <span className="font-medium">₹{(invoice.subtotal || 0).toLocaleString("en-IN")}</span>
+            </div>
+            {(invoice.taxRate || 0) > 0 && (
+              <div className="summary-row">
+                <span className="summary-row-label">Tax ({invoice.taxRate}%)</span>
+                <span>₹{(invoice.taxAmount || 0).toLocaleString("en-IN")}</span>
+              </div>
+            )}
+            {(invoice.discountAmount || 0) > 0 && (
+              <div className="summary-row">
+                <span className="text-emerald-400">Discount</span>
+                <span className="text-emerald-400">-₹{(invoice.discountAmount || 0).toLocaleString("en-IN")}</span>
+              </div>
+            )}
           </div>
 
-          {/* Labor Items */}
-          {invoice.laborItems.length > 0 && (
-            <Card className="bg-card/50">
-              <CardHeader className="pb-2"><CardTitle className="text-sm text-muted-foreground">Labor Charges</CardTitle></CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  {invoice.laborItems.map((item) => (
-                    <div key={item.id} className="flex justify-between text-sm py-1">
-                      <span>{item.description}</span>
-                      <span className="font-medium">₹{item.total.toLocaleString("en-IN")}</span>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          )}
+          <div className="block-divider" />
 
-          {/* Part Items */}
-          {invoice.partItems.length > 0 && (
-            <Card className="bg-card/50">
-              <CardHeader className="pb-2"><CardTitle className="text-sm text-muted-foreground">Spare Parts</CardTitle></CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  {invoice.partItems.map((item) => (
-                    <div key={item.id} className="flex justify-between text-sm py-1">
-                      <span>{item.partName} <span className="text-muted-foreground">({item.quantity} × ₹{item.unitPrice})</span></span>
-                      <span className="font-medium">₹{item.total.toLocaleString("en-IN")}</span>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          )}
+          <div className="flex items-center justify-between">
+            <span className="text-base font-semibold">Grand Total</span>
+            <span className="summary-total hero-total">
+              ₹{(invoice.grandTotal || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+            </span>
+          </div>
 
-          {invoice.notes && (
-            <Card className="bg-card/50">
-              <CardContent className="p-4">
-                <p className="text-xs text-muted-foreground uppercase mb-1">Notes</p>
-                <p className="text-sm">{invoice.notes}</p>
-              </CardContent>
-            </Card>
-          )}
-        </div>
-
-        {/* Sidebar: Totals + QR */}
-        <div className="space-y-4">
-          <Card className="bg-card/50">
-            <CardHeader className="pb-2"><CardTitle className="text-sm text-muted-foreground">Bill Summary</CardTitle></CardHeader>
-            <CardContent className="space-y-2">
-              <div className="flex justify-between text-sm"><span className="text-muted-foreground">Labor</span><span>₹{(invoice.laborTotal || 0).toLocaleString("en-IN")}</span></div>
-              <div className="flex justify-between text-sm"><span className="text-muted-foreground">Parts</span><span>₹{(invoice.partsTotal || 0).toLocaleString("en-IN")}</span></div>
-              <div className="flex justify-between text-sm"><span className="text-muted-foreground">Subtotal</span><span>₹{(invoice.subtotal || 0).toLocaleString("en-IN")}</span></div>
-              {(invoice.taxRate || 0) > 0 && <div className="flex justify-between text-sm"><span className="text-muted-foreground">Tax ({invoice.taxRate}%)</span><span>₹{(invoice.taxAmount || 0).toLocaleString("en-IN")}</span></div>}
-              {(invoice.discountAmount || 0) > 0 && <div className="flex justify-between text-sm text-emerald-400"><span>Discount</span><span>-₹{(invoice.discountAmount || 0).toLocaleString("en-IN")}</span></div>}
-              <Separator />
-              <div className="flex justify-between text-lg font-bold">
-                <span>Total</span>
-                <span className="text-primary">₹{(invoice.grandTotal || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 })}</span>
+          {status !== "paid" && (invoice.amountPaid || 0) > 0 && (
+            <>
+              <div className="block-divider" />
+              <div className="summary-row">
+                <span className="summary-row-label">Paid</span>
+                <span>₹{(invoice.amountPaid || 0).toLocaleString("en-IN")}</span>
               </div>
-              {status !== "paid" && (invoice.amountPaid || 0) > 0 && (
-                <>
-                  <div className="flex justify-between text-sm"><span className="text-muted-foreground">Paid</span><span>₹{(invoice.amountPaid || 0).toLocaleString("en-IN")}</span></div>
-                  <div className="flex justify-between text-sm font-semibold text-amber-400"><span>Balance</span><span>₹{((invoice.grandTotal || 0) - (invoice.amountPaid || 0)).toLocaleString("en-IN")}</span></div>
-                </>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* UPI QR */}
-          {qrDataUrl && status !== "paid" && (
-            <Card className="bg-card/50">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm text-muted-foreground flex items-center gap-2">
-                  <QrCode className="w-4 h-4" />Scan to Pay
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="flex flex-col items-center gap-3">
-                <div className="p-3 bg-white rounded-xl">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={qrDataUrl} alt="UPI QR Code" className="w-48 h-48" />
-                </div>
-                <div className="text-center">
-                  <p className="text-lg font-bold text-primary">
-                    ₹{(invoice.grandTotal || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
-                  </p>
-                  <p className="text-xs text-muted-foreground">{upi.vpa}</p>
-                </div>
-              </CardContent>
-            </Card>
+              <div className="summary-row">
+                <span className="text-amber-400 font-medium">Balance Due</span>
+                <span className="text-amber-400 font-semibold">
+                  ₹{((invoice.grandTotal || 0) - (invoice.amountPaid || 0)).toLocaleString("en-IN")}
+                </span>
+              </div>
+            </>
           )}
         </div>
+
+        {/* QR Code */}
+        {qrDataUrl && status !== "paid" && (
+          <div className="block-section lg:col-span-2 flex flex-col items-center justify-center gap-4">
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <QrCode className="w-3.5 h-3.5" />
+              <span>Scan to Pay</span>
+            </div>
+            <div className="p-3 bg-white rounded-xl">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={qrDataUrl} alt="UPI QR Code" className="w-40 h-40" />
+            </div>
+            <div className="text-center">
+              <p className="text-lg font-bold text-primary">
+                ₹{balanceAmount.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+              </p>
+              {status === "partial" && (invoice.amountPaid || 0) > 0 && (
+                <p className="text-[10px] text-amber-400 font-medium">Balance Due</p>
+              )}
+              <p className="text-[10px] text-muted-foreground">{upi.vpa}</p>
+            </div>
+          </div>
+        )}
       </div>
+      {/* ── PDF Viewer Overlay ──────────────────────────────────────── */}
+      {isPdfViewerOpen && pdfViewerUrl && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ background: "oklch(0 0 0 / 80%)" }}>
+          <div className="relative w-[53vw] h-[98vh] flex flex-col rounded-xl overflow-hidden" style={{ background: "oklch(0.17 0.01 260)" }}>
+            {/* Toolbar */}
+            <div className="flex items-center justify-between px-4 py-2.5 border-b border-border/30">
+              <span className="text-sm font-medium text-muted-foreground">{invoice.invoiceNumber}.pdf</span>
+              <div className="flex items-center gap-2">
+                <Button variant="ghost" size="sm" className="gap-1.5 cursor-pointer text-xs" onClick={handleDownloadPdf}>
+                  <Download className="w-3.5 h-3.5" />Download
+                </Button>
+                <button
+                  onClick={closePdfViewer}
+                  className="w-8 h-8 rounded-lg flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-accent/40 transition-colors cursor-pointer"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+            {/* PDF iframe */}
+            <iframe
+              src={pdfViewerUrl}
+              className="flex-1 w-full"
+              title="Invoice PDF"
+              style={{ border: "none", background: "white" }}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

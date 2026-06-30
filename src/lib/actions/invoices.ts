@@ -11,6 +11,7 @@ import {
   vehicles,
 } from "@/db/schema";
 import { eq, desc, asc, sql, and, gte, lte, inArray } from "drizzle-orm";
+import { getISTDayBounds } from "@/lib/utils";
 import { revalidatePath } from "next/cache";
 
 // ─── Invoice Number Generation ───────────────────────────────────────
@@ -256,10 +257,12 @@ export async function getInvoices(filters?: {
     .leftJoin(vehicles, eq(invoices.vehicleId, vehicles.id));
 
   if (filters?.from && filters?.to) {
+    const { start } = getISTDayBounds(filters.from);
+    const { end } = getISTDayBounds(filters.to);
     query = query.where(
       and(
-        gte(invoices.createdAt, filters.from),
-        lte(invoices.createdAt, filters.to)
+        gte(invoices.createdAt, start),
+        lte(invoices.createdAt, end)
       )
     ) as any;
   }
@@ -439,19 +442,14 @@ export async function updatePaymentStatus(
 
 // ─── Dashboard Stats (PARALLELIZED) ─────────────────────────────────
 export async function getDashboardStats(startDate?: string, endDate?: string) {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const tomorrow = new Date(today);
-  tomorrow.setDate(tomorrow.getDate() + 1);
+  const { start: todayStart, end: todayEnd } = getISTDayBounds();
 
   // Build the date condition for revenue and graph
   let revenueCondition = undefined;
   let graphCondition;
   if (startDate && endDate) {
-    const start = new Date(startDate);
-    start.setHours(0, 0, 0, 0);
-    const end = new Date(endDate);
-    end.setHours(23, 59, 59, 999);
+    const { start } = getISTDayBounds(startDate);
+    const { end } = getISTDayBounds(endDate);
     revenueCondition = and(gte(invoices.createdAt, start), lte(invoices.createdAt, end));
     graphCondition = revenueCondition;
   } else {
@@ -471,7 +469,7 @@ export async function getDashboardStats(startDate?: string, endDate?: string) {
         })
         .from(invoices)
         .where(
-          and(gte(invoices.createdAt, today), lte(invoices.createdAt, tomorrow))
+          and(gte(invoices.createdAt, todayStart), lte(invoices.createdAt, todayEnd))
         )
         .then((r) => r[0]),
 

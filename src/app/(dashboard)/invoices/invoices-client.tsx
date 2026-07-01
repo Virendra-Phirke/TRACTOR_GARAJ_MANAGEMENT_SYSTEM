@@ -169,19 +169,26 @@ export function InvoicesClient({ invoices }: { invoices: Invoice[] }) {
     {
       id: "actions",
       cell: ({ row }) => (
-        <DropdownMenu>
-          <DropdownMenuTrigger className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 hover:bg-accent hover:text-accent-foreground h-8 w-8 cursor-pointer">
-            <MoreVertical className="w-4 h-4" />
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={() => router.push(`/invoices/${row.original.id}`)} className="cursor-pointer">
-              <Eye className="w-4 h-4 mr-2" /> View Details
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => setInvoiceToDelete(row.original.id)} className="cursor-pointer text-red-500 focus:text-red-600 focus:bg-red-500/10">
-              <Trash2 className="w-4 h-4 mr-2" /> Delete
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        <div className="flex items-center justify-end gap-2">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => router.push(`/invoices/${row.original.id}`)}
+            title="View Details"
+            className="h-8 w-8 text-blue-500 hover:text-blue-600 hover:bg-blue-500/10 cursor-pointer"
+          >
+            <Eye className="w-4 h-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setInvoiceToDelete(row.original.id)}
+            title="Delete Invoice"
+            className="h-8 w-8 text-red-500 hover:text-red-600 hover:bg-red-500/10 cursor-pointer"
+          >
+            <Trash2 className="w-4 h-4" />
+          </Button>
+        </div>
       ),
     },
   ];

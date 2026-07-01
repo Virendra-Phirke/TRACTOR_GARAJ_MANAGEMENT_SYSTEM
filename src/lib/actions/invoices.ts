@@ -574,10 +574,15 @@ export async function updateInvoicePayment(id: number, data: { paymentStatus: st
 
   if (!currentInvoice) return;
 
+  const total = currentInvoice.grandTotal || 0;
+  
+  if (data.amountPaid >= total && data.paymentStatus === "partial") {
+    data.paymentStatus = "paid";
+  }
+
   const isNowPaid = data.paymentStatus === "paid";
   const wasUnpaid = currentInvoice.paymentStatus !== "paid";
   const oldAmountPaid = currentInvoice.amountPaid || 0;
-  const total = currentInvoice.grandTotal || 0;
 
   await (async () => {
     const tx = db;

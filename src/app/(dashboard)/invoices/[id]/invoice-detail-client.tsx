@@ -152,8 +152,13 @@ export function InvoiceDetailClient({
       if (draftPayMethod === "upi") uAmt = finalAmount;
     }
 
+    let actualStatus = draftStatus;
+    if (actualStatus === "partial" && finalAmount >= (invoice.grandTotal || 0)) {
+      actualStatus = "paid";
+    }
+
     await updateInvoicePayment(invoice.id, {
-      paymentStatus: draftStatus,
+      paymentStatus: actualStatus,
       paymentMethod: draftPayMethod,
       amountPaid: finalAmount,
       cashAmount: cAmt,
@@ -161,10 +166,10 @@ export function InvoiceDetailClient({
     });
 
     // Only NOW commit the draft to real state
-    setStatus(draftStatus);
+    setStatus(actualStatus);
     setPayMethod(draftPayMethod);
     setIsPayDialogOpen(false);
-    toast.success(`Payment recorded as ${draftStatus}`);
+    toast.success(`Payment recorded as ${actualStatus}`);
   };
 
   const handleDownloadPdf = async () => {

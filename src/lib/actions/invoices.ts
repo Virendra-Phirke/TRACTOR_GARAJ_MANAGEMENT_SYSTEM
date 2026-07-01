@@ -617,3 +617,149 @@ export async function updateInvoicePayment(id: number, data: { paymentStatus: st
   revalidatePath("/invoices");
   revalidatePath("/customers");
 }
+
+// ─── Report Stats (date-filtered, comprehensive) ─────────────────────
+export async function getReportStats(startDate?: string, endDate?: string) {
+  const { start: todayStart, end: todayEnd } = getISTDayBounds();
+
+  // Default to today if no dates provided
+  let rangeStart = todayStart;
+  let rangeEnd = todayEnd;
+  if (startDate && endDate) {
+    const { start } = getISTDayBounds(startDate);
+    const { end } = getISTDayBounds(endDate);
+    rangeStart = start;
+    rangeEnd = end;
+  }
+
+  const rangeCondition = and(
+    gte(invoices.createdAt, rangeStart),
+    lte(invoices.createdAt, rangeEnd)
+  );
+
+  const [
+    revenueSummary,
+    statusCounts,
+    paymentMethodSplit,
+    laborPartsBreakdown,
+    pendingPayments,
+    dailyData,
+  ] = await Promise.all([
+    // 1. Revenue summary for the range
+    db
+      .select({
+        totalRevenue: sql<number>`COALESCE(SUM(${invoices.grandTotal}), 0)`,
+        totalCollected: sql<number>`COALESCE(SUM(${invoices.amountPaid}), 0)`,
+        totalCash: sql<number>`COALESCE(SUM(${invoices.cashAmount}), 0)`,
+        totalUpi: sql<number>`COALESCE(SUM(${invoices.upiAmount}), 0)`,
+        totalDiscount: sql<number>`COALESCE(SUM(${invoices.discountAmount}), 0)`,
+        totalTax: sql<number>`COALESCE(SUM(${invoices.taxAmount}), 0)`,
+        invoiceCount: sql<number>`count(*)`,
+        avgInvoice: sql<number>`COALESCE(AVG(${invoices.grandTotal}), 0)`,
+        maxInvoice: sql<number>`COALESCE(MAX(${invoices.grandTotal}), 0)`,
+        minInvoice: sql<number>`COALESCE(MIN(${invoices.grandTotal}), 0)`,
+      })
+      .from(invoices)
+      .where(rangeCondition)
+      .then((r) => r[0]),
+
+    // 2. Status breakdown (paid/unpaid/partial) in range
+    db
+      .select({
+        status: invoices.paymentStatus,
+        count: sql<number>`count(*)`,
+        total: sql<number>`COALESCE(SUM(${invoices.grandTotal}), 0)`,
+      })
+      .from(invoices)
+      .where(rangeCondition)
+      .groupBy(invoices.paymentStatus),
+
+    // 3. Payment method breakdown in range
+    db
+      .select({
+        method: invoices.paymentMethod,
+        count: sql<number>`count(*)`,
+        total: sql<number>`COALESCE(SUM(${invoices.grandTotal}), 0)`,
+      })
+      .from(invoices)
+      .where(and(rangeCondition, eq(invoices.paymentStatus, "paid")))
+      .groupBy(invoices.paymentMethod),
+
+    // 4. Labor vs Parts breakdown in range
+    db
+      .select({
+        totalLabor: sql<number>`COALESCE(SUM(${invoices.laborTotal}), 0)`,
+        totalParts: sql<number>`COALESCE(SUM(${invoices.partsTotal}), 0)`,
+      })
+      .from(invoices)
+      .where(rangeCondition)
+      .then((r) => r[0]),
+
+    // 5. Overall pending payments (not date-filtered)
+    db
+      .select({
+        total: sql<number>`COALESCE(SUM(${invoices.grandTotal} - ${invoices.amountPaid}), 0)`,
+        count: sql<number>`count(*)`,
+      })
+      .from(invoices)
+      .where(
+        sql`${invoices.paymentStatus} IN ('unpaid', 'partial')`
+      )
+      .then((r) => r[0]),
+
+    // 6. Daily breakdown for the range
+    db
+      .select({
+        date: sql<string>`DATE(${invoices.createdAt})`,
+        total: sql<number>`COALESCE(SUM(${invoices.grandTotal}), 0)`,
+        count: sql<number>`count(*)`,
+      })
+      .from(invoices)
+      .where(rangeCondition)
+      .groupBy(sql`DATE(${invoices.createdAt})`)
+      .orderBy(sql`DATE(${invoices.createdAt})`),
+  ]);
+
+  // Transform status counts into a lookup
+  const statusMap: Record<string, { count: number; total: number }> = {};
+  for (const row of statusCounts) {
+    statusMap[row.status] = {
+      count: Number(row.count),
+      total: Number(row.total),
+    };
+  }
+
+  // Transform payment method counts
+  const methodMap: Record<string, { count: number; total: number }> = {};
+  for (const row of paymentMethodSplit) {
+    const method = row.method || "other";
+    methodMap[method] = {
+      count: Number(row.count),
+      total: Number(row.total),
+    };
+  }
+
+  return {
+    totalRevenue: Number(revenueSummary.totalRevenue),
+    totalCollected: Number(revenueSummary.totalCollected),
+    totalCash: Number(revenueSummary.totalCash),
+    totalUpi: Number(revenueSummary.totalUpi),
+    totalDiscount: Number(revenueSummary.totalDiscount),
+    totalTax: Number(revenueSummary.totalTax),
+    invoiceCount: Number(revenueSummary.invoiceCount),
+    avgInvoice: Number(revenueSummary.avgInvoice),
+    maxInvoice: Number(revenueSummary.maxInvoice),
+    minInvoice: Number(revenueSummary.minInvoice),
+    statusBreakdown: statusMap,
+    paymentMethodBreakdown: methodMap,
+    laborTotal: Number(laborPartsBreakdown.totalLabor),
+    partsTotal: Number(laborPartsBreakdown.totalParts),
+    pendingAmount: Number(pendingPayments.total),
+    pendingCount: Number(pendingPayments.count),
+    dailyData: dailyData.map((d) => ({
+      date: d.date,
+      revenue: Number(d.total),
+      bills: Number(d.count),
+    })),
+  };
+}

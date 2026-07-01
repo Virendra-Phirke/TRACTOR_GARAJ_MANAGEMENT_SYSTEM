@@ -335,28 +335,36 @@ export function InvoiceWizard({ customers, spareParts, taxRates }: { customers: 
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1">
                   <Label className="text-xs text-muted-foreground">Brand *</Label>
-                  <Combobox
-                    options={tractorBrands.map((b) => ({ value: b, label: b }))}
+                  <Select
                     value={newVehBrand}
-                    onChange={(v) => { setNewVehBrand(v); setNewVehModel(""); }}
-                    placeholder="Select Brand"
-                    searchPlaceholder="Search brand..."
-                    emptyText="No brand found."
-                    allowCustomValue
-                  />
+                    onValueChange={(v) => { setNewVehBrand(v || ""); setNewVehModel(""); }}
+                  >
+                    <SelectTrigger className="w-full bg-transparent border-border/40">
+                      <SelectValue placeholder="Select Brand" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {tractorBrands.map((b) => (
+                        <SelectItem key={b} value={b}>{b}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div className="space-y-1">
                   <Label className="text-xs text-muted-foreground">Model</Label>
-                  <Combobox
-                    options={(tractorModelsMap as Record<string, string[]>)[newVehBrand]?.map((m) => ({ value: m, label: m })) || []}
+                  <Select
                     value={newVehModel}
-                    onChange={setNewVehModel}
-                    placeholder="Select Model"
-                    searchPlaceholder="Search model..."
-                    emptyText={newVehBrand ? "No model found." : "Select brand first"}
+                    onValueChange={(v) => setNewVehModel(v || "")}
                     disabled={!newVehBrand}
-                    allowCustomValue
-                  />
+                  >
+                    <SelectTrigger className="w-full bg-transparent border-border/40">
+                      <SelectValue placeholder="Select Model" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {((tractorModelsMap as Record<string, string[]>)[newVehBrand] || []).map((m) => (
+                        <SelectItem key={m} value={m}>{m}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
               <div className="flex gap-2">

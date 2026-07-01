@@ -492,19 +492,39 @@ export function InvoiceDetailClient({
             </span>
           </div>
 
-          {status !== "paid" && (invoice.amountPaid || 0) > 0 && (
+          {(invoice.amountPaid || 0) > 0 && (
             <>
               <div className="block-divider" />
               <div className="summary-row">
-                <span className="summary-row-label">Paid</span>
-                <span>₹{(invoice.amountPaid || 0).toLocaleString("en-IN")}</span>
+                <span className="summary-row-label">Total Paid</span>
+                <span className={status === "paid" ? "text-emerald-400 font-medium" : ""}>₹{(invoice.amountPaid || 0).toLocaleString("en-IN")}</span>
               </div>
-              <div className="summary-row">
-                <span className="text-amber-400 font-medium">Balance Due</span>
-                <span className="text-amber-400 font-semibold">
-                  ₹{((invoice.grandTotal || 0) - (invoice.amountPaid || 0)).toLocaleString("en-IN")}
-                </span>
-              </div>
+              
+              {((invoice.cashAmount || 0) > 0 || (invoice.upiAmount || 0) > 0) && (
+                <div className="flex flex-col gap-1.5 mt-2 mb-2 pl-3 border-l-2 border-border/40 text-xs text-muted-foreground">
+                   {(invoice.cashAmount || 0) > 0 && (
+                     <div className="flex justify-between">
+                       <span>Via Cash</span>
+                       <span>₹{invoice.cashAmount!.toLocaleString("en-IN")}</span>
+                     </div>
+                   )}
+                   {(invoice.upiAmount || 0) > 0 && (
+                     <div className="flex justify-between">
+                       <span>Via UPI</span>
+                       <span>₹{invoice.upiAmount!.toLocaleString("en-IN")}</span>
+                     </div>
+                   )}
+                </div>
+              )}
+
+              {status !== "paid" && (
+                <div className="summary-row mt-2">
+                  <span className="text-amber-400 font-medium">Balance Due</span>
+                  <span className="text-amber-400 font-semibold">
+                    ₹{((invoice.grandTotal || 0) - (invoice.amountPaid || 0)).toLocaleString("en-IN")}
+                  </span>
+                </div>
+              )}
             </>
           )}
         </div>

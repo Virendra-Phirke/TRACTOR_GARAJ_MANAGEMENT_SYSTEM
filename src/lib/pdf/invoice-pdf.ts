@@ -27,6 +27,9 @@ export interface InvoicePdfData {
   discountAmount: number;
   grandTotal: number;
   amountPaid: number;
+  cashAmount?: number;
+  upiAmount?: number;
+  paymentMethod?: string;
   paymentStatus: string;
   upiQrDataUrl?: string;
   upiVpa?: string;
@@ -250,7 +253,19 @@ export async function generateInvoicePdf(
 
   if (data.paymentStatus === "paid") {
     page.drawText("PAID IN FULL", { x: margin, y: leftY - 15, size: 22, font: fontBold, color: rgb(0.2, 0.7, 0.3) });
-    leftY -= 40;
+    leftY -= 35;
+    
+    if ((data.cashAmount && data.cashAmount > 0) || (data.upiAmount && data.upiAmount > 0)) {
+      if (data.cashAmount && data.cashAmount > 0) {
+        page.drawText(`Via Cash: ${formatCurrency(data.cashAmount)}`, { x: margin, y: leftY, size: 10, font: fontRegular, color: textColor });
+        leftY -= 14;
+      }
+      if (data.upiAmount && data.upiAmount > 0) {
+        page.drawText(`Via UPI: ${formatCurrency(data.upiAmount)}`, { x: margin, y: leftY, size: 10, font: fontRegular, color: textColor });
+        leftY -= 14;
+      }
+      leftY -= 5;
+    }
   } else if (data.paymentStatus === "partial" && data.amountPaid > 0) {
     const balanceDue = data.grandTotal - data.amountPaid;
 
@@ -262,7 +277,22 @@ export async function generateInvoicePdf(
     page.drawRectangle({ x: margin, y: leftY - 8, width: 200, height: 22, color: rgb(0.95, 0.98, 0.95) });
     page.drawText("Paid:", { x: margin + 10, y: leftY - 2, size: 10, font: fontRegular, color: textColor });
     drawRightText(formatCurrency(data.amountPaid), margin + 190, leftY - 2, 10, fontBold, rgb(0.15, 0.55, 0.3));
-    leftY -= 24;
+    leftY -= 20;
+
+    // Breakdown for partial
+    if ((data.cashAmount && data.cashAmount > 0) || (data.upiAmount && data.upiAmount > 0)) {
+      if (data.cashAmount && data.cashAmount > 0) {
+        page.drawText(`Via Cash: ${formatCurrency(data.cashAmount)}`, { x: margin + 10, y: leftY - 2, size: 9, font: fontRegular, color: mutedColor });
+        leftY -= 12;
+      }
+      if (data.upiAmount && data.upiAmount > 0) {
+        page.drawText(`Via UPI: ${formatCurrency(data.upiAmount)}`, { x: margin + 10, y: leftY - 2, size: 9, font: fontRegular, color: mutedColor });
+        leftY -= 12;
+      }
+      leftY -= 5;
+    } else {
+      leftY -= 5;
+    }
 
     // Balance row
     page.drawRectangle({ x: margin, y: leftY - 8, width: 200, height: 22, color: rgb(1, 0.95, 0.95) });

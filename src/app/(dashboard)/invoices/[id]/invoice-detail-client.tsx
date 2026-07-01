@@ -136,35 +136,59 @@ export function InvoiceDetailClient({
     let finalAmount = 0;
     let cAmt = 0;
     let uAmt = 0;
+    let pMethod = draftPayMethod;
 
     if (draftStatus === "paid") {
       finalAmount = invoice.grandTotal || 0;
+      if (draftPayMethod === "split") {
+        cAmt = Number(draftCash) || 0;
+        uAmt = Number(draftUpi) || 0;
+        finalAmount = cAmt + uAmt;
+        if (Math.abs(finalAmount - (invoice.grandTotal || 0)) > 0.01) {
+          toast.error("Split amounts must equal the grand total for Paid status.");
+          return;
+        }
+      } else {
+        // Smart additive logic: pay remaining balance using the chosen method, preserving previous payments
+        const existingCash = invoice.cashAmount || 0;
+        const existingUpi = invoice.upiAmount || 0;
+        const remaining = Math.max(0, finalAmount - (invoice.amountPaid || 0));
+        
+        if (draftPayMethod === "cash") {
+          cAmt = existingCash + remaining;
+          uAmt = existingUpi;
+        } else if (draftPayMethod === "upi") {
+          uAmt = existingUpi + remaining;
+          cAmt = existingCash;
+        }
+        if (cAmt > 0 && uAmt > 0) pMethod = "split";
+      }
     } else if (draftStatus === "partial") {
       if (draftPayMethod === "split") {
         cAmt = Number(draftCash) || 0;
         uAmt = Number(draftUpi) || 0;
         finalAmount = cAmt + uAmt;
+        pMethod = "split";
       } else {
-        finalAmount = Number(draftCash) || 0;
-        if (draftPayMethod === "cash") cAmt = finalAmount;
-        if (draftPayMethod === "upi") uAmt = finalAmount;
+        const typedAmount = Number(draftCash) || 0;
+        if (draftPayMethod === "cash") {
+          cAmt = typedAmount;
+          if ((invoice.upiAmount || 0) > 0) {
+            uAmt = invoice.upiAmount || 0;
+            pMethod = "split";
+          }
+        } else if (draftPayMethod === "upi") {
+          uAmt = typedAmount;
+          if ((invoice.cashAmount || 0) > 0) {
+            cAmt = invoice.cashAmount || 0;
+            pMethod = "split";
+          }
+        }
+        finalAmount = cAmt + uAmt;
       }
     } else {
       finalAmount = 0;
-    }
-
-    if (draftStatus === "paid" && draftPayMethod === "split") {
-      cAmt = Number(draftCash) || 0;
-      uAmt = Number(draftUpi) || 0;
-      finalAmount = cAmt + uAmt;
-      
-      if (Math.abs(finalAmount - (invoice.grandTotal || 0)) > 0.01) {
-        toast.error("Split amounts must equal the grand total for Paid status.");
-        return;
-      }
-    } else if (draftStatus === "paid") {
-      if (draftPayMethod === "cash") cAmt = finalAmount;
-      if (draftPayMethod === "upi") uAmt = finalAmount;
+      pMethod = "cash";
     }
 
     let actualStatus = draftStatus;
@@ -174,7 +198,7 @@ export function InvoiceDetailClient({
 
     await updateInvoicePayment(invoice.id, {
       paymentStatus: actualStatus,
-      paymentMethod: draftPayMethod,
+      paymentMethod: pMethod,
       amountPaid: finalAmount,
       cashAmount: cAmt,
       upiAmount: uAmt,

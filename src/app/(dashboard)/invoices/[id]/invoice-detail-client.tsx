@@ -24,6 +24,8 @@ interface InvoiceDetail {
   discountAmount: number | null;
   grandTotal: number | null;
   amountPaid: number | null;
+  cashAmount: number | null;
+  upiAmount: number | null;
   paymentStatus: string;
   paymentMethod: string | null;
   notes: string | null;
@@ -103,8 +105,15 @@ export function InvoiceDetailClient({
   const openPayDialog = () => {
     setDraftStatus(status);
     setDraftPayMethod(payMethod);
-    setDraftCash("");
-    setDraftUpi("");
+    
+    if (payMethod === "split") {
+      setDraftCash(invoice.cashAmount ? invoice.cashAmount.toString() : "");
+      setDraftUpi(invoice.upiAmount ? invoice.upiAmount.toString() : "");
+    } else {
+      setDraftCash(invoice.amountPaid ? invoice.amountPaid.toString() : "");
+      setDraftUpi("");
+    }
+    
     setIsPayDialogOpen(true);
   };
 
@@ -133,6 +142,11 @@ export function InvoiceDetailClient({
       cAmt = Number(draftCash) || 0;
       uAmt = Number(draftUpi) || 0;
       finalAmount = cAmt + uAmt;
+      
+      if (Math.abs(finalAmount - (invoice.grandTotal || 0)) > 0.01) {
+        toast.error("Split amounts must equal the grand total for Paid status.");
+        return;
+      }
     } else if (draftStatus === "paid") {
       if (draftPayMethod === "cash") cAmt = finalAmount;
       if (draftPayMethod === "upi") uAmt = finalAmount;

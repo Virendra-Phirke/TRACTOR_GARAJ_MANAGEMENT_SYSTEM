@@ -297,6 +297,8 @@ export async function getInvoiceById(id: number) {
       discountAmount: invoices.discountAmount,
       grandTotal: invoices.grandTotal,
       amountPaid: invoices.amountPaid,
+      cashAmount: invoices.cashAmount,
+      upiAmount: invoices.upiAmount,
       paymentStatus: invoices.paymentStatus,
       paymentMethod: invoices.paymentMethod,
       notes: invoices.notes,
@@ -590,26 +592,15 @@ export async function updateInvoicePayment(id: number, data: { paymentStatus: st
     }).where(eq(invoices.id, id));
 
     // Adjust customer outstanding balance
-    if (wasUnpaid && isNowPaid) {
-      const remainingBalance = total - oldAmountPaid;
+    const balanceDiff = data.amountPaid - oldAmountPaid;
+    if (balanceDiff !== 0) {
       await tx
         .update(customers)
         .set({
-          outstandingBalance: sql`GREATEST(0, ${customers.outstandingBalance} - ${remainingBalance})`,
+          outstandingBalance: sql`GREATEST(0, ${customers.outstandingBalance} - ${balanceDiff})`,
           updatedAt: new Date(),
         })
         .where(eq(customers.id, currentInvoice.customerId));
-    } else if (wasUnpaid && !isNowPaid) {
-      const balanceDiff = data.amountPaid - oldAmountPaid;
-      if (balanceDiff > 0) {
-        await tx
-          .update(customers)
-          .set({
-            outstandingBalance: sql`GREATEST(0, ${customers.outstandingBalance} - ${balanceDiff})`,
-            updatedAt: new Date(),
-          })
-          .where(eq(customers.id, currentInvoice.customerId));
-      }
     }
   })();
 

@@ -8,10 +8,23 @@ import { Download, Printer, QrCode, CheckCircle, X } from "lucide-react";
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { updateInvoicePayment } from "@/lib/actions/invoices";
+import { updateInvoicePayment, deleteInvoice } from "@/lib/actions/invoices";
 import { generateUpiQrDataUrl } from "@/lib/qr/upi-qr";
 import { toast } from "sonner";
 import { format } from "date-fns";
+import { useRouter } from "next/navigation";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { Trash2 } from "lucide-react";
 
 interface InvoiceDetail {
   id: number;
@@ -59,12 +72,14 @@ interface UpiSettings {
 
 export function InvoiceDetailClient({
   invoice,
+  garage,
   upi,
 }: {
   invoice: InvoiceDetail;
   garage: GarageSettings;
   upi: UpiSettings;
 }) {
+  const router = useRouter();
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
   const [status, setStatus] = useState(invoice.paymentStatus);
   const [payMethod, setPayMethod] = useState(invoice.paymentMethod || "cash");
@@ -170,6 +185,16 @@ export function InvoiceDetailClient({
     setPayMethod(draftPayMethod);
     setIsPayDialogOpen(false);
     toast.success(`Payment recorded as ${actualStatus}`);
+  };
+
+  const handleDeleteInvoice = async () => {
+    try {
+      await deleteInvoice(invoice.id);
+      toast.success("Invoice deleted successfully");
+      router.push("/invoices");
+    } catch {
+      toast.error("Failed to delete invoice");
+    }
   };
 
   const handleDownloadPdf = async () => {
@@ -308,6 +333,26 @@ export function InvoiceDetailClient({
           <Button variant="ghost" size="sm" className="gap-1.5 cursor-pointer text-xs text-muted-foreground" onClick={handlePrintPdf} disabled={isPdfLoading}>
             <Printer className="w-3.5 h-3.5" />{isPdfLoading ? "Loading..." : "Print"}
           </Button>
+
+          <AlertDialog>
+            <AlertDialogTrigger render={<Button variant="ghost" size="sm" className="gap-1.5 cursor-pointer text-xs text-red-500 hover:text-red-600 hover:bg-red-500/10" />}>
+              <Trash2 className="w-3.5 h-3.5 mr-1" />Delete
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Delete Invoice</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Are you sure you want to delete Invoice #{invoice.invoiceNumber}? This action cannot be undone. Inventory stock and customer stats will be adjusted accordingly.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={handleDeleteInvoice} className="bg-red-500 hover:bg-red-600 text-white">
+                  Delete
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </div>
       </div>
 

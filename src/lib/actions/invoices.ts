@@ -614,6 +614,90 @@ export async function updateInvoicePayment(id: number, data: { paymentStatus: st
   revalidatePath("/customers");
 }
 
+export async function deleteInvoice(id: number) {
+  const [invoice] = await db
+    .select({
+      id: invoices.id,
+      invoiceNumber: invoices.invoiceNumber,
+      customerId: invoices.customerId,
+      grandTotal: invoices.grandTotal,
+      amountPaid: invoices.amountPaid,
+      paymentStatus: invoices.paymentStatus,
+    })
+    .from(invoices)
+    .where(eq(invoices.id, id))
+    .limit(1);
+
+  if (!invoice) return;
+
+  const parts = await db
+    .select({
+      sparePartId: invoiceParts.sparePartId,
+      quantity: invoiceParts.quantity,
+    })
+    .from(invoiceParts)
+    .where(eq(invoiceParts.invoiceId, id));
+
+  await (async () => {
+    const tx = db;
+    
+    // Restore stock
+    for (const part of parts) {
+      if (part.sparePartId) {
+        const [spare] = await tx
+          .select({ stock: spareParts.stock })
+          .from(spareParts)
+          .where(eq(spareParts.id, part.sparePartId))
+          .limit(1);
+
+        if (spare) {
+          const previousStock = spare.stock || 0;
+          const newStock = previousStock + part.quantity;
+
+          await tx
+            .update(spareParts)
+            .set({
+              stock: newStock,
+              updatedAt: new Date(),
+            })
+            .where(eq(spareParts.id, part.sparePartId));
+
+          await tx.insert(stockHistory).values({
+            sparePartId: part.sparePartId,
+            type: "adjustment",
+            quantity: part.quantity,
+            previousStock,
+            newStock,
+            reference: `Invoice Deleted: #${invoice.invoiceNumber}`,
+          });
+        }
+      }
+    }
+
+    // Adjust customer stats
+    const outstandingDiff = invoice.paymentStatus !== "paid" ? (invoice.grandTotal || 0) - (invoice.amountPaid || 0) : 0;
+    
+    await tx
+      .update(customers)
+      .set({
+        totalSpent: sql`GREATEST(0, ${customers.totalSpent} - ${invoice.grandTotal || 0})`,
+        visitCount: sql`GREATEST(0, ${customers.visitCount} - 1)`,
+        outstandingBalance: sql`GREATEST(0, ${customers.outstandingBalance} - ${outstandingDiff})`,
+        updatedAt: new Date(),
+      })
+      .where(eq(customers.id, invoice.customerId));
+
+    // Delete the invoice (cascade handles invoice_labors and invoice_parts)
+    await tx.delete(invoices).where(eq(invoices.id, id));
+  })();
+
+  revalidatePath("/invoices");
+  revalidatePath("/");
+  revalidatePath("/inventory");
+  revalidatePath("/customers");
+  revalidatePath("/reports");
+}
+
 // ─── Report Stats (date-filtered, comprehensive) ─────────────────────
 export async function getReportStats(startDate?: string, endDate?: string) {
   const { start: todayStart, end: todayEnd } = getISTDayBounds();

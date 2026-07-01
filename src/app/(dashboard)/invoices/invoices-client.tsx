@@ -5,16 +5,27 @@ import { Button } from "@/components/ui/button";
 import { DataTable } from "@/components/ui/data-table";
 import { ColumnDef } from "@tanstack/react-table";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Eye } from "lucide-react";
-import Link from "next/link";
 import { format } from "date-fns";
+import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { DateRange } from "react-day-picker";
 import { DatePickerWithRange } from "@/components/ui/date-range-picker";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { MoreVertical } from "lucide-react";
+import { Plus, MoreVertical, Eye, Trash2 } from "lucide-react";
+import { deleteInvoice } from "@/lib/actions/invoices";
+import { toast } from "sonner";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface Invoice {
   id: number;
@@ -40,6 +51,19 @@ export function InvoicesClient({ invoices }: { invoices: Invoice[] }) {
     to: initialTo ? new Date(initialTo) : undefined,
   });
   const [sortDir, setSortDir] = useState(searchParams.get("sort") || "desc");
+  const [invoiceToDelete, setInvoiceToDelete] = useState<number | null>(null);
+
+  const handleDelete = async () => {
+    if (!invoiceToDelete) return;
+    try {
+      await deleteInvoice(invoiceToDelete);
+      toast.success("Invoice deleted successfully");
+    } catch {
+      toast.error("Failed to delete invoice");
+    } finally {
+      setInvoiceToDelete(null);
+    }
+  };
 
   const applyFilters = (newDate: DateRange | undefined, newSort: string) => {
     const params = new URLSearchParams();
@@ -153,6 +177,9 @@ export function InvoicesClient({ invoices }: { invoices: Invoice[] }) {
             <DropdownMenuItem onClick={() => router.push(`/invoices/${row.original.id}`)} className="cursor-pointer">
               <Eye className="w-4 h-4 mr-2" /> View Details
             </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setInvoiceToDelete(row.original.id)} className="cursor-pointer text-red-500 focus:text-red-600 focus:bg-red-500/10">
+              <Trash2 className="w-4 h-4 mr-2" /> Delete
+            </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       ),
@@ -207,6 +234,23 @@ export function InvoicesClient({ invoices }: { invoices: Invoice[] }) {
           ]}
         />
       </div>
+
+      <AlertDialog open={!!invoiceToDelete} onOpenChange={(open) => !open && setInvoiceToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Invoice</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this invoice? This action cannot be undone. Inventory stock and customer stats will be adjusted accordingly.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} className="bg-red-500 hover:bg-red-600 text-white">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

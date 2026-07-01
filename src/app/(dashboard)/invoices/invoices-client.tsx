@@ -39,36 +39,28 @@ export function InvoicesClient({ invoices }: { invoices: Invoice[] }) {
     from: initialFrom ? new Date(initialFrom) : undefined,
     to: initialTo ? new Date(initialTo) : undefined,
   });
-  const [limit, setLimit] = useState(searchParams.get("limit") || "100");
   const [sortDir, setSortDir] = useState(searchParams.get("sort") || "desc");
 
-  const applyFilters = (newDate: DateRange | undefined, newLimit: string, newSort: string) => {
+  const applyFilters = (newDate: DateRange | undefined, newSort: string) => {
     const params = new URLSearchParams();
     if (newDate?.from) params.set("from", newDate.from.toISOString());
     if (newDate?.to) params.set("to", newDate.to.toISOString());
-    if (newLimit !== "100") params.set("limit", newLimit);
     if (newSort !== "desc") params.set("sort", newSort);
     router.push(`/invoices?${params.toString()}`);
   };
 
   const handleDateChange = (d: DateRange | undefined) => {
     setDate(d);
-    applyFilters(d, limit, sortDir);
-  };
-
-  const handleLimitChange = (l: string) => {
-    setLimit(l);
-    applyFilters(date, l, sortDir);
+    applyFilters(d, sortDir);
   };
 
   const handleSortChange = (s: string) => {
     setSortDir(s);
-    applyFilters(date, limit, s);
+    applyFilters(date, s);
   };
 
   const handleClearFilters = () => {
     setDate(undefined);
-    setLimit("100");
     setSortDir("desc");
     router.push("/invoices");
   };
@@ -189,17 +181,7 @@ export function InvoicesClient({ invoices }: { invoices: Invoice[] }) {
               <SelectItem value="asc">Oldest First</SelectItem>
             </SelectContent>
           </Select>
-          <Select value={limit} onValueChange={(v) => handleLimitChange(v || "100")}>
-            <SelectTrigger className="w-[90px] h-8 text-xs bg-transparent border-border/40">
-              <SelectValue placeholder="Limit" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="20">20 items</SelectItem>
-              <SelectItem value="50">50 items</SelectItem>
-              <SelectItem value="100">100 items</SelectItem>
-              <SelectItem value="200">200 items</SelectItem>
-            </SelectContent>
-          </Select>
+
           <Link href="/invoices/new">
             <Button className="gap-2 cursor-pointer h-8 text-sm">
               <Plus className="w-4 h-4" />

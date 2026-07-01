@@ -32,6 +32,7 @@ import { toast } from "sonner";
 import { format } from "date-fns";
 import tractorBrands from "../../../../00 services/tractor_brands.json";
 import tractorModelsMap from "../../../../00 services/tractor_models.json";
+import { PaginationFooter } from "@/components/ui/pagination-footer";
 
 interface Vehicle {
   id: number;
@@ -70,9 +71,19 @@ export function VehiclesClient({
   const [newBrand, setNewBrand] = useState("");
   const [newModel, setNewModel] = useState("");
 
+  const [pageIndex, setPageIndex] = useState(0);
+  const [pageSize, setPageSize] = useState(20);
+
+  // Reset pagination on search change (handled by server fetch via router, but good for local state reset too)
   const handleSearch = () => {
+    setPageIndex(0);
     router.push(`/vehicles?search=${encodeURIComponent(search)}`);
   };
+
+  const paginatedVehicles = vehicles.slice(
+    pageIndex * pageSize,
+    (pageIndex + 1) * pageSize
+  );
 
   const handleCreate = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -204,14 +215,14 @@ export function VehiclesClient({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {vehicles.length === 0 ? (
+              {paginatedVehicles.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={6} className="text-center py-10 text-muted-foreground">
                     No vehicles found.
                   </TableCell>
                 </TableRow>
               ) : (
-                vehicles.map((v) => (
+                paginatedVehicles.map((v) => (
                   <TableRow key={v.id} className="border-border/30 hover:bg-accent/30">
                     <TableCell className="font-mono font-semibold">{v.registrationNumber}</TableCell>
                     <TableCell>{v.brand} {v.model || ""}</TableCell>
@@ -248,6 +259,13 @@ export function VehiclesClient({
               )}
             </TableBody>
           </Table>
+          <PaginationFooter
+            pageIndex={pageIndex}
+            pageSize={pageSize}
+            totalRows={vehicles.length}
+            setPageIndex={setPageIndex}
+            setPageSize={setPageSize}
+          />
         </CardContent>
       </Card>
     </div>

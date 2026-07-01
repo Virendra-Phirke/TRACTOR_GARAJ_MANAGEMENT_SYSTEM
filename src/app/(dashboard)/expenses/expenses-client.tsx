@@ -29,6 +29,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { PaginationFooter } from "@/components/ui/pagination-footer";
 
 const EXPENSE_CATEGORIES = ["Rent", "Electricity", "Salary", "Tools", "Transport", "Materials", "Maintenance", "Other"];
 
@@ -76,11 +77,18 @@ export function ExpensesClient({
   const now = new Date();
   const [filterMonth, setFilterMonth] = useState(now.getMonth()); // 0-indexed
   const [filterYear, setFilterYear] = useState(now.getFullYear());
+  const [pageIndex, setPageIndex] = useState(0);
+  const [pageSize, setPageSize] = useState(20);
 
   const filteredExpenses = expenses.filter((e) => {
     const d = new Date(e.date);
     return d.getMonth() === filterMonth && d.getFullYear() === filterYear;
   });
+
+  const paginatedExpenses = filteredExpenses.slice(
+    pageIndex * pageSize,
+    (pageIndex + 1) * pageSize
+  );
 
   const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
   const availableYears = Array.from(new Set(expenses.map((e) => new Date(e.date).getFullYear()))).sort((a, b) => b - a);
@@ -191,7 +199,7 @@ export function ExpensesClient({
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-3 flex-wrap">
-          <Select value={filterMonth.toString()} onValueChange={(v) => setFilterMonth(Number(v))}>
+          <Select value={filterMonth.toString()} onValueChange={(v) => { setFilterMonth(Number(v)); setPageIndex(0); }}>
             <SelectTrigger className="w-[130px] h-8 text-xs bg-transparent border-border/40">
               <SelectValue />
             </SelectTrigger>
@@ -201,7 +209,7 @@ export function ExpensesClient({
               ))}
             </SelectContent>
           </Select>
-          <Select value={filterYear.toString()} onValueChange={(v) => setFilterYear(Number(v))}>
+          <Select value={filterYear.toString()} onValueChange={(v) => { setFilterYear(Number(v)); setPageIndex(0); }}>
             <SelectTrigger className="w-[90px] h-8 text-xs bg-transparent border-border/40">
               <SelectValue />
             </SelectTrigger>
@@ -421,13 +429,13 @@ export function ExpensesClient({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredExpenses.length === 0 ? (
+              {paginatedExpenses.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={6} className="text-center py-10 text-muted-foreground">
                     <Receipt className="w-8 h-8 mx-auto mb-2 opacity-30" />No expenses for {monthNames[filterMonth]} {filterYear}.
                   </TableCell>
                 </TableRow>
-              ) : filteredExpenses.map((exp) => (
+              ) : paginatedExpenses.map((exp) => (
                 <TableRow key={exp.id} className="border-border/30">
                   <TableCell><Badge variant="outline">{exp.category}</Badge></TableCell>
                   <TableCell className="text-muted-foreground text-sm">{exp.description || "—"}</TableCell>
@@ -461,6 +469,13 @@ export function ExpensesClient({
               ))}
             </TableBody>
           </Table>
+          <PaginationFooter
+            pageIndex={pageIndex}
+            pageSize={pageSize}
+            totalRows={filteredExpenses.length}
+            setPageIndex={setPageIndex}
+            setPageSize={setPageSize}
+          />
         </CardContent>
       </Card>
     </div>

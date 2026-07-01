@@ -9,14 +9,13 @@ export default async function InvoicesPage(props: {
   const searchParams = await props.searchParams;
   const from = searchParams?.from ? new Date(searchParams.from) : undefined;
   const to = searchParams?.to ? new Date(searchParams.to) : undefined;
-  const limit = searchParams?.limit ? parseInt(searchParams.limit) : 100;
   const sortDir = searchParams?.sort === "asc" ? "asc" : "desc";
 
   const invoicesList = await getInvoices({
     from,
     to,
-    limit,
     sortDir,
+    limit: 1000, // Fetch enough to let DataTable paginate client-side
   });
 
   return (

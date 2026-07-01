@@ -4,6 +4,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { DateRange } from "react-day-picker";
 import { DatePickerWithRange } from "@/components/ui/date-range-picker";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent } from "@/components/ui/card";
 import {
   IndianRupee,
@@ -79,6 +80,24 @@ export function ReportsClient({
     to: initialTo ? new Date(initialTo) : undefined,
   });
 
+  const now = new Date();
+  const [filterMonth, setFilterMonth] = useState(initialFrom ? new Date(initialFrom).getMonth() : now.getMonth());
+  const [filterYear, setFilterYear] = useState(initialFrom ? new Date(initialFrom).getFullYear() : now.getFullYear());
+  const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+  const availableYears = Array.from({ length: 6 }, (_, i) => now.getFullYear() - i);
+
+  const handleMonthYearChange = (m: number, y: number) => {
+    setFilterMonth(m);
+    setFilterYear(y);
+    const start = new Date(y, m, 1);
+    const end = new Date(y, m + 1, 0, 23, 59, 59, 999);
+    setDate({ from: start, to: end });
+    const params = new URLSearchParams();
+    params.set("from", start.toISOString());
+    params.set("to", end.toISOString());
+    router.push(`/reports?${params.toString()}`);
+  };
+
   const handleDateChange = (d: DateRange | undefined) => {
     setDate(d);
     const params = new URLSearchParams();
@@ -89,6 +108,8 @@ export function ReportsClient({
 
   const handleClear = () => {
     setDate(undefined);
+    setFilterMonth(now.getMonth());
+    setFilterYear(now.getFullYear());
     router.push("/reports");
   };
 
@@ -118,7 +139,29 @@ export function ReportsClient({
             {rangeLabel} — {stats.invoiceCount} invoice{stats.invoiceCount !== 1 ? "s" : ""}
           </p>
         </div>
-        <DatePickerWithRange date={date} setDate={handleDateChange} onClear={handleClear} />
+        <div className="flex flex-wrap items-center gap-2">
+          <Select value={filterMonth.toString()} onValueChange={(v) => handleMonthYearChange(Number(v), filterYear)}>
+            <SelectTrigger className="w-[120px] h-9 text-xs">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {monthNames.map((m, i) => (
+                <SelectItem key={i} value={i.toString()}>{m}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select value={filterYear.toString()} onValueChange={(v) => handleMonthYearChange(filterMonth, Number(v))}>
+            <SelectTrigger className="w-[90px] h-9 text-xs">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {availableYears.map((y) => (
+                <SelectItem key={y} value={y.toString()}>{y}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <DatePickerWithRange date={date} setDate={handleDateChange} onClear={handleClear} />
+        </div>
       </div>
 
       {/* ── Top Row: 4 Key Metric Cards ────────────────────────────── */}

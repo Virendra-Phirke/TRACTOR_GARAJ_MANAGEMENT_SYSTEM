@@ -21,6 +21,7 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { DateRange } from "react-day-picker";
 import { DatePickerWithRange } from "@/components/ui/date-range-picker";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   AreaChart,
   Area,
@@ -82,6 +83,24 @@ export function DashboardClient({
     to: initialTo ? new Date(initialTo) : undefined,
   });
 
+  const now = new Date();
+  const [filterMonth, setFilterMonth] = useState(initialFrom ? new Date(initialFrom).getMonth() : now.getMonth());
+  const [filterYear, setFilterYear] = useState(initialFrom ? new Date(initialFrom).getFullYear() : now.getFullYear());
+  const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+  const availableYears = Array.from({ length: 6 }, (_, i) => now.getFullYear() - i);
+
+  const handleMonthYearChange = (m: number, y: number) => {
+    setFilterMonth(m);
+    setFilterYear(y);
+    const start = new Date(y, m, 1);
+    const end = new Date(y, m + 1, 0, 23, 59, 59, 999);
+    setDate({ from: start, to: end });
+    const params = new URLSearchParams();
+    params.set("from", start.toISOString());
+    params.set("to", end.toISOString());
+    router.push(`/?${params.toString()}`);
+  };
+
   const needsBackup = !lastBackupDate || new Date().getTime() - new Date(lastBackupDate).getTime() > 7 * 24 * 60 * 60 * 1000;
 
   useEffect(() => {
@@ -105,6 +124,8 @@ export function DashboardClient({
 
   const handleClearFilters = () => {
     setDate(undefined);
+    setFilterMonth(now.getMonth());
+    setFilterYear(now.getFullYear());
     router.push("/");
   };
   const statCards = [
@@ -162,6 +183,26 @@ export function DashboardClient({
         {/* Actions & Filters */}
         <div className="flex flex-wrap gap-3 items-center">
           <div className="flex items-center gap-2">
+            <Select value={filterMonth.toString()} onValueChange={(v) => handleMonthYearChange(Number(v), filterYear)}>
+              <SelectTrigger className="w-[120px] h-9 text-xs">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {monthNames.map((m, i) => (
+                  <SelectItem key={i} value={i.toString()}>{m}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select value={filterYear.toString()} onValueChange={(v) => handleMonthYearChange(filterMonth, Number(v))}>
+              <SelectTrigger className="w-[90px] h-9 text-xs">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {availableYears.map((y) => (
+                  <SelectItem key={y} value={y.toString()}>{y}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
             <DatePickerWithRange date={date} setDate={setDate} onClear={handleClearFilters} />
             <Button size="sm" variant="secondary" onClick={handleApplyFilters} className="h-9 cursor-pointer">
               Apply

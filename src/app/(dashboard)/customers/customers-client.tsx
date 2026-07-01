@@ -13,9 +13,10 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Plus } from "lucide-react";
-import { createCustomer } from "@/lib/actions/customers";
+import { Plus, Trash2 } from "lucide-react";
+import { createCustomer, bulkDeleteCustomers } from "@/lib/actions/customers";
 import { toast } from "sonner";
+import { RowSelectionState } from "@tanstack/react-table";
 import { DataTable } from "@/components/ui/data-table";
 import { columns, Customer } from "./columns";
 import { Combobox } from "@/components/ui/combobox";
@@ -35,6 +36,26 @@ export function CustomersClient({
   const [loading, setLoading] = useState(false);
   const [vehicleBrand, setVehicleBrand] = useState("");
   const [vehicleModel, setVehicleModel] = useState("");
+  const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
+  const [deleting, setDeleting] = useState(false);
+
+  const selectedCount = Object.keys(rowSelection).length;
+
+  const handleBulkDelete = async () => {
+    if (!confirm(`Are you sure you want to delete ${selectedCount} customers?`)) return;
+    setDeleting(true);
+    try {
+      const ids = Object.keys(rowSelection).map((i) => customers[parseInt(i)].id);
+      await bulkDeleteCustomers(ids);
+      toast.success(`${selectedCount} customers deleted`);
+      setRowSelection({});
+      router.refresh();
+    } catch {
+      toast.error("Failed to delete customers");
+    } finally {
+      setDeleting(false);
+    }
+  };
 
   const handleCreate = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -67,9 +88,21 @@ export function CustomersClient({
       <div className="flex items-center justify-between gap-4">
         <h2 className="text-2xl font-semibold tracking-tight">Customers</h2>
 
-        <Dialog open={open} onOpenChange={setOpen}>
-          <DialogTrigger render={<Button className="gap-2 cursor-pointer"><Plus className="w-4 h-4" />Add Customer</Button>} />
-          <DialogContent className="sm:max-w-[30vw] w-full">
+        <div className="flex gap-2">
+          {selectedCount > 0 && (
+            <Button
+              variant="destructive"
+              onClick={handleBulkDelete}
+              disabled={deleting}
+              className="gap-2 cursor-pointer"
+            >
+              <Trash2 className="w-4 h-4" />
+              {deleting ? "Deleting..." : `Delete (${selectedCount})`}
+            </Button>
+          )}
+          <Dialog open={open} onOpenChange={setOpen}>
+            <DialogTrigger render={<Button className="gap-2 cursor-pointer"><Plus className="w-4 h-4" />Add Customer</Button>} />
+            <DialogContent className="sm:max-w-[30vw] w-full">
             <DialogHeader>
               <DialogTitle>New Customer</DialogTitle>
             </DialogHeader>
@@ -122,6 +155,7 @@ export function CustomersClient({
             </form>
           </DialogContent>
         </Dialog>
+        </div>
       </div>
 
       <DataTable 
@@ -129,6 +163,8 @@ export function CustomersClient({
         data={customers} 
         searchKey="name" 
         searchPlaceholder="Filter customers by name..." 
+        rowSelection={rowSelection}
+        onRowSelectionChange={setRowSelection}
       />
     </div>
   );

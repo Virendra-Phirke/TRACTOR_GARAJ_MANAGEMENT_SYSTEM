@@ -2,7 +2,7 @@
 
 import { db } from "@/db";
 import { customers, vehicles, invoices } from "@/db/schema";
-import { eq, ilike, or, desc, sql } from "drizzle-orm";
+import { eq, ilike, or, desc, sql, inArray } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 
 export async function getCustomers(search?: string) {
@@ -48,10 +48,11 @@ export async function createCustomer(data: {
     
   const customer = result[0];
 
-  if (data.vehicleReg && data.vehicleReg.trim()) {
+  if (data.vehicleBrand || data.vehicleModel || (data.vehicleReg && data.vehicleReg.trim())) {
+    const regNum = (data.vehicleReg && data.vehicleReg.trim()) || `N/A-${Date.now()}`;
     await db.insert(vehicles).values({
       customerId: customer.id,
-      registrationNumber: data.vehicleReg.trim(),
+      registrationNumber: regNum,
       brand: data.vehicleBrand || "",
       model: data.vehicleModel || "",
     });
@@ -103,4 +104,10 @@ export async function getCustomerCount() {
     .select({ count: sql<number>`count(*)` })
     .from(customers);
   return Number(result[0].count);
+}
+
+export async function bulkDeleteCustomers(ids: number[]) {
+  if (!ids || ids.length === 0) return;
+  await db.delete(customers).where(inArray(customers.id, ids));
+  revalidatePath("/customers");
 }

@@ -14,8 +14,10 @@ import { DatePickerWithRange } from "@/components/ui/date-range-picker";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Plus, MoreVertical, Eye, Trash2 } from "lucide-react";
-import { deleteInvoice } from "@/lib/actions/invoices";
+import { deleteInvoice, bulkDeleteInvoices } from "@/lib/actions/invoices";
 import { toast } from "sonner";
+import { RowSelectionState } from "@tanstack/react-table";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -52,6 +54,26 @@ export function InvoicesClient({ invoices }: { invoices: Invoice[] }) {
   });
   const [sortDir, setSortDir] = useState(searchParams.get("sort") || "desc");
   const [invoiceToDelete, setInvoiceToDelete] = useState<number | null>(null);
+  const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
+  const [deleting, setDeleting] = useState(false);
+
+  const selectedCount = Object.keys(rowSelection).length;
+
+  const handleBulkDelete = async () => {
+    if (!confirm(`Are you sure you want to delete ${selectedCount} invoices?`)) return;
+    setDeleting(true);
+    try {
+      const ids = Object.keys(rowSelection).map((i) => invoices[parseInt(i)].id);
+      await bulkDeleteInvoices(ids);
+      toast.success(`${selectedCount} invoices deleted`);
+      setRowSelection({});
+      router.refresh();
+    } catch {
+      toast.error("Failed to delete invoices");
+    } finally {
+      setDeleting(false);
+    }
+  };
 
   const handleDelete = async () => {
     if (!invoiceToDelete) return;
@@ -96,6 +118,25 @@ export function InvoicesClient({ invoices }: { invoices: Invoice[] }) {
   };
 
   const columns: ColumnDef<Invoice>[] = [
+    {
+      id: "select",
+      header: ({ table }) => (
+        <Checkbox
+          checked={table.getIsAllPageRowsSelected()}
+          onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
+          aria-label="Select all"
+        />
+      ),
+      cell: ({ row }) => (
+        <Checkbox
+          checked={row.getIsSelected()}
+          onCheckedChange={(value) => row.toggleSelected(!!value)}
+          aria-label="Select row"
+        />
+      ),
+      enableSorting: false,
+      enableHiding: false,
+    },
     {
       accessorKey: "invoiceNumber",
       header: "Invoice #",
@@ -216,6 +257,17 @@ export function InvoicesClient({ invoices }: { invoices: Invoice[] }) {
             </SelectContent>
           </Select>
 
+          {selectedCount > 0 && (
+            <Button
+              variant="destructive"
+              onClick={handleBulkDelete}
+              disabled={deleting}
+              className="gap-2 cursor-pointer h-8 text-sm"
+            >
+              <Trash2 className="w-4 h-4" />
+              {deleting ? "Deleting..." : `Delete (${selectedCount})`}
+            </Button>
+          )}
           <Link href="/invoices/new">
             <Button className="gap-2 cursor-pointer h-8 text-sm">
               <Plus className="w-4 h-4" />
@@ -239,6 +291,8 @@ export function InvoicesClient({ invoices }: { invoices: Invoice[] }) {
             { label: "Unpaid", value: "unpaid" },
             { label: "Partial", value: "partial" },
           ]}
+          rowSelection={rowSelection}
+          onRowSelectionChange={setRowSelection}
         />
       </div>
 

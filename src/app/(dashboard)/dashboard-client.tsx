@@ -77,7 +77,7 @@ export function DashboardClient({
   const searchParams = useSearchParams();
   const initialFrom = searchParams.get("from");
   const initialTo = searchParams.get("to");
-  
+
   const [date, setDate] = useState<DateRange | undefined>({
     from: initialFrom ? new Date(initialFrom) : undefined,
     to: initialTo ? new Date(initialTo) : undefined,
@@ -179,7 +179,7 @@ export function DashboardClient({
             Here&apos;s your garage at a glance
           </p>
         </div>
-        
+
         {/* Actions & Filters */}
         <div className="flex flex-wrap gap-3 items-center">
           <div className="flex items-center gap-2">

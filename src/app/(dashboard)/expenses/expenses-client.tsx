@@ -18,6 +18,7 @@ import { format, isWithinInterval } from "date-fns";
 import { DateRange } from "react-day-picker";
 import { DatePickerWithRange } from "@/components/ui/date-range-picker";
 import { Checkbox } from "@/components/ui/checkbox";
+import { PieChart, Pie, Cell, Tooltip as RechartsTooltip, ResponsiveContainer, Legend } from "recharts";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -101,6 +102,20 @@ export function ExpensesClient({
     return isWithinInterval(invDate, { start: date.from, end: date.to });
   });
 
+  const totalExpenses = filteredExpenses.reduce((sum, exp) => sum + exp.amount, 0);
+
+  const expensesByCategory = filteredExpenses.reduce((acc, curr) => {
+    acc[curr.category] = (acc[curr.category] || 0) + curr.amount;
+    return acc;
+  }, {} as Record<string, number>);
+
+  const pieData = Object.keys(expensesByCategory).map((key) => ({
+    name: key,
+    value: expensesByCategory[key],
+  })).sort((a, b) => b.value - a.value);
+
+  const COLORS = ['#3b82f6', '#f43f5e', '#10b981', '#f59e0b', '#8b5cf6', '#06b6d4', '#64748b', '#ec4899'];
+
   // Automatically select all filtered invoices when date range changes
   const handleDateChange = (d: DateRange | undefined) => {
     setDate(d);
@@ -128,8 +143,6 @@ export function ExpensesClient({
   // Sync custom payout amount when total changes (if user hasn't typed anything yet)
   // Actually, better to just let it default or auto-update if empty, but we can just use an effect or calculate it.
   const finalPayoutAmount = customPayoutAmount !== "" ? Number(customPayoutAmount) : partnerPayoutTotal;
-
-  const totalExpenses = filteredExpenses.reduce((s, e) => s + e.amount, 0);
 
   const handleCreate = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -415,9 +428,52 @@ export function ExpensesClient({
         </div>
       </div>
 
-      <Card className="bg-card/50">
-        <CardContent className="p-0">
-          <Table>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <Card className="bg-card/50 lg:col-span-1">
+          <CardContent className="p-6">
+            <h3 className="text-sm font-medium text-muted-foreground mb-4">Expense Breakdown</h3>
+            {pieData.length > 0 ? (
+              <ResponsiveContainer width="100%" height={240}>
+                <PieChart>
+                  <Pie
+                    data={pieData}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={60}
+                    outerRadius={80}
+                    paddingAngle={5}
+                    dataKey="value"
+                  >
+                    {pieData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <RechartsTooltip 
+                    formatter={(value: any) => `₹${Number(value).toLocaleString("en-IN")}`}
+                    contentStyle={{
+                      backgroundColor: "rgba(40, 45, 55, 0.85)",
+                      backdropFilter: "blur(8px)",
+                      border: "1px solid rgba(255, 255, 255, 0.1)",
+                      borderRadius: "8px",
+                      fontSize: "12px",
+                      color: "#fff"
+                    }}
+                    itemStyle={{ color: "#fff" }}
+                  />
+                  <Legend wrapperStyle={{ fontSize: '12px' }} />
+                </PieChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="h-[240px] flex items-center justify-center text-muted-foreground text-sm">
+                No expenses to show.
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card className="bg-card/50 lg:col-span-2">
+          <CardContent className="p-0">
+            <Table>
             <TableHeader>
               <TableRow className="border-border/50">
                 <TableHead>Category</TableHead>
@@ -478,6 +534,7 @@ export function ExpensesClient({
           />
         </CardContent>
       </Card>
+      </div>
     </div>
   );
 }

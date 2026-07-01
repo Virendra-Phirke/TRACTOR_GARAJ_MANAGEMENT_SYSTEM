@@ -33,6 +33,7 @@ import { format } from "date-fns";
 import tractorBrands from "../../../../00 services/tractor_brands.json";
 import tractorModelsMap from "../../../../00 services/tractor_models.json";
 import { PaginationFooter } from "@/components/ui/pagination-footer";
+import { EditVehicleDialog } from "@/components/vehicles/edit-vehicle-dialog";
 
 interface Vehicle {
   id: number;
@@ -211,7 +212,7 @@ export function VehiclesClient({
                 <TableHead>Owner</TableHead>
                 <TableHead>Year</TableHead>
                 <TableHead>Added</TableHead>
-                <TableHead className="w-[60px]"></TableHead>
+                <TableHead className="w-[100px] text-right"></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -231,7 +232,8 @@ export function VehiclesClient({
                     <TableCell className="text-muted-foreground text-sm">
                       {format(new Date(v.createdAt), "dd MMM yyyy")}
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="text-right flex items-center justify-end gap-1">
+                      <EditVehicleDialog vehicle={v} />
                       <AlertDialog>
                         <AlertDialogTrigger render={
                           <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive cursor-pointer">

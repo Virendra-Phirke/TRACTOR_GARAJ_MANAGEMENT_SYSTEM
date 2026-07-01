@@ -9,6 +9,7 @@ import {
   stockHistory,
   customers,
   vehicles,
+  expenses,
 } from "@/db/schema";
 import { eq, desc, asc, sql, and, gte, lte, inArray } from "drizzle-orm";
 import { getISTDayBounds } from "@/lib/utils";
@@ -450,19 +451,23 @@ export async function getDashboardStats(startDate?: string, endDate?: string) {
   // Build the date condition for revenue and graph
   let revenueCondition = undefined;
   let graphCondition;
+  let expenseGraphCondition;
+  
   if (startDate && endDate) {
     const { start } = getISTDayBounds(startDate);
     const { end } = getISTDayBounds(endDate);
     revenueCondition = and(gte(invoices.createdAt, start), lte(invoices.createdAt, end));
     graphCondition = revenueCondition;
+    expenseGraphCondition = and(gte(expenses.date, start), lte(expenses.date, end));
   } else {
     const sevenDaysAgo = new Date();
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
     graphCondition = gte(invoices.createdAt, sevenDaysAgo);
+    expenseGraphCondition = gte(expenses.date, sevenDaysAgo);
   }
 
-  // ─── Run all 4 queries in PARALLEL ──────────────────────────────
-  const [todayRevenue, pendingPayments, totalRevenue, weeklyData, recentInvoices] =
+  // ─── Run all queries in PARALLEL ──────────────────────────────
+  const [todayRevenue, pendingPayments, totalRevenue, weeklyData, recentInvoices, expensesData] =
     await Promise.all([
       // 1. Today's revenue
       db
@@ -495,7 +500,7 @@ export async function getDashboardStats(startDate?: string, endDate?: string) {
         .where(revenueCondition)
         .then((r) => r[0]),
 
-      // 4. Graph data
+      // 4. Graph data (Revenue)
       db
         .select({
           date: sql<string>`DATE(${invoices.createdAt})`,
@@ -521,7 +526,34 @@ export async function getDashboardStats(startDate?: string, endDate?: string) {
         .leftJoin(customers, eq(invoices.customerId, customers.id))
         .orderBy(desc(invoices.createdAt))
         .limit(5),
+
+      // 6. Expenses for Graph
+      db
+        .select({
+          date: sql<string>`DATE(${expenses.date})`,
+          total: sql<number>`COALESCE(SUM(${expenses.amount}), 0)`,
+        })
+        .from(expenses)
+        .where(expenseGraphCondition)
+        .groupBy(sql`DATE(${expenses.date})`)
+        .orderBy(sql`DATE(${expenses.date})`),
     ]);
+
+  const dateMap = new Map<string, { date: string; revenue: number; bills: number; expenses: number }>();
+  
+  weeklyData.forEach((d) => {
+    dateMap.set(d.date, { date: d.date, revenue: Number(d.total), bills: Number(d.count), expenses: 0 });
+  });
+
+  expensesData.forEach((d) => {
+    if (dateMap.has(d.date)) {
+      dateMap.get(d.date)!.expenses = Number(d.total);
+    } else {
+      dateMap.set(d.date, { date: d.date, revenue: 0, bills: 0, expenses: Number(d.total) });
+    }
+  });
+
+  const mergedWeeklyData = Array.from(dateMap.values()).sort((a, b) => a.date.localeCompare(b.date));
 
   return {
     todayRevenue: Number(todayRevenue.total),
@@ -529,11 +561,7 @@ export async function getDashboardStats(startDate?: string, endDate?: string) {
     pendingAmount: Number(pendingPayments.total),
     pendingCount: Number(pendingPayments.count),
     totalRevenue: Number(totalRevenue.total),
-    weeklyData: weeklyData.map((d) => ({
-      date: d.date,
-      revenue: Number(d.total),
-      bills: Number(d.count),
-    })),
+    weeklyData: mergedWeeklyData,
     recentInvoices,
   };
 }
@@ -691,6 +719,16 @@ export async function deleteInvoice(id: number) {
     await tx.delete(invoices).where(eq(invoices.id, id));
   })();
 
+  revalidatePath("/invoices");
+  revalidatePath("/");
+  revalidatePath("/inventory");
+  revalidatePath("/customers");
+  revalidatePath("/reports");
+}
+
+export async function bulkDeleteInvoices(ids: number[]) {
+  if (!ids || ids.length === 0) return;
+  await db.delete(invoices).where(inArray(invoices.id, ids));
   revalidatePath("/invoices");
   revalidatePath("/");
   revalidatePath("/inventory");

@@ -4,6 +4,7 @@ import { ColumnDef } from "@tanstack/react-table";
 import { Button } from "@/components/ui/button";
 import { ArrowUpDown, ChevronRight } from "lucide-react";
 import Link from "next/link";
+import { Checkbox } from "@/components/ui/checkbox";
 
 // Define the shape of our data based on what getCustomers() returns
 export type Customer = {
@@ -17,6 +18,25 @@ export type Customer = {
 };
 
 export const columns: ColumnDef<Customer>[] = [
+  {
+    id: "select",
+    header: ({ table }) => (
+      <Checkbox
+        checked={table.getIsAllPageRowsSelected()}
+        onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
+        aria-label="Select all"
+      />
+    ),
+    cell: ({ row }) => (
+      <Checkbox
+        checked={row.getIsSelected()}
+        onCheckedChange={(value) => row.toggleSelected(!!value)}
+        aria-label="Select row"
+      />
+    ),
+    enableSorting: false,
+    enableHiding: false,
+  },
   {
     accessorKey: "name",
     header: ({ column }) => {
@@ -47,7 +67,7 @@ export const columns: ColumnDef<Customer>[] = [
     cell: ({ row }) => {
       const address = row.getValue("address") as string;
       return (
-        <div className="text-sm truncate max-w-[200px]" title={address || "—"}>
+        <div className="text-sm max-w-[200px] break-words whitespace-normal">
           {address || "—"}
         </div>
       );

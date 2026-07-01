@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Download, Printer, QrCode, CheckCircle, X } from "lucide-react";
+import { Download, Printer, QrCode, CheckCircle, X, MessageCircle } from "lucide-react";
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -13,6 +13,7 @@ import { generateUpiQrDataUrl } from "@/lib/qr/upi-qr";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -204,11 +205,11 @@ export function InvoiceDetailClient({
       upiAmount: uAmt,
     });
 
-    // Only NOW commit the draft to real state
     setStatus(actualStatus);
     setPayMethod(draftPayMethod);
     setIsPayDialogOpen(false);
     toast.success(`Payment recorded as ${actualStatus}`);
+    router.refresh();
   };
 
   const handleDeleteInvoice = async () => {
@@ -266,6 +267,14 @@ export function InvoiceDetailClient({
     return "border-amber-400/30 text-amber-400 bg-amber-400/10";
   };
 
+  const handleWhatsAppShare = () => {
+    const text = `Hello ${invoice.customerName || 'Customer'},\n\nHere are the details for Invoice #${invoice.invoiceNumber}:\n\nVehicle: ${invoice.vehicleReg || 'N/A'}\nTotal Amount: ₹${invoice.grandTotal?.toLocaleString("en-IN")}\nStatus: ${status.toUpperCase()}\n\nThank you for choosing us!`;
+    const encodedText = encodeURIComponent(text);
+    const phone = invoice.customerPhone ? invoice.customerPhone.replace(/\D/g, '') : '';
+    const url = `https://wa.me/${phone}?text=${encodedText}`;
+    window.open(url, "_blank");
+  };
+
   return (
     <div className="max-w-4xl mx-auto space-y-6 block-stagger">
       {/* ── Header ──────────────────────────────────────────────────── */}
@@ -289,6 +298,11 @@ export function InvoiceDetailClient({
         </div>
 
         <div className="flex items-center gap-2">
+          <Link href={`/invoices/${invoice.id}/edit`}>
+            <Button variant="outline" size="sm" className="gap-1.5 cursor-pointer text-xs">
+              Edit Invoice
+            </Button>
+          </Link>
           <Dialog open={isPayDialogOpen} onOpenChange={setIsPayDialogOpen}>
             <DialogTrigger render={<Button variant="outline" size="sm" className="gap-1.5 cursor-pointer text-xs" onClick={openPayDialog} />}>
               Record Payment
@@ -356,6 +370,9 @@ export function InvoiceDetailClient({
           </Button>
           <Button variant="ghost" size="sm" className="gap-1.5 cursor-pointer text-xs text-muted-foreground" onClick={handlePrintPdf} disabled={isPdfLoading}>
             <Printer className="w-3.5 h-3.5" />{isPdfLoading ? "Loading..." : "Print"}
+          </Button>
+          <Button variant="outline" size="sm" className="gap-1.5 cursor-pointer text-xs border-emerald-500/30 text-emerald-500 hover:bg-emerald-500/10" onClick={handleWhatsAppShare}>
+            <MessageCircle className="w-3.5 h-3.5" />Share
           </Button>
 
           <AlertDialog>

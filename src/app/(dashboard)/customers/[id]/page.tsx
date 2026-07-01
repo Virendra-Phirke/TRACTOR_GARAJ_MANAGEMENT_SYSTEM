@@ -8,6 +8,8 @@ import { Badge } from "@/components/ui/badge";
 import { Phone, Mail, MapPin, Truck, FileText } from "lucide-react";
 import { format } from "date-fns";
 import Link from "next/link";
+import { EditCustomerDialog } from "@/components/customers/edit-customer-dialog";
+import { EditVehicleDialog } from "@/components/vehicles/edit-vehicle-dialog";
 
 export default async function CustomerDetailPage({
   params,
@@ -29,8 +31,11 @@ export default async function CustomerDetailPage({
       <div className="p-6 animate-in-page space-y-6">
         {/* Customer Info */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Card className="bg-card/50">
-            <CardContent className="p-5 space-y-3">
+          <Card className="bg-card/50 relative">
+            <div className="absolute top-3 right-3">
+              <EditCustomerDialog customer={customer} />
+            </div>
+            <CardContent className="p-5 space-y-3 pt-8">
               <div className="flex items-center gap-2 text-sm">
                 <Phone className="w-4 h-4 text-muted-foreground" />
                 {customer.phone}
@@ -82,7 +87,10 @@ export default async function CustomerDetailPage({
             {vehicles.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 {vehicles.map((v) => (
-                  <div key={v.id} className="p-3 rounded-lg bg-accent/30 border border-border/30">
+                  <div key={v.id} className="p-3 rounded-lg bg-accent/30 border border-border/30 relative">
+                    <div className="absolute top-2 right-2">
+                      <EditVehicleDialog vehicle={v} />
+                    </div>
                     <p className="font-semibold text-sm">{v.registrationNumber}</p>
                     <p className="text-xs text-muted-foreground">
                       {v.brand} {v.model} {v.year ? `(${v.year})` : ""}

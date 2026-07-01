@@ -11,6 +11,8 @@ import {
   getPaginationRowModel,
   getSortedRowModel,
   useReactTable,
+  RowSelectionState,
+  OnChangeFn,
 } from "@tanstack/react-table";
 
 import {
@@ -48,6 +50,8 @@ interface DataTableProps<TData, TValue> {
   filterOptions?: { label: string; value: string }[];
   filterPlaceholder?: string;
   defaultPageSize?: number;
+  rowSelection?: RowSelectionState;
+  onRowSelectionChange?: OnChangeFn<RowSelectionState>;
 }
 
 const PAGE_SIZE_OPTIONS = [20, 50, 100, 200];
@@ -61,6 +65,8 @@ export function DataTable<TData, TValue>({
   filterOptions,
   filterPlaceholder = "Filter...",
   defaultPageSize = 20,
+  rowSelection,
+  onRowSelectionChange,
 }: DataTableProps<TData, TValue>) {
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
@@ -79,7 +85,10 @@ export function DataTable<TData, TValue>({
     state: {
       sorting,
       columnFilters,
+      rowSelection,
     },
+    enableRowSelection: true,
+    onRowSelectionChange,
     initialState: {
       pagination: {
         pageSize: defaultPageSize,

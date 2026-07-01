@@ -30,6 +30,8 @@ import { Plus, Search, Trash2 } from "lucide-react";
 import { createVehicle, deleteVehicle } from "@/lib/actions/vehicles";
 import { toast } from "sonner";
 import { format } from "date-fns";
+import tractorBrands from "../../../../00 services/tractor_brands.json";
+import tractorModelsMap from "../../../../00 services/tractor_models.json";
 
 interface Vehicle {
   id: number;
@@ -65,6 +67,8 @@ export function VehiclesClient({
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState("");
+  const [newBrand, setNewBrand] = useState("");
+  const [newModel, setNewModel] = useState("");
 
   const handleSearch = () => {
     router.push(`/vehicles?search=${encodeURIComponent(search)}`);
@@ -78,13 +82,15 @@ export function VehiclesClient({
       await createVehicle({
         customerId: Number(selectedCustomer),
         registrationNumber: form.get("registrationNumber") as string,
-        brand: form.get("brand") as string,
-        model: (form.get("model") as string) || "",
+        brand: newBrand,
+        model: newModel || "",
         year: form.get("year") ? Number(form.get("year")) : undefined,
         engineNumber: (form.get("engineNumber") as string) || "",
         chassisNumber: (form.get("chassisNumber") as string) || "",
       });
       toast.success("Vehicle added successfully");
+      setNewBrand("");
+      setNewModel("");
       setOpen(false);
       router.refresh();
     } catch {
@@ -138,14 +144,28 @@ export function VehiclesClient({
                   <Input id="registrationNumber" name="registrationNumber" required placeholder="MH-01-AB-1234" />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="brand">Brand *</Label>
-                  <Input id="brand" name="brand" required placeholder="Mahindra, John Deere..." />
+                  <Label>Brand *</Label>
+                  <Select value={newBrand} onValueChange={(v) => { setNewBrand(v || ""); setNewModel(""); }}>
+                    <SelectTrigger><SelectValue placeholder="Select Brand" /></SelectTrigger>
+                    <SelectContent>
+                      {tractorBrands.map((b) => (
+                        <SelectItem key={b} value={b}>{b}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-2">
-                  <Label htmlFor="model">Model</Label>
-                  <Input id="model" name="model" placeholder="575 DI, 5310..." />
+                  <Label>Model</Label>
+                  <Select value={newModel} onValueChange={(v) => setNewModel(v || "")} disabled={!newBrand}>
+                    <SelectTrigger><SelectValue placeholder="Select Model" /></SelectTrigger>
+                    <SelectContent>
+                      {((tractorModelsMap as Record<string, string[]>)[newBrand] || []).map((m) => (
+                        <SelectItem key={m} value={m}>{m}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="year">Year</Label>
@@ -162,7 +182,7 @@ export function VehiclesClient({
                   <Input id="chassisNumber" name="chassisNumber" placeholder="Optional" />
                 </div>
               </div>
-              <Button type="submit" className="w-full cursor-pointer" disabled={loading || !selectedCustomer}>
+              <Button type="submit" className="w-full cursor-pointer" disabled={loading || !selectedCustomer || !newBrand}>
                 {loading ? "Adding..." : "Add Vehicle"}
               </Button>
             </form>

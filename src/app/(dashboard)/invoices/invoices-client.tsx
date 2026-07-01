@@ -201,7 +201,7 @@ export function InvoicesClient({ invoices }: { invoices: Invoice[] }) {
           <DatePickerWithRange date={date} setDate={handleDateChange} onClear={handleClearFilters} />
           <Select value={sortDir} onValueChange={(v) => handleSortChange(v || "desc")}>
             <SelectTrigger className="w-[130px] h-8 text-xs bg-transparent border-border/40">
-              <SelectValue placeholder="Sort by date" />
+              {sortDir === "asc" ? "Oldest First" : "Newest First"}
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="desc">Newest First</SelectItem>

@@ -185,7 +185,7 @@ export function DashboardClient({
           <div className="flex items-center gap-2">
             <Select value={filterMonth.toString()} onValueChange={(v) => handleMonthYearChange(Number(v), filterYear)}>
               <SelectTrigger className="w-[120px] h-9 text-xs">
-                <SelectValue />
+                {monthNames[filterMonth]}
               </SelectTrigger>
               <SelectContent>
                 {monthNames.map((m, i) => (
@@ -195,7 +195,7 @@ export function DashboardClient({
             </Select>
             <Select value={filterYear.toString()} onValueChange={(v) => handleMonthYearChange(filterMonth, Number(v))}>
               <SelectTrigger className="w-[90px] h-9 text-xs">
-                <SelectValue />
+                {filterYear}
               </SelectTrigger>
               <SelectContent>
                 {availableYears.map((y) => (

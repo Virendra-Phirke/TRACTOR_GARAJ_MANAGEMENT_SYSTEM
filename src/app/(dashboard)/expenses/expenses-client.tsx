@@ -201,7 +201,7 @@ export function ExpensesClient({
         <div className="flex items-center gap-3 flex-wrap">
           <Select value={filterMonth.toString()} onValueChange={(v) => { setFilterMonth(Number(v)); setPageIndex(0); }}>
             <SelectTrigger className="w-[130px] h-8 text-xs bg-transparent border-border/40">
-              <SelectValue />
+              {monthNames[filterMonth]}
             </SelectTrigger>
             <SelectContent>
               {monthNames.map((m, i) => (
@@ -211,7 +211,7 @@ export function ExpensesClient({
           </Select>
           <Select value={filterYear.toString()} onValueChange={(v) => { setFilterYear(Number(v)); setPageIndex(0); }}>
             <SelectTrigger className="w-[90px] h-8 text-xs bg-transparent border-border/40">
-              <SelectValue />
+              {filterYear}
             </SelectTrigger>
             <SelectContent>
               {availableYears.map((y) => (

@@ -72,6 +72,20 @@ export function ExpensesClient({
   const [selectedInvoiceIds, setSelectedInvoiceIds] = useState<number[]>([]);
   const [date, setDate] = useState<DateRange | undefined>(undefined);
 
+  // ── Monthly filter for expense list ────────────────────────────────
+  const now = new Date();
+  const [filterMonth, setFilterMonth] = useState(now.getMonth()); // 0-indexed
+  const [filterYear, setFilterYear] = useState(now.getFullYear());
+
+  const filteredExpenses = expenses.filter((e) => {
+    const d = new Date(e.date);
+    return d.getMonth() === filterMonth && d.getFullYear() === filterYear;
+  });
+
+  const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+  const availableYears = Array.from(new Set(expenses.map((e) => new Date(e.date).getFullYear()))).sort((a, b) => b - a);
+  if (!availableYears.includes(now.getFullYear())) availableYears.unshift(now.getFullYear());
+
   // Filter invoices by selected date range
   const filteredInvoices = recentInvoices.filter(inv => {
     if (!date?.from || !date?.to) return true;
@@ -107,7 +121,7 @@ export function ExpensesClient({
   // Actually, better to just let it default or auto-update if empty, but we can just use an effect or calculate it.
   const finalPayoutAmount = customPayoutAmount !== "" ? Number(customPayoutAmount) : partnerPayoutTotal;
 
-  const totalExpenses = expenses.reduce((s, e) => s + e.amount, 0);
+  const totalExpenses = filteredExpenses.reduce((s, e) => s + e.amount, 0);
 
   const handleCreate = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -176,8 +190,28 @@ export function ExpensesClient({
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <p className="text-sm text-muted-foreground">{expenses.length} expenses • Total: ₹{totalExpenses.toLocaleString("en-IN")}</p>
+        <div className="flex items-center gap-3 flex-wrap">
+          <Select value={filterMonth.toString()} onValueChange={(v) => setFilterMonth(Number(v))}>
+            <SelectTrigger className="w-[130px] h-8 text-xs bg-transparent border-border/40">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {monthNames.map((m, i) => (
+                <SelectItem key={i} value={i.toString()}>{m}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select value={filterYear.toString()} onValueChange={(v) => setFilterYear(Number(v))}>
+            <SelectTrigger className="w-[90px] h-8 text-xs bg-transparent border-border/40">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {availableYears.map((y) => (
+                <SelectItem key={y} value={y.toString()}>{y}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <p className="text-sm text-muted-foreground">{filteredExpenses.length} expenses • Total: ₹{totalExpenses.toLocaleString("en-IN")}</p>
         </div>
         <div className="flex gap-3">
           <Dialog open={partnerOpen} onOpenChange={setPartnerOpen}>
@@ -387,13 +421,13 @@ export function ExpensesClient({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {expenses.length === 0 ? (
+              {filteredExpenses.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={6} className="text-center py-10 text-muted-foreground">
-                    <Receipt className="w-8 h-8 mx-auto mb-2 opacity-30" />No expenses recorded.
+                    <Receipt className="w-8 h-8 mx-auto mb-2 opacity-30" />No expenses for {monthNames[filterMonth]} {filterYear}.
                   </TableCell>
                 </TableRow>
-              ) : expenses.map((exp) => (
+              ) : filteredExpenses.map((exp) => (
                 <TableRow key={exp.id} className="border-border/30">
                   <TableCell><Badge variant="outline">{exp.category}</Badge></TableCell>
                   <TableCell className="text-muted-foreground text-sm">{exp.description || "—"}</TableCell>

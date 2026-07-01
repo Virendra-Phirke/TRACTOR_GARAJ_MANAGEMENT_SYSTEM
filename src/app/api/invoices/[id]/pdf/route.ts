@@ -3,7 +3,7 @@ import { getInvoiceById } from "@/lib/actions/invoices";
 import { getGarageSettings, getUpiSettings } from "@/lib/actions/settings";
 import { generateInvoicePdf } from "@/lib/pdf/invoice-pdf";
 import { generateUpiQrDataUrl } from "@/lib/qr/upi-qr";
-import { format } from "date-fns";
+import { formatInTimeZone } from "date-fns-tz";
 import { verifyApiRequest } from "@/lib/auth";
 
 export async function GET(
@@ -57,8 +57,8 @@ export async function GET(
       gstNumber: garage.gstNumber || "",
       garageTagline: garage.tagline || "",
       invoiceNumber: invoice.invoiceNumber,
-      invoiceDate: format(new Date(invoice.createdAt), "dd MMM yyyy, hh:mm a"),
-      paymentDate: invoice.paymentDoneAt ? format(new Date(invoice.paymentDoneAt), "dd MMM yyyy, hh:mm a") : undefined,
+      invoiceDate: formatInTimeZone(new Date(invoice.createdAt), 'Asia/Kolkata', "dd MMM yyyy, hh:mm a"),
+      paymentDate: invoice.paymentDoneAt ? formatInTimeZone(new Date(invoice.paymentDoneAt), 'Asia/Kolkata', "dd MMM yyyy, hh:mm a") : undefined,
       customerName: invoice.customerName || "—",
       customerPhone: invoice.customerPhone || "—",
       customerAddress: invoice.customerAddress || "",

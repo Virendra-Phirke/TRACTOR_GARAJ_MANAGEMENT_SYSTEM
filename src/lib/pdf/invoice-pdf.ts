@@ -116,7 +116,7 @@ export async function generateInvoicePdf(
     y: y - 85,
     width: width - (margin * 2),
     height: 100,
-    color: lightGray,
+    color: rgb(0.98, 0.98, 0.98), // Slightly lighter background for the info box
     borderColor: borderColor,
     borderWidth: 1,
   });

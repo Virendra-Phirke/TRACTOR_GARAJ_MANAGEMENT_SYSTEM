@@ -270,60 +270,115 @@ export function InvoiceDetailClient({
   const [isWhatsAppLoading, setIsWhatsAppLoading] = useState(false);
 
   const handleWhatsAppShare = async () => {
-    // Build a clean phone number for WhatsApp
-    let phone = invoice.customerPhone ? invoice.customerPhone.replace(/[\s\-\(\)]/g, '') : '';
-    // Strip leading + if present
-    if (phone.startsWith('+')) phone = phone.substring(1);
-    // If it's a 10-digit Indian number, prepend 91
-    if (/^\d{10}$/.test(phone)) phone = '91' + phone;
-    // If phone is still empty or invalid, let the user know
-    if (!phone || phone.length < 10) {
-      toast.error("Customer phone number is missing or invalid. Cannot open WhatsApp.");
-      return;
-    }
-
-    setIsWhatsAppLoading(true);
-
-    // Build a professional share message
-    const paidLabel = status === "paid" ? "✅ PAID" : status === "partial" ? "⏳ PARTIAL" : "❌ UNPAID";
-    const balanceStr = status === "partial" ? `\nBalance Due: ₹${((invoice.grandTotal || 0) - (invoice.amountPaid || 0)).toLocaleString("en-IN")}` : "";
-
-    // Fetch the share token from the server
-    let shareLink = "";
     try {
-      const tokenRes = await fetch(`/api/share-token/${invoice.id}`);
-      if (tokenRes.ok) {
-        const tokenData = await tokenRes.json();
-        if (tokenData.token) {
-          shareLink = `${window.location.origin}/api/share/${invoice.id}/pdf?token=${tokenData.token}`;
-        }
+      // Build a clean phone number for WhatsApp
+      let phone = invoice.customerPhone ? invoice.customerPhone.replace(/[\s\-\(\)\.]/g, '') : '';
+      // Strip leading + if present
+      if (phone.startsWith('+')) phone = phone.substring(1);
+      // If it starts with 0 (local format), remove it and prepend 91
+      if (phone.startsWith('0')) phone = '91' + phone.substring(1);
+      // If it's a 10-digit Indian number, prepend 91
+      if (/^\d{10}$/.test(phone)) phone = '91' + phone;
+      // If phone is still empty or invalid, let the user know
+      if (!phone || phone.length < 10) {
+        toast.error("Customer phone number is missing or invalid. Cannot open WhatsApp.");
+        return;
       }
-    } catch {
-      // Fallback: no PDF link in message
+
+      setIsWhatsAppLoading(true);
+
+      // Build a professional share message
+      const paidLabel = status === "paid" ? "✅ PAID" : status === "partial" ? "⏳ PARTIAL" : "❌ UNPAID";
+      const balanceDue = (invoice.grandTotal || 0) - (invoice.amountPaid || 0);
+
+      // Fetch the share token from the server (with credentials so cookies are sent)
+      let shareLink = "";
+      try {
+        const tokenRes = await fetch("/api/share-token/" + invoice.id, {
+          credentials: "include",
+        });
+        if (tokenRes.ok) {
+          const tokenData = await tokenRes.json();
+          if (tokenData.token) {
+            shareLink = window.location.origin + "/api/share/" + invoice.id + "/pdf?token=" + tokenData.token;
+          }
+        } else {
+          console.warn("Share token fetch failed:", tokenRes.status);
+        }
+      } catch (err) {
+        console.warn("Share token fetch error:", err);
+      }
+
+      // Build the message text
+      // Build a clean, human-like WhatsApp message
+      const lines = [
+        "Hello " + (invoice.customerName || "Customer") + ",",
+        "",
+        "Thank you for choosing " + garage.name + "!",
+        "Here is a summary of your recent service:",
+        "",
+        "Invoice No: " + invoice.invoiceNumber,
+        "Date: " + format(new Date(invoice.createdAt), "dd MMM yyyy"),
+        "",
+        "Vehicle Details:",
+        (invoice.vehicleBrand || "") + " " + (invoice.vehicleModel || "") + (invoice.vehicleReg ? " (" + invoice.vehicleReg + ")" : ""),
+        "",
+      ];
+
+      // Add labor and parts breakdown if available
+      if (invoice.laborItems.length > 0 || invoice.partItems.length > 0) {
+        lines.push("Service Details:");
+        
+        invoice.laborItems.forEach(item => {
+           lines.push("- " + item.description);
+        });
+        
+        invoice.partItems.forEach(item => {
+           lines.push("- " + item.partName + " (Qty: " + item.quantity + ")");
+        });
+        
+        lines.push("");
+      }
+
+      lines.push("------------------------");
+      lines.push("Grand Total: Rs " + (invoice.grandTotal || 0).toLocaleString("en-IN"));
+
+      if ((invoice.amountPaid || 0) > 0) {
+         lines.push("Amount Paid: Rs " + invoice.amountPaid?.toLocaleString("en-IN"));
+      }
+
+      if (balanceDue > 0) {
+         lines.push("Balance Due: Rs " + balanceDue.toLocaleString("en-IN"));
+      }
+      lines.push("------------------------");
+      lines.push("");
+      
+      const cleanPaidLabel = status === "paid" ? "PAID" : status === "partial" ? "PARTIAL" : "UNPAID";
+      lines.push("Payment Status: " + cleanPaidLabel);
+
+      if (shareLink) {
+        lines.push("");
+        lines.push("Click the link below to view and download your full invoice:");
+        lines.push(shareLink);
+      }
+
+      lines.push("");
+      lines.push("For any queries, please feel free to reach out to us.");
+
+      const messageText = lines.join("\n");
+      const encodedText = encodeURIComponent(messageText);
+
+      // Construct the WhatsApp URL using string concatenation (avoid any encoding issues)
+      const whatsappUrl = "https://wa.me/" + phone + "?text=" + encodedText;
+
+      // Open in new tab — wa.me is the official deep-link that works on desktop + mobile
+      window.open(whatsappUrl, "_blank");
+    } catch (err) {
+      console.error("WhatsApp share error:", err);
+      toast.error("Failed to open WhatsApp. Please try again.");
+    } finally {
+      setIsWhatsAppLoading(false);
     }
-
-    const text = [
-      `Hello ${invoice.customerName || "Customer"},`,
-      ``,
-      `Here is your invoice from *${garage.name}*:`,
-      ``,
-      `📋 *Invoice:* #${invoice.invoiceNumber}`,
-      `📅 *Date:* ${format(new Date(invoice.createdAt), "dd MMM yyyy")}`,
-      `🚜 *Vehicle:* ${invoice.vehicleBrand || ""} ${invoice.vehicleModel || ""} (${invoice.vehicleReg || "N/A"})`,
-      ``,
-      `💰 *Total Amount:* ₹${(invoice.grandTotal || 0).toLocaleString("en-IN")}`,
-      `*Status:* ${paidLabel}`,
-      balanceStr,
-      shareLink ? `\n📄 *Download Invoice PDF:*\n${shareLink}` : "",
-      ``,
-      `Thank you for choosing *${garage.name}*! 🙏`,
-    ].filter(Boolean).join("\n");
-
-    // Use api.whatsapp.com/send for better cross-device compatibility
-    // This opens the WhatsApp chat with the specific customer phone number
-    const url = `https://api.whatsapp.com/send?phone=${phone}&text=${encodeURIComponent(text)}`;
-    window.open(url, "_blank");
-    setIsWhatsAppLoading(false);
   };
 
   return (

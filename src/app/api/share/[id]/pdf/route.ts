@@ -113,7 +113,7 @@ export async function GET(
     return new NextResponse(pdfBytes as any, {
       headers: {
         "Content-Type": "application/pdf",
-        "Content-Disposition": `inline; filename="${invoice.invoiceNumber}.pdf"`,
+        "Content-Disposition": `attachment; filename="${invoice.invoiceNumber}.pdf"`,
         "Cache-Control": "public, max-age=86400",
       },
     });

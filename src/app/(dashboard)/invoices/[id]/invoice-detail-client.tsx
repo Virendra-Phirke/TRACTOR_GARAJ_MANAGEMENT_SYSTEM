@@ -285,10 +285,14 @@ export function InvoiceDetailClient({
         return;
       }
 
+      // Open window synchronously to avoid popup blockers
+      const newWindow = window.open('about:blank', '_blank');
+      if (newWindow) {
+        newWindow.document.write('Loading WhatsApp share...');
+      }
+
       setIsWhatsAppLoading(true);
 
-      // Build a professional share message
-      const paidLabel = status === "paid" ? "✅ PAID" : status === "partial" ? "⏳ PARTIAL" : "❌ UNPAID";
       const balanceDue = (invoice.grandTotal || 0) - (invoice.amountPaid || 0);
 
       // Fetch the share token from the server (with credentials so cookies are sent)
@@ -371,8 +375,13 @@ export function InvoiceDetailClient({
       // Construct the WhatsApp URL using string concatenation (avoid any encoding issues)
       const whatsappUrl = "https://wa.me/" + phone + "?text=" + encodedText;
 
-      // Open in new tab — wa.me is the official deep-link that works on desktop + mobile
-      window.open(whatsappUrl, "_blank");
+      // Navigate the previously opened window to WhatsApp
+      if (newWindow) {
+        newWindow.location.href = whatsappUrl;
+      } else {
+        // Fallback if popup blocker completely blocked the initial window.open
+        window.location.href = whatsappUrl;
+      }
     } catch (err) {
       console.error("WhatsApp share error:", err);
       toast.error("Failed to open WhatsApp. Please try again.");

@@ -674,7 +674,7 @@ async function generateModernAccent(data: InvoicePdfData, colors: any): Promise<
     y -= 20;
 
     items.forEach((item) => {
-      page.drawRectangle({ x: margin, y: y - 5, width: 250, height: 20, color: rgb(0.98, 0.98, 0.98) });
+      page.drawRectangle({ x: margin, y: y - 5, width: width - (margin * 2), height: 20, color: rgb(0.98, 0.98, 0.98) });
       const desc = type === "labor" ? item.description : item.partName;
       page.drawText(desc.substring(0, 45), { x: cDesc, y, size: 9, font: fontRegular, color: textColor });
       if (type === "parts") {
@@ -685,7 +685,7 @@ async function generateModernAccent(data: InvoicePdfData, colors: any): Promise<
       y -= 20;
     });
     
-    page.drawRectangle({ x: margin, y: y - 5, width: 250, height: 20, color: rgb(0.95, 0.95, 0.95) });
+    page.drawRectangle({ x: margin, y: y - 5, width: width - (margin * 2), height: 20, color: rgb(0.95, 0.95, 0.95) });
     page.drawText(`Total ${title}`, { x: cDesc, y, size: 9, font: fontBold, color: textColor });
     drawRightText(page, formatCurrency(type === "labor" ? data.laborTotal : data.partsTotal), cAmt, y, 9, fontBold, textColor);
     y -= 30;

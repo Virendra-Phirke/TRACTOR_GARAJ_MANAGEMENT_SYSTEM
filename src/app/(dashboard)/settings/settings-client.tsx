@@ -8,12 +8,13 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Building, QrCode, Percent, Check, Palette, Eye, FileText, Settings2, Moon, Sun, ChevronDown } from "lucide-react";
+import { Building, QrCode, Percent, Check, Palette, Eye, FileText, Settings2, Moon, Sun, ChevronDown, Type, ALargeSmall } from "lucide-react";
 import { updateGarageSettings, updateUpiSettings, setDefaultTax } from "@/lib/actions/settings";
 import { toast } from "sonner";
 import { LayoutEditor } from "./layout-editor";
 import { useTheme, COLOR_SCHEMES } from "@/components/theme-provider";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface GarageSettings { id: number; name: string; address: string | null; phone: string | null; email: string | null; gstNumber: string | null; tagline: string | null; invoiceTheme: string | null; invoiceFormat: string | null; }
 interface UpiSettings { id: number; vpa: string; payeeName: string; merchantCode: string | null; isEnabled: boolean | null; }
@@ -242,7 +243,7 @@ export function SettingsClient({ garage, upi, taxes }: { garage: GarageSettings;
   const [selectedTheme, setSelectedTheme] = useState(garage.invoiceTheme || "default");
   const [selectedFormat, setSelectedFormat] = useState(garage.invoiceFormat || "standard");
   const [isLayoutEditorOpen, setIsLayoutEditorOpen] = useState(false);
-  const { theme: appTheme, toggleTheme: toggleAppTheme, accentColor, setAccentColor } = useTheme();
+  const { theme: appTheme, toggleTheme: toggleAppTheme, accentColor, setAccentColor, fontFamily, setFontFamily, fontSize, setFontSize } = useTheme();
   const [showAccentPicker, setShowAccentPicker] = useState(false);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const activeScheme = COLOR_SCHEMES.find(s => s.primary === accentColor);
@@ -574,6 +575,67 @@ export function SettingsClient({ garage, upi, taxes }: { garage: GarageSettings;
                 </div>
               </div>
             )}
+          </div>
+          
+          {/* Font Settings */}
+          {/* Font Settings */}
+          <div className="space-y-3 pt-4 border-t border-border/30">
+            {/* Font Family */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between p-3 rounded-lg border border-border/30 bg-muted/20 gap-4">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                  <Type className="w-4 h-4 text-primary" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium">Font Family</p>
+                  <p className="text-xs text-muted-foreground">Select the typeface for the application</p>
+                </div>
+              </div>
+              <Select value={fontFamily} onValueChange={(val) => val && setFontFamily(val)}>
+                <SelectTrigger className="w-full sm:w-[200px] h-9 text-sm">
+                  <SelectValue placeholder="Select font family" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="inter">Inter (Default)</SelectItem>
+                  <SelectItem value="roboto">Roboto</SelectItem>
+                  <SelectItem value="poppins">Poppins</SelectItem>
+                  <SelectItem value="josefin">Josefin Sans</SelectItem>
+                  <SelectItem value="rubik">Rubik</SelectItem>
+                  <SelectItem value="lato">Lato</SelectItem>
+                  <SelectItem value="ranade">Ranade</SelectItem>
+                  <SelectItem value="source-sans">Source Sans 3</SelectItem>
+                  <SelectItem value="manrope">Manrope</SelectItem>
+                  <SelectItem value="montserrat">Montserrat</SelectItem>
+                  <SelectItem value="outfit">Outfit</SelectItem>
+                  <SelectItem value="playfair">Playfair Display</SelectItem>
+                  <SelectItem value="monospace">Monospace</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Font Size */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between p-3 rounded-lg border border-border/30 bg-muted/20 gap-4">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                  <ALargeSmall className="w-4 h-4 text-primary" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium">Base Font Size</p>
+                  <p className="text-xs text-muted-foreground">Adjust the global text size for readability</p>
+                </div>
+              </div>
+              <Select value={fontSize} onValueChange={(val) => val && setFontSize(val)}>
+                <SelectTrigger className="w-full sm:w-[200px] h-9 text-sm">
+                  <SelectValue placeholder="Select base font size" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="small">Small (14px)</SelectItem>
+                  <SelectItem value="medium">Medium (16px)</SelectItem>
+                  <SelectItem value="large">Large (18px)</SelectItem>
+                  <SelectItem value="xlarge">X-Large (20px)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
         </CardContent>
       </Card>

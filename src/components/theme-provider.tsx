@@ -10,6 +10,10 @@ interface ThemeContextType {
   setTheme: (theme: Theme) => void;
   accentColor: string;
   setAccentColor: (color: string) => void;
+  fontFamily: string;
+  setFontFamily: (family: string) => void;
+  fontSize: string;
+  setFontSize: (size: string) => void;
 }
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
@@ -93,13 +97,19 @@ export const COLOR_SCHEMES = [
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [theme, setThemeState] = useState<Theme>("dark");
   const [accentColor, setAccentColorState] = useState("oklch(0.648 0.17 160)"); // default emerald
+  const [fontFamily, setFontFamilyState] = useState("inter"); // default inter
+  const [fontSize, setFontSizeState] = useState("medium"); // default medium
 
   useEffect(() => {
     // Load saved preferences from localStorage
     const savedTheme = localStorage.getItem("gbms-theme") as Theme | null;
     const savedAccent = localStorage.getItem("gbms-accent");
+    const savedFontFamily = localStorage.getItem("gbms-font-family");
+    const savedFontSize = localStorage.getItem("gbms-font-size");
     if (savedTheme) setThemeState(savedTheme);
     if (savedAccent) setAccentColorState(savedAccent);
+    if (savedFontFamily) setFontFamilyState(savedFontFamily);
+    if (savedFontSize) setFontSizeState(savedFontSize);
   }, []);
 
   useEffect(() => {
@@ -126,15 +136,49 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     localStorage.setItem("gbms-accent", accentColor);
   }, [accentColor]);
 
+  useEffect(() => {
+    // Apply font family as CSS custom property
+    let cssFontFamily = "var(--font-sans)"; // Default fallback to next/font/google if defined
+    if (fontFamily === "roboto") cssFontFamily = "'Roboto', sans-serif";
+    if (fontFamily === "outfit") cssFontFamily = "'Outfit', sans-serif";
+    if (fontFamily === "poppins") cssFontFamily = "'Poppins', sans-serif";
+    if (fontFamily === "josefin") cssFontFamily = "'Josefin Sans', sans-serif";
+    if (fontFamily === "rubik") cssFontFamily = "'Rubik', sans-serif";
+    if (fontFamily === "lato") cssFontFamily = "'Lato', sans-serif";
+    if (fontFamily === "ranade") cssFontFamily = "'Ranade', sans-serif";
+    if (fontFamily === "source-sans") cssFontFamily = "'Source Sans 3', sans-serif";
+    if (fontFamily === "manrope") cssFontFamily = "'Manrope', sans-serif";
+    if (fontFamily === "montserrat") cssFontFamily = "'Montserrat', sans-serif";
+    if (fontFamily === "playfair") cssFontFamily = "'Playfair Display', serif";
+    if (fontFamily === "geist") cssFontFamily = "var(--font-geist-sans), sans-serif";
+    if (fontFamily === "monospace") cssFontFamily = "var(--font-geist-mono), monospace";
+    
+    document.documentElement.style.setProperty("--font-sans", cssFontFamily);
+    localStorage.setItem("gbms-font-family", fontFamily);
+  }, [fontFamily]);
+
+  useEffect(() => {
+    // Apply font size to document root
+    let rootFontSize = "16px";
+    if (fontSize === "small") rootFontSize = "14px";
+    if (fontSize === "large") rootFontSize = "18px";
+    if (fontSize === "xlarge") rootFontSize = "20px";
+    
+    document.documentElement.style.fontSize = rootFontSize;
+    localStorage.setItem("gbms-font-size", fontSize);
+  }, [fontSize]);
+
   const toggleTheme = () => {
     setThemeState((prev) => (prev === "dark" ? "light" : "dark"));
   };
 
   const setTheme = (t: Theme) => setThemeState(t);
   const setAccentColor = (c: string) => setAccentColorState(c);
+  const setFontFamily = (f: string) => setFontFamilyState(f);
+  const setFontSize = (s: string) => setFontSizeState(s);
 
   return (
-    <ThemeContext.Provider value={{ theme, toggleTheme, setTheme, accentColor, setAccentColor }}>
+    <ThemeContext.Provider value={{ theme, toggleTheme, setTheme, accentColor, setAccentColor, fontFamily, setFontFamily, fontSize, setFontSize }}>
       {children}
     </ThemeContext.Provider>
   );

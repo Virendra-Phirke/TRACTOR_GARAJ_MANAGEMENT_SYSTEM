@@ -16,6 +16,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Plus, MoreVertical, Eye, Trash2 } from "lucide-react";
 import { deleteInvoice, bulkDeleteInvoices } from "@/lib/actions/invoices";
 import { toast } from "sonner";
+import { useTheme } from "@/components/theme-provider";
 import { RowSelectionState } from "@tanstack/react-table";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -27,6 +28,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
+  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 
 interface Invoice {
@@ -56,35 +58,85 @@ export function InvoicesClient({ invoices }: { invoices: Invoice[] }) {
   const [invoiceToDelete, setInvoiceToDelete] = useState<number | null>(null);
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
   const [deleting, setDeleting] = useState(false);
+  const [hiddenIds, setHiddenIds] = useState<Set<number>>(new Set());
+  const { playSound } = useTheme();
+
+  const displayedInvoices = invoices.filter((i) => !hiddenIds.has(i.id));
 
   const selectedCount = Object.keys(rowSelection).length;
 
-  const handleBulkDelete = async () => {
-    if (!confirm(`Are you sure you want to delete ${selectedCount} invoices?`)) return;
-    setDeleting(true);
-    try {
-      const ids = Object.keys(rowSelection).map((i) => invoices[parseInt(i)].id);
-      await bulkDeleteInvoices(ids);
-      toast.success(`${selectedCount} invoices deleted`);
-      setRowSelection({});
-      router.refresh();
-    } catch {
-      toast.error("Failed to delete invoices");
-    } finally {
-      setDeleting(false);
-    }
+  const handleBulkDelete = () => {
+    const ids = Object.keys(rowSelection).map((i) => displayedInvoices[parseInt(i)].id);
+    if (ids.length === 0) return;
+    
+    setHiddenIds((prev) => new Set([...prev, ...ids]));
+    setRowSelection({});
+
+    const timeoutId = setTimeout(async () => {
+      try {
+        await bulkDeleteInvoices(ids);
+        router.refresh();
+      } catch {
+        toast.error("Failed to delete invoices");
+        setHiddenIds((prev) => {
+          const next = new Set(prev);
+          ids.forEach((id) => next.delete(id));
+          return next;
+        });
+      }
+    }, 5000);
+
+    toast.success(`${ids.length} invoices deleted`, {
+      duration: 5000,
+      action: {
+        label: "Undo",
+        onClick: () => {
+          clearTimeout(timeoutId);
+          setHiddenIds((prev) => {
+            const next = new Set(prev);
+            ids.forEach((id) => next.delete(id));
+            return next;
+          });
+          toast.success("Action undone");
+        },
+      },
+    });
+    playSound("delete");
   };
 
-  const handleDelete = async () => {
-    if (!invoiceToDelete) return;
-    try {
-      await deleteInvoice(invoiceToDelete);
-      toast.success("Invoice deleted successfully");
-    } catch {
-      toast.error("Failed to delete invoice");
-    } finally {
-      setInvoiceToDelete(null);
-    }
+  const handleDelete = (id: number) => {
+    setHiddenIds((prev) => new Set([...prev, id]));
+
+    const timeoutId = setTimeout(async () => {
+      try {
+        await deleteInvoice(id);
+        router.refresh();
+      } catch {
+        toast.error("Failed to delete invoice");
+        setHiddenIds((prev) => {
+          const next = new Set(prev);
+          next.delete(id);
+          return next;
+        });
+      }
+    }, 5000);
+
+    toast.success("Invoice deleted successfully", {
+      duration: 5000,
+      action: {
+        label: "Undo",
+        onClick: () => {
+          clearTimeout(timeoutId);
+          setHiddenIds((prev) => {
+            const next = new Set(prev);
+            next.delete(id);
+            return next;
+          });
+          toast.success("Action undone");
+        },
+      },
+    });
+    playSound("delete");
   };
 
   const applyFilters = (newDate: DateRange | undefined, newSort: string) => {
@@ -220,15 +272,32 @@ export function InvoicesClient({ invoices }: { invoices: Invoice[] }) {
           >
             <Eye className="w-4 h-4" />
           </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setInvoiceToDelete(row.original.id)}
-            title="Delete Invoice"
-            className="h-8 w-8 text-red-500 hover:text-red-600 hover:bg-red-500/10 cursor-pointer"
-          >
-            <Trash2 className="w-4 h-4" />
-          </Button>
+          <AlertDialog>
+            <AlertDialogTrigger render={
+              <Button
+                variant="ghost"
+                size="icon"
+                title="Delete Invoice"
+                className="h-8 w-8 text-red-500 hover:text-red-600 hover:bg-red-500/10 cursor-pointer"
+              >
+                <Trash2 className="w-4 h-4" />
+              </Button>
+            } />
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Delete Invoice</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Are you sure you want to delete this invoice? This action cannot be undone.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={() => handleDelete(row.original.id)} className="bg-red-500 hover:bg-red-600 text-white cursor-pointer">
+                  Delete
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </div>
       ),
     },
@@ -281,7 +350,7 @@ export function InvoicesClient({ invoices }: { invoices: Invoice[] }) {
       <div className="block-section">
         <DataTable 
           columns={columns} 
-          data={invoices} 
+          data={displayedInvoices} 
           searchKey="customerName"
           searchPlaceholder="Search customer..."
           filterKey="paymentStatus"
@@ -295,23 +364,6 @@ export function InvoicesClient({ invoices }: { invoices: Invoice[] }) {
           onRowSelectionChange={setRowSelection}
         />
       </div>
-
-      <AlertDialog open={!!invoiceToDelete} onOpenChange={(open) => !open && setInvoiceToDelete(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete Invoice</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to delete this invoice? This action cannot be undone. Inventory stock and customer stats will be adjusted accordingly.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete} className="bg-red-500 hover:bg-red-600 text-white">
-              Delete
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   );
 }

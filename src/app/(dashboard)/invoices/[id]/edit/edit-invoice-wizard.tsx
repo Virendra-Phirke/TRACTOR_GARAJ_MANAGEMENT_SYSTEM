@@ -14,6 +14,7 @@ import { createVehicle, getVehiclesByCustomer } from "@/lib/actions/vehicles";
 import { type LaborItem, type PartItem } from "@/lib/actions/invoices";
 import { updateInvoice } from "@/lib/actions/invoices-edit";
 import { toast } from "sonner";
+import { useTheme } from "@/components/theme-provider";
 import tractorServices from "../../../../../../00 services/tractor_services.json";
 import partsData from "../../../../../../00 services/tractor_spare_parts_seed.json";
 import tractorBrands from "../../../../../../00 services/tractor_brands.json";
@@ -46,6 +47,7 @@ export function EditInvoiceWizard({
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [activeSection, setActiveSection] = useState("customer");
+  const { playSound } = useTheme();
 
   // Refs for scroll-to-section
   const sectionRefs = useRef<Record<string, HTMLElement | null>>({});
@@ -218,9 +220,11 @@ export function EditInvoiceWizard({
         notes,
       });
       toast.success("Invoice updated!");
+      playSound("create");
       router.push(`/invoices/${invoice.id}`);
     } catch {
       toast.error("Failed to update invoice");
+      playSound("error");
     } finally {
       setLoading(false);
     }
@@ -421,7 +425,12 @@ export function EditInvoiceWizard({
                   <Combobox
                     options={tractorServices.map((s) => ({ value: s.name, label: s.name }))}
                     value={labDesc}
-                    onChange={setLabDesc}
+                    onChange={(val) => {
+                      setLabDesc(val);
+                      if (val) {
+                        setTimeout(() => document.getElementById("labor-charge-input")?.focus(), 50);
+                      }
+                    }}
                     placeholder="Select or type service..."
                     searchPlaceholder="Search services..."
                     emptyText="No service found."
@@ -430,7 +439,19 @@ export function EditInvoiceWizard({
                 </div>
                 <div className="col-span-3 sm:col-span-3 space-y-1">
                   <Label className="text-xs text-muted-foreground">Charge (₹)</Label>
-                  <Input type="number" placeholder="500" value={labRate} onChange={(e) => setLabRate(e.target.value)} />
+                  <Input 
+                    id="labor-charge-input"
+                    type="number" 
+                    placeholder="500" 
+                    value={labRate} 
+                    onChange={(e) => setLabRate(e.target.value)} 
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && labDesc && labRate) {
+                        e.preventDefault();
+                        addLaborItem();
+                      }
+                    }}
+                  />
                 </div>
                 <div className="col-span-2 sm:col-span-1">
                   <Button size="sm" className="w-full cursor-pointer h-8" onClick={addLaborItem} disabled={!labDesc || !labRate}>
@@ -484,7 +505,12 @@ export function EditInvoiceWizard({
                   <Combobox
                     options={combinedParts.map((p) => ({ value: p, label: p }))}
                     value={selectedPartId}
-                    onChange={(val) => handlePartSearch(val)}
+                    onChange={(val) => {
+                      handlePartSearch(val);
+                      if (val) {
+                        setTimeout(() => document.getElementById("part-price-input")?.focus(), 50);
+                      }
+                    }}
                     placeholder="Select or type part..."
                     searchPlaceholder="Search parts..."
                     emptyText="No part found."
@@ -493,7 +519,19 @@ export function EditInvoiceWizard({
                 </div>
                 <div className="col-span-3 sm:col-span-3 space-y-1">
                   <Label className="text-xs text-muted-foreground">Price (₹)</Label>
-                  <Input type="number" placeholder="150" value={partPrice} onChange={(e) => setPartPrice(e.target.value)} />
+                  <Input 
+                    id="part-price-input"
+                    type="number" 
+                    placeholder="150" 
+                    value={partPrice} 
+                    onChange={(e) => setPartPrice(e.target.value)} 
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && selectedPartId && partPrice) {
+                        e.preventDefault();
+                        addPartItemManual();
+                      }
+                    }}
+                  />
                 </div>
                 <div className="col-span-2 sm:col-span-1">
                   <Button size="sm" className="w-full cursor-pointer h-8" onClick={addPartItemManual} disabled={!selectedPartId || !partPrice}>

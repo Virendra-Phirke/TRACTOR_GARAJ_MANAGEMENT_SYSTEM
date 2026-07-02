@@ -14,6 +14,7 @@ import { toast } from "sonner";
 import { format } from "date-fns";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { useTheme } from "@/components/theme-provider";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -96,6 +97,7 @@ export function InvoiceDetailClient({
   const [pdfViewerUrl, setPdfViewerUrl] = useState<string | null>(null);
   const [isPdfViewerOpen, setIsPdfViewerOpen] = useState(false);
   const [isPdfLoading, setIsPdfLoading] = useState(false);
+  const { playSound } = useTheme();
 
   // Calculate the remaining balance for partial payments
   const balanceAmount = status === "partial" && (invoice.amountPaid || 0) > 0
@@ -147,6 +149,7 @@ export function InvoiceDetailClient({
         finalAmount = cAmt + uAmt;
         if (Math.abs(finalAmount - (invoice.grandTotal || 0)) > 0.01) {
           toast.error("Split amounts must equal the grand total for Paid status.");
+          playSound("error");
           return;
         }
       } else {
@@ -209,17 +212,33 @@ export function InvoiceDetailClient({
     setPayMethod(draftPayMethod);
     setIsPayDialogOpen(false);
     toast.success(`Payment recorded as ${actualStatus}`);
+    playSound("success");
     router.refresh();
   };
 
-  const handleDeleteInvoice = async () => {
-    try {
-      await deleteInvoice(invoice.id);
-      toast.success("Invoice deleted successfully");
-      router.push("/invoices");
-    } catch {
-      toast.error("Failed to delete invoice");
-    }
+  const handleDeleteInvoice = () => {
+    const timeoutId = setTimeout(async () => {
+      try {
+        await deleteInvoice(invoice.id);
+      } catch {
+        toast.error("Failed to delete invoice");
+        playSound("error");
+      }
+    }, 5000);
+
+    toast.success("Invoice deleted successfully", {
+      duration: 5000,
+      action: {
+        label: "Undo",
+        onClick: () => {
+          clearTimeout(timeoutId);
+          toast.success("Invoice restored");
+          router.push(`/invoices/${invoice.id}`);
+        }
+      }
+    });
+    playSound("delete");
+    router.push("/invoices");
   };
 
   const handleDownloadPdf = async () => {

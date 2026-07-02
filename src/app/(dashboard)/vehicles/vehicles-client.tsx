@@ -29,6 +29,7 @@ import {
 import { Plus, Search, Trash2 } from "lucide-react";
 import { createVehicle, deleteVehicle } from "@/lib/actions/vehicles";
 import { toast } from "sonner";
+import { useTheme } from "@/components/theme-provider";
 import { format } from "date-fns";
 import tractorBrands from "../../../../00 services/tractor_brands.json";
 import tractorModelsMap from "../../../../00 services/tractor_models.json";
@@ -59,15 +60,22 @@ export function VehiclesClient({
   vehicles,
   customers,
   searchQuery,
+  searchQuery: initialSearch,
 }: {
   vehicles: Vehicle[];
   customers: Customer[];
   searchQuery: string;
 }) {
   const router = useRouter();
-  const [search, setSearch] = useState(searchQuery);
+  const [search, setSearch] = useState(initialSearch || "");
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [hiddenIds, setHiddenIds] = useState<Set<number>>(new Set());
+  
+  const { playSound } = useTheme();
+
+  const displayedVehicles = vehicles.filter((v) => !hiddenIds.has(v.id));
+
   const [selectedCustomer, setSelectedCustomer] = useState("");
   const [newBrand, setNewBrand] = useState("");
   const [newModel, setNewModel] = useState("");
@@ -81,7 +89,7 @@ export function VehiclesClient({
     router.push(`/vehicles?search=${encodeURIComponent(search)}`);
   };
 
-  const paginatedVehicles = vehicles.slice(
+  const paginatedVehicles = displayedVehicles.slice(
     pageIndex * pageSize,
     (pageIndex + 1) * pageSize
   );
@@ -101,25 +109,52 @@ export function VehiclesClient({
         chassisNumber: (form.get("chassisNumber") as string) || "",
       });
       toast.success("Vehicle added successfully");
+      playSound("create");
       setNewBrand("");
       setNewModel("");
       setOpen(false);
       router.refresh();
     } catch {
       toast.error("Failed to add vehicle. Registration may already exist.");
+      playSound("error");
     } finally {
       setLoading(false);
     }
   };
 
-  const handleDelete = async (id: number) => {
-    try {
-      await deleteVehicle(id);
-      toast.success("Vehicle deleted");
-      router.refresh();
-    } catch {
-      toast.error("Failed to delete vehicle");
-    }
+  const handleDelete = (id: number) => {
+    setHiddenIds((prev) => new Set([...prev, id]));
+
+    const timeoutId = setTimeout(async () => {
+      try {
+        await deleteVehicle(id);
+        router.refresh();
+      } catch {
+        toast.error("Failed to delete vehicle");
+        setHiddenIds((prev) => {
+          const next = new Set(prev);
+          next.delete(id);
+          return next;
+        });
+      }
+    }, 5000);
+
+    toast.success("Vehicle deleted", {
+      duration: 5000,
+      action: {
+        label: "Undo",
+        onClick: () => {
+          clearTimeout(timeoutId);
+          setHiddenIds((prev) => {
+            const next = new Set(prev);
+            next.delete(id);
+            return next;
+          });
+          toast.success("Action undone");
+        }
+      }
+    });
+    playSound("delete");
   };
 
   return (
@@ -216,7 +251,7 @@ export function VehiclesClient({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {paginatedVehicles.length === 0 ? (
+              {displayedVehicles.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={6} className="text-center py-10 text-muted-foreground">
                     No vehicles found.
@@ -236,7 +271,11 @@ export function VehiclesClient({
                       <EditVehicleDialog vehicle={v} />
                       <AlertDialog>
                         <AlertDialogTrigger render={
-                          <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive cursor-pointer">
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-8 w-8 text-destructive hover:text-destructive cursor-pointer"
+                          >
                             <Trash2 className="w-4 h-4" />
                           </Button>
                         } />
@@ -249,7 +288,7 @@ export function VehiclesClient({
                           </AlertDialogHeader>
                           <AlertDialogFooter>
                             <AlertDialogCancel>Cancel</AlertDialogCancel>
-                            <AlertDialogAction onClick={() => handleDelete(v.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                            <AlertDialogAction onClick={() => handleDelete(v.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90 cursor-pointer">
                               Delete
                             </AlertDialogAction>
                           </AlertDialogFooter>

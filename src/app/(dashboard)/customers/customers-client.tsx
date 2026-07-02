@@ -11,11 +11,22 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Plus, Trash2 } from "lucide-react";
 import { createCustomer, bulkDeleteCustomers } from "@/lib/actions/customers";
 import { toast } from "sonner";
+import { useTheme } from "@/components/theme-provider";
 import { RowSelectionState } from "@tanstack/react-table";
 import { DataTable } from "@/components/ui/data-table";
 import { columns, Customer } from "./columns";
@@ -38,23 +49,64 @@ export function CustomersClient({
   const [vehicleModel, setVehicleModel] = useState("");
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
   const [deleting, setDeleting] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [hiddenIds, setHiddenIds] = useState<Set<number>>(new Set());
+  const { playSound } = useTheme();
+
+  const displayedCustomers = customers.filter((c) => !hiddenIds.has(c.id));
 
   const selectedCount = Object.keys(rowSelection).length;
+  
+  const selectedCustomers = Object.keys(rowSelection).map(
+    (i) => displayedCustomers[parseInt(i)]
+  );
+  
+  const customersWithDues = selectedCustomers.filter(
+    (c) => (c.outstandingBalance || 0) > 0
+  );
+  const totalDues = customersWithDues.reduce(
+    (sum, c) => sum + (c.outstandingBalance || 0),
+    0
+  );
 
-  const handleBulkDelete = async () => {
-    if (!confirm(`Are you sure you want to delete ${selectedCount} customers?`)) return;
-    setDeleting(true);
-    try {
-      const ids = Object.keys(rowSelection).map((i) => customers[parseInt(i)].id);
-      await bulkDeleteCustomers(ids);
-      toast.success(`${selectedCount} customers deleted`);
-      setRowSelection({});
-      router.refresh();
-    } catch {
-      toast.error("Failed to delete customers");
-    } finally {
-      setDeleting(false);
-    }
+  const handleBulkDelete = () => {
+    const ids = selectedCustomers.map((c) => c.id);
+    if (ids.length === 0) return;
+
+    setHiddenIds((prev) => new Set([...prev, ...ids]));
+    setRowSelection({});
+    setDeleteDialogOpen(false);
+
+    const timeoutId = setTimeout(async () => {
+      try {
+        await bulkDeleteCustomers(ids);
+        router.refresh();
+      } catch {
+        toast.error("Failed to delete customers");
+        setHiddenIds((prev) => {
+          const next = new Set(prev);
+          ids.forEach((id) => next.delete(id));
+          return next;
+        });
+      }
+    }, 5000);
+
+    toast.success(`${ids.length} customer(s) deleted.`, {
+      duration: 5000,
+      action: {
+        label: "Undo",
+        onClick: () => {
+          clearTimeout(timeoutId);
+          setHiddenIds((prev) => {
+            const next = new Set(prev);
+            ids.forEach((id) => next.delete(id));
+            return next;
+          });
+          toast.success("Action undone");
+        }
+      }
+    });
+    playSound("delete");
   };
 
   const handleCreate = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -72,12 +124,14 @@ export function CustomersClient({
         vehicleModel,
       });
       toast.success("Customer created successfully");
+      playSound("create");
       setOpen(false);
       setVehicleBrand("");
       setVehicleModel("");
       router.refresh();
     } catch {
       toast.error("Failed to create customer. Phone may already exist.");
+      playSound("error");
     } finally {
       setLoading(false);
     }
@@ -90,15 +144,39 @@ export function CustomersClient({
 
         <div className="flex gap-2">
           {selectedCount > 0 && (
-            <Button
-              variant="destructive"
-              onClick={handleBulkDelete}
-              disabled={deleting}
-              className="gap-2 cursor-pointer"
-            >
-              <Trash2 className="w-4 h-4" />
-              {deleting ? "Deleting..." : `Delete (${selectedCount})`}
-            </Button>
+            <>
+              <Button
+                variant="destructive"
+                onClick={() => setDeleteDialogOpen(true)}
+                disabled={deleting}
+                className="gap-2 cursor-pointer"
+              >
+                <Trash2 className="w-4 h-4" />
+                {deleting ? "Deleting..." : `Delete (${selectedCount})`}
+              </Button>
+              
+              <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      This action cannot be undone. You are about to permanently delete <strong>{selectedCount}</strong> customer(s) from the system.
+                    </AlertDialogDescription>
+                    {customersWithDues.length > 0 && (
+                      <div className="p-3 mt-4 bg-destructive/10 text-destructive text-sm rounded-md border border-destructive/20 font-medium">
+                        ⚠️ Warning: The selected customers have a total of {new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR" }).format(totalDues)} in outstanding due payments. Deleting them may cause data loss for those dues.
+                      </div>
+                    )}
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction onClick={handleBulkDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                      Delete Permanently
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </>
           )}
           <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger render={<Button className="gap-2 cursor-pointer"><Plus className="w-4 h-4" />Add Customer</Button>} />
@@ -160,7 +238,7 @@ export function CustomersClient({
 
       <DataTable 
         columns={columns} 
-        data={customers} 
+        data={displayedCustomers} 
         searchKey="name" 
         searchPlaceholder="Filter customers by name..." 
         rowSelection={rowSelection}

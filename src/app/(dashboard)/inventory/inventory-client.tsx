@@ -24,6 +24,7 @@ import {
 import { Plus, Search, Trash2, Package, AlertTriangle } from "lucide-react";
 import { createSparePart, deleteSparePart, createCategory } from "@/lib/actions/inventory";
 import { toast } from "sonner";
+import { useTheme } from "@/components/theme-provider";
 
 interface Part {
   id: number;
@@ -49,9 +50,13 @@ export function InventoryClient({ parts, categories, searchQuery }: { parts: Par
   const [open, setOpen] = useState(false);
   const [catOpen, setCatOpen] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [selectedCategory, setSelectedCategory] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState<string>("");
+  const [hiddenIds, setHiddenIds] = useState<Set<number>>(new Set());
+  const { playSound } = useTheme();
 
-  const handleSearch = () => {
+  const displayedParts = parts.filter((p) => !hiddenIds.has(p.id));
+
+  const applyFilters = (term: string, category: string) => {
     router.push(`/inventory?search=${encodeURIComponent(search)}`);
   };
 
@@ -71,10 +76,12 @@ export function InventoryClient({ parts, categories, searchQuery }: { parts: Par
         sellingPrice: Number(form.get("sellingPrice")) || 0,
       });
       toast.success("Part added successfully");
+      playSound("create");
       setOpen(false);
       router.refresh();
     } catch {
       toast.error("Failed to add part");
+      playSound("error");
     } finally {
       setLoading(false);
     }
@@ -86,29 +93,56 @@ export function InventoryClient({ parts, categories, searchQuery }: { parts: Par
     try {
       await createCategory(form.get("catName") as string);
       toast.success("Category created");
+      playSound("create");
       setCatOpen(false);
       router.refresh();
     } catch {
       toast.error("Failed to create category");
+      playSound("error");
     }
   };
 
-  const handleDelete = async (id: number) => {
-    try {
-      await deleteSparePart(id);
-      toast.success("Part deleted");
-      router.refresh();
-    } catch {
-      toast.error("Failed to delete part");
-    }
+  const handleDelete = (id: number) => {
+    setHiddenIds((prev) => new Set([...prev, id]));
+
+    const timeoutId = setTimeout(async () => {
+      try {
+        await deleteSparePart(id);
+        router.refresh();
+      } catch {
+        toast.error("Failed to delete part");
+        setHiddenIds((prev) => {
+          const next = new Set(prev);
+          next.delete(id);
+          return next;
+        });
+      }
+    }, 5000);
+
+    toast.success("Part deleted", {
+      duration: 5000,
+      action: {
+        label: "Undo",
+        onClick: () => {
+          clearTimeout(timeoutId);
+          setHiddenIds((prev) => {
+            const next = new Set(prev);
+            next.delete(id);
+            return next;
+          });
+          toast.success("Action undone");
+        }
+      }
+    });
+    playSound("delete");
   };
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between gap-4 flex-wrap">
         <div className="flex items-center gap-2 flex-1 max-w-md">
-          <Input placeholder="Search parts..." value={search} onChange={(e) => setSearch(e.target.value)} onKeyDown={(e) => e.key === "Enter" && handleSearch()} className="bg-card/50" />
-          <Button variant="secondary" size="icon" onClick={handleSearch} className="cursor-pointer shrink-0"><Search className="w-4 h-4" /></Button>
+          <Input placeholder="Search parts..." value={search} onChange={(e) => setSearch(e.target.value)} onKeyDown={(e) => e.key === "Enter" && applyFilters(search, selectedCategory)} className="bg-card/50" />
+          <Button variant="secondary" size="icon" onClick={() => applyFilters(search, selectedCategory)} className="cursor-pointer shrink-0"><Search className="w-4 h-4" /></Button>
         </div>
         <div className="flex gap-2">
           <Dialog open={catOpen} onOpenChange={setCatOpen}>
@@ -169,7 +203,7 @@ export function InventoryClient({ parts, categories, searchQuery }: { parts: Par
               </TableRow>
             </TableHeader>
             <TableBody>
-              {parts.length === 0 ? (
+              {displayedParts.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={7} className="text-center py-10 text-muted-foreground">
                     <Package className="w-8 h-8 mx-auto mb-2 opacity-30" />
@@ -177,7 +211,7 @@ export function InventoryClient({ parts, categories, searchQuery }: { parts: Par
                   </TableCell>
                 </TableRow>
               ) : (
-                parts.map((part) => (
+                displayedParts.map((part) => (
                   <TableRow key={part.id} className="border-border/30 hover:bg-accent/30">
                     <TableCell className="font-medium">{part.name}</TableCell>
                     <TableCell>
@@ -212,7 +246,7 @@ export function InventoryClient({ parts, categories, searchQuery }: { parts: Par
                           </AlertDialogHeader>
                           <AlertDialogFooter>
                             <AlertDialogCancel>Cancel</AlertDialogCancel>
-                            <AlertDialogAction onClick={() => handleDelete(part.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                            <AlertDialogAction onClick={() => handleDelete(part.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90 cursor-pointer">
                               Delete
                             </AlertDialogAction>
                           </AlertDialogFooter>

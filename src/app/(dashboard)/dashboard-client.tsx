@@ -171,14 +171,14 @@ export function DashboardClient({
     <div className="space-y-6">
       {/* Quick Action */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
+        {/* <div>
           <h1 className="text-2xl font-bold tracking-tight">
             Welcome back, Owner
           </h1>
           <p className="text-muted-foreground text-sm mt-1">
             Here&apos;s your garage at a glance
           </p>
-        </div>
+        </div> */}
 
         {/* Actions & Filters */}
         <div className="flex flex-wrap gap-3 items-center">

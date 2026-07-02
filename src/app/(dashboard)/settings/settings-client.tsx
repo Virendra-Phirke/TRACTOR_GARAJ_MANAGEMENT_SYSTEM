@@ -8,13 +8,14 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Building, QrCode, Percent, Check, Palette, Eye, FileText, Settings2, Moon, Sun, ChevronDown, Type, ALargeSmall } from "lucide-react";
+import { Building, QrCode, Percent, Check, Palette, Eye, FileText, Settings2, Moon, Sun, ChevronDown, Type, ALargeSmall, Volume2, VolumeX } from "lucide-react";
 import { updateGarageSettings, updateUpiSettings, setDefaultTax } from "@/lib/actions/settings";
 import { toast } from "sonner";
 import { LayoutEditor } from "./layout-editor";
 import { useTheme, COLOR_SCHEMES } from "@/components/theme-provider";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 
 interface GarageSettings { id: number; name: string; address: string | null; phone: string | null; email: string | null; gstNumber: string | null; tagline: string | null; invoiceTheme: string | null; invoiceFormat: string | null; }
 interface UpiSettings { id: number; vpa: string; payeeName: string; merchantCode: string | null; isEnabled: boolean | null; }
@@ -243,7 +244,19 @@ export function SettingsClient({ garage, upi, taxes }: { garage: GarageSettings;
   const [selectedTheme, setSelectedTheme] = useState(garage.invoiceTheme || "default");
   const [selectedFormat, setSelectedFormat] = useState(garage.invoiceFormat || "standard");
   const [isLayoutEditorOpen, setIsLayoutEditorOpen] = useState(false);
-  const { theme: appTheme, toggleTheme: toggleAppTheme, accentColor, setAccentColor, fontFamily, setFontFamily, fontSize, setFontSize } = useTheme();
+  const { 
+    theme: appTheme, 
+    toggleTheme: toggleAppTheme, 
+    accentColor, 
+    setAccentColor, 
+    fontFamily, 
+    setFontFamily, 
+    fontSize, 
+    setFontSize,
+    soundEnabled,
+    setSoundEnabled,
+    playSound
+  } = useTheme();
   const [showAccentPicker, setShowAccentPicker] = useState(false);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const activeScheme = COLOR_SCHEMES.find(s => s.primary === accentColor);
@@ -264,8 +277,12 @@ export function SettingsClient({ garage, upi, taxes }: { garage: GarageSettings;
         invoiceFormat: form.get("invoiceFormat") as string,
       });
       toast.success("Settings saved successfully");
+      playSound("success");
       router.refresh();
-    } catch { toast.error("Failed to save"); }
+    } catch { 
+      toast.error("Failed to save");
+      playSound("error");
+    }
     finally { setGLoading(false); }
   };
 
@@ -280,8 +297,12 @@ export function SettingsClient({ garage, upi, taxes }: { garage: GarageSettings;
         merchantCode: (form.get("merchantCode") as string) || "",
       });
       toast.success("UPI settings saved");
+      playSound("success");
       router.refresh();
-    } catch { toast.error("Failed to save"); }
+    } catch { 
+      toast.error("Failed to save");
+      playSound("error");
+    }
     finally { setULoading(false); }
   };
 
@@ -514,19 +535,50 @@ export function SettingsClient({ garage, upi, taxes }: { garage: GarageSettings;
         </CardHeader>
         <CardContent className="space-y-6">
           {/* Dark / Light toggle */}
-          <div className="flex items-center justify-between p-3 rounded-lg border border-border/30 bg-muted/20">
-            <div className="flex items-center gap-3">
-              {appTheme === "dark" ? <Moon className="w-4 h-4 text-primary" /> : <Sun className="w-4 h-4 text-primary" />}
-              <div>
-                <p className="text-sm font-medium">Theme Mode</p>
-                <p className="text-xs text-muted-foreground">Currently using <span className="font-semibold text-foreground">{appTheme === "dark" ? "Dark" : "Light"}</span> mode</p>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between p-3 rounded-lg border border-border/30 bg-muted/20 gap-4">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                  {appTheme === "dark" ? <Moon className="w-4 h-4 text-primary" /> : <Sun className="w-4 h-4 text-primary" />}
+                </div>
+                <div>
+                  <p className="text-sm font-medium">Theme Mode</p>
+                  <p className="text-xs text-muted-foreground">Currently using <span className="font-semibold text-foreground">{appTheme === "dark" ? "Dark" : "Light"}</span> mode</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-medium text-muted-foreground">Light</span>
+                <button
+                  type="button"
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${appTheme === "dark" ? 'bg-primary' : 'bg-muted-foreground/30'}`}
+                  onClick={toggleAppTheme}
+                >
+                  <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${appTheme === "dark" ? 'translate-x-6' : 'translate-x-1'}`} />
+                </button>
+                <span className="text-xs font-medium text-muted-foreground">Dark</span>
               </div>
             </div>
-            <Button variant="outline" size="sm" className="gap-1.5 cursor-pointer" onClick={toggleAppTheme}>
-              {appTheme === "dark" ? <Sun className="w-3.5 h-3.5" /> : <Moon className="w-3.5 h-3.5" />}
-              Switch to {appTheme === "dark" ? "Light" : "Dark"}
-            </Button>
-          </div>
+            
+            {/* Audio Cues Toggle */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between p-3 rounded-lg border border-border/30 bg-muted/20 gap-4">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                  {soundEnabled ? <Volume2 className="w-4 h-4 text-primary" /> : <VolumeX className="w-4 h-4 text-primary" />}
+                </div>
+                <div>
+                  <p className="text-sm font-medium">Audio Cues (Earcons)</p>
+                  <p className="text-xs text-muted-foreground">Play subtle sound effects for interactions like success and errors</p>
+                </div>
+              </div>
+              <Switch
+                checked={soundEnabled}
+                onCheckedChange={(checked) => {
+                  setSoundEnabled(checked);
+                  if (checked) {
+                    playSound("success"); // Play a test sound when enabled
+                  }
+                }}
+              />
+            </div>
 
           {/* Accent Color Scheme — collapsible dropdown */}
           <div>

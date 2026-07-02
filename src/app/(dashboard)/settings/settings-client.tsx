@@ -13,6 +13,7 @@ import { updateGarageSettings, updateUpiSettings, setDefaultTax } from "@/lib/ac
 import { toast } from "sonner";
 import { LayoutEditor } from "./layout-editor";
 import { useTheme, COLOR_SCHEMES } from "@/components/theme-provider";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 
 interface GarageSettings { id: number; name: string; address: string | null; phone: string | null; email: string | null; gstNumber: string | null; tagline: string | null; invoiceTheme: string | null; invoiceFormat: string | null; }
 interface UpiSettings { id: number; vpa: string; payeeName: string; merchantCode: string | null; isEnabled: boolean | null; }
@@ -243,6 +244,7 @@ export function SettingsClient({ garage, upi, taxes }: { garage: GarageSettings;
   const [isLayoutEditorOpen, setIsLayoutEditorOpen] = useState(false);
   const { theme: appTheme, toggleTheme: toggleAppTheme, accentColor, setAccentColor } = useTheme();
   const [showAccentPicker, setShowAccentPicker] = useState(false);
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const activeScheme = COLOR_SCHEMES.find(s => s.primary === accentColor);
 
   const handleGarage = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -469,12 +471,24 @@ export function SettingsClient({ garage, upi, taxes }: { garage: GarageSettings;
 
             <div className="flex gap-2 pt-2 border-t border-border/30">
               <Button type="submit" className="cursor-pointer" disabled={gLoading}>{gLoading ? "Saving..." : "Save Layout & Theme"}</Button>
-              <Button type="button" variant="outline" className="cursor-pointer gap-1.5" onClick={() => {
-                window.open(`/api/preview-invoice?theme=${selectedTheme}&format=${selectedFormat}`, '_blank');
-              }}>
-                <Eye className="w-3.5 h-3.5" />
-                Preview Full PDF
-              </Button>
+              
+              <Dialog open={isPreviewOpen} onOpenChange={setIsPreviewOpen}>
+                <DialogTrigger render={<Button type="button" variant="outline" className="cursor-pointer gap-1.5"><Eye className="w-3.5 h-3.5" />Preview Full PDF</Button>} />
+                <DialogContent className="max-w-4xl w-[90vw] h-[90vh] flex flex-col p-4">
+                  <DialogHeader>
+                    <DialogTitle>Invoice Design Preview</DialogTitle>
+                  </DialogHeader>
+                  <div className="flex-1 w-full bg-muted rounded-md overflow-hidden relative">
+                    {isPreviewOpen && (
+                      <iframe 
+                        src={`/api/preview-invoice?theme=${selectedTheme}&format=${selectedFormat}`} 
+                        className="w-full h-full border-0 absolute inset-0"
+                        title="PDF Preview"
+                      />
+                    )}
+                  </div>
+                </DialogContent>
+              </Dialog>
             </div>
             {selectedFormat === "custom_layout" && (
               <div className="mt-4 p-4 border border-primary/20 rounded-lg bg-primary/5 flex flex-col sm:flex-row items-center justify-between gap-4">

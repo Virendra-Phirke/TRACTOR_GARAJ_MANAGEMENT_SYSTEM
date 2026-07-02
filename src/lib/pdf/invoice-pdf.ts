@@ -537,25 +537,36 @@ async function generateGridStructured(data: InvoicePdfData, colors: any): Promis
   if (data.vehicleReg) page.drawText(`Reg: ${data.vehicleReg}`, { x: vX, y: y - 34, size: 9, font: fontRegular, color: textColor });
 
   y -= 70;
-  const cols = [margin, width - margin - 120, width - margin - 60, width - margin];
-
   const drawTable = (title: string, items: any[], type: "labor" | "parts") => {
     if (items.length === 0) return;
     
     let startY = y;
     const rH = 20;
+    
+    // Dynamic columns for Parts vs Labor
+    const dividers = type === "parts" 
+      ? [width - margin - 180, width - margin - 100, width - margin - 60, width - margin] // Desc | Qty | Rate | Total
+      : [width - margin - 80, width - margin]; // Desc | Total
+      
+    const cTotal = type === "parts" ? dividers[2] : dividers[0];
+    const cEnd = type === "parts" ? dividers[3] : dividers[1];
+
     page.drawRectangle({ x: margin, y: y - rH, width: width - (margin * 2), height: rH, color: rgb(0.9, 0.9, 0.9), borderColor: rgb(0.5, 0.5, 0.5), borderWidth: 1 });
     page.drawText(type === "labor" ? "DESCRIPTION" : "PART NAME", { x: margin + 5, y: y - 14, size: 9, font: fontBold, color: textColor });
-    if (type === "parts") {
-      page.drawText("QTY", { x: cols[1] + 5, y: y - 14, size: 9, font: fontBold, color: textColor });
-      page.drawText("RATE", { x: cols[2] + 5, y: y - 14, size: 9, font: fontBold, color: textColor });
-    }
-    page.drawText("TOTAL", { x: cols[3] - 40, y: y - 14, size: 9, font: fontBold, color: textColor });
     
-    page.drawLine({ start: { x: cols[1], y: startY }, end: { x: cols[1], y: startY - rH }, thickness: 1, color: rgb(0.5, 0.5, 0.5) });
     if (type === "parts") {
-      page.drawLine({ start: { x: cols[2], y: startY }, end: { x: cols[2], y: startY - rH }, thickness: 1, color: rgb(0.5, 0.5, 0.5) });
+      page.drawText("QTY", { x: dividers[0] + 5, y: y - 14, size: 9, font: fontBold, color: textColor });
+      page.drawText("RATE", { x: dividers[1] + 5, y: y - 14, size: 9, font: fontBold, color: textColor });
+      page.drawText("TOTAL", { x: dividers[2] + 5, y: y - 14, size: 9, font: fontBold, color: textColor });
+    } else {
+      page.drawText("TOTAL", { x: dividers[0] + 5, y: y - 14, size: 9, font: fontBold, color: textColor });
     }
+    
+    // Draw vertical header lines
+    dividers.slice(0, -1).forEach(d => {
+      page.drawLine({ start: { x: d, y: startY }, end: { x: d, y: startY - rH }, thickness: 1, color: rgb(0.5, 0.5, 0.5) });
+    });
+    
     y -= rH;
 
     page.drawRectangle({ x: margin, y: y - rH, width: width - (margin * 2), height: rH, borderColor: rgb(0.5, 0.5, 0.5), borderWidth: 1 });
@@ -566,23 +577,26 @@ async function generateGridStructured(data: InvoicePdfData, colors: any): Promis
       page.drawRectangle({ x: margin, y: y - rH, width: width - (margin * 2), height: rH, borderColor: rgb(0.5, 0.5, 0.5), borderWidth: 1 });
       const desc = type === "labor" ? item.description : item.partName;
       page.drawText(desc.substring(0, 50), { x: margin + 5, y: y - 14, size: 9, font: fontRegular, color: textColor });
-      if (type === "parts") {
-        drawRightText(page, `${item.quantity}`, cols[2] - 5, y - 14, 9, fontRegular, textColor);
-        drawRightText(page, formatCurrency(item.unitPrice), cols[3] - 5, y - 14, 9, fontRegular, textColor);
-      }
-      drawRightText(page, formatCurrency(item.total), cols[3] - 5, y - 14, 9, fontRegular, textColor);
       
-      page.drawLine({ start: { x: cols[1], y: y }, end: { x: cols[1], y: y - rH }, thickness: 1, color: rgb(0.5, 0.5, 0.5) });
       if (type === "parts") {
-        page.drawLine({ start: { x: cols[2], y: y }, end: { x: cols[2], y: y - rH }, thickness: 1, color: rgb(0.5, 0.5, 0.5) });
+        drawRightText(page, `${item.quantity}`, dividers[1] - 5, y - 14, 9, fontRegular, textColor);
+        drawRightText(page, formatCurrency(item.unitPrice), dividers[2] - 5, y - 14, 9, fontRegular, textColor);
       }
+      drawRightText(page, formatCurrency(item.total), cEnd - 5, y - 14, 9, fontRegular, textColor);
+      
+      // Draw vertical item lines
+      dividers.slice(0, -1).forEach(d => {
+        page.drawLine({ start: { x: d, y: y }, end: { x: d, y: y - rH }, thickness: 1, color: rgb(0.5, 0.5, 0.5) });
+      });
       y -= rH;
     });
     
     page.drawRectangle({ x: margin, y: y - rH, width: width - (margin * 2), height: rH, borderColor: rgb(0.5, 0.5, 0.5), borderWidth: 1 });
     page.drawText(`Total ${title}`, { x: margin + 5, y: y - 14, size: 9, font: fontBold, color: textColor });
-    drawRightText(page, formatCurrency(type === "labor" ? data.laborTotal : data.partsTotal), cols[3] - 5, y - 14, 9, fontBold, textColor);
-    page.drawLine({ start: { x: cols[1], y: y }, end: { x: cols[1], y: y - rH }, thickness: 1, color: rgb(0.5, 0.5, 0.5) });
+    drawRightText(page, formatCurrency(type === "labor" ? data.laborTotal : data.partsTotal), cEnd - 5, y - 14, 9, fontBold, textColor);
+    
+    // Draw vertical total line
+    page.drawLine({ start: { x: cTotal, y: y }, end: { x: cTotal, y: y - rH }, thickness: 1, color: rgb(0.5, 0.5, 0.5) });
     y -= (rH + 10);
   };
 

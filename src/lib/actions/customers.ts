@@ -82,19 +82,6 @@ export async function updateCustomer(
 }
 
 export async function deleteCustomer(id: number) {
-  // Check if customer has invoices — prevent deletion to avoid orphaned data
-  const [invoiceCount] = await db
-    .select({ count: sql<number>`count(*)` })
-    .from(invoices)
-    .where(eq(invoices.customerId, id));
-
-  if (Number(invoiceCount.count) > 0) {
-    throw new Error(
-      `Cannot delete this customer because they have ${invoiceCount.count} invoice(s). ` +
-      `Delete the invoices first, or mark the customer as inactive.`
-    );
-  }
-
   await db.delete(customers).where(eq(customers.id, id));
   revalidatePath("/customers");
 }

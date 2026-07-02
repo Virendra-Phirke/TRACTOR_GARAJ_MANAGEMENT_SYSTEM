@@ -21,6 +21,8 @@ export const garageSettings = pgTable("garage_settings", {
   email: varchar("email", { length: 255 }).default(""),
   gstNumber: varchar("gst_number", { length: 20 }).default(""),
   tagline: text("tagline").default(""),
+  invoiceTheme: varchar("invoice_theme", { length: 50 }).default("default"),
+  invoiceFormat: varchar("invoice_format", { length: 50 }).default("standard"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
@@ -159,7 +161,7 @@ export const invoices = pgTable(
     invoiceNumber: varchar("invoice_number", { length: 20 }).notNull(),
     customerId: integer("customer_id")
       .notNull()
-      .references(() => customers.id),
+      .references(() => customers.id, { onDelete: "cascade" }),
     vehicleId: integer("vehicle_id").references(() => vehicles.id),
     laborTotal: real("labor_total").default(0),
     partsTotal: real("parts_total").default(0),
@@ -302,96 +304,3 @@ export const backups = pgTable("backups", {
   fileName: varchar("file_name", { length: 255 }).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
-
-// ─── Estimates ───────────────────────────────────────────────────────
-export const estimates = pgTable(
-  "estimates",
-  {
-    id: serial("id").primaryKey(),
-    estimateNumber: varchar("estimate_number", { length: 20 }).notNull(),
-    customerId: integer("customer_id")
-      .notNull()
-      .references(() => customers.id),
-    vehicleId: integer("vehicle_id").references(() => vehicles.id),
-    laborTotal: real("labor_total").default(0),
-    partsTotal: real("parts_total").default(0),
-    subtotal: real("subtotal").default(0),
-    taxRate: real("tax_rate").default(0),
-    taxAmount: real("tax_amount").default(0),
-    discountType: varchar("discount_type", { length: 10 }).default("fixed"),
-    discountValue: real("discount_value").default(0),
-    discountAmount: real("discount_amount").default(0),
-    grandTotal: real("grand_total").default(0),
-    status: varchar("status", { length: 20 }).default("pending").notNull(), // pending, accepted, rejected, invoiced
-    notes: text("notes").default(""),
-    createdAt: timestamp("created_at").defaultNow().notNull(),
-    updatedAt: timestamp("updated_at").defaultNow().notNull(),
-  },
-  (table) => [
-    uniqueIndex("estimates_number_idx").on(table.estimateNumber),
-    index("estimates_customer_idx").on(table.customerId),
-    index("estimates_vehicle_idx").on(table.vehicleId),
-  ]
-);
-
-export const estimatesRelations = relations(estimates, ({ one, many }) => ({
-  customer: one(customers, {
-    fields: [estimates.customerId],
-    references: [customers.id],
-  }),
-  vehicle: one(vehicles, {
-    fields: [estimates.vehicleId],
-    references: [vehicles.id],
-  }),
-  laborItems: many(estimateLabors),
-  partItems: many(estimateParts),
-}));
-
-export const estimateLabors = pgTable(
-  "estimate_labors",
-  {
-    id: serial("id").primaryKey(),
-    estimateId: integer("estimate_id")
-      .notNull()
-      .references(() => estimates.id, { onDelete: "cascade" }),
-    description: text("description").notNull(),
-    hours: real("hours").default(1),
-    rate: real("rate").notNull(),
-    total: real("total").notNull(),
-  },
-  (table) => [index("estimate_labors_estimate_idx").on(table.estimateId)]
-);
-
-export const estimateLaborsRelations = relations(estimateLabors, ({ one }) => ({
-  estimate: one(estimates, {
-    fields: [estimateLabors.estimateId],
-    references: [estimates.id],
-  }),
-}));
-
-export const estimateParts = pgTable(
-  "estimate_parts",
-  {
-    id: serial("id").primaryKey(),
-    estimateId: integer("estimate_id")
-      .notNull()
-      .references(() => estimates.id, { onDelete: "cascade" }),
-    sparePartId: integer("spare_part_id").references(() => spareParts.id),
-    partName: varchar("part_name", { length: 255 }).notNull(),
-    quantity: integer("quantity").notNull().default(1),
-    unitPrice: real("unit_price").notNull(),
-    total: real("total").notNull(),
-  },
-  (table) => [index("estimate_parts_estimate_idx").on(table.estimateId)]
-);
-
-export const estimatePartsRelations = relations(estimateParts, ({ one }) => ({
-  estimate: one(estimates, {
-    fields: [estimateParts.estimateId],
-    references: [estimates.id],
-  }),
-  sparePart: one(spareParts, {
-    fields: [estimateParts.sparePartId],
-    references: [spareParts.id],
-  }),
-}));

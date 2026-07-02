@@ -17,6 +17,7 @@ import {
   ChevronLeft,
   ChevronRight,
   UserCircle2,
+  LineChart,
 } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -32,9 +33,9 @@ const navItems = [
   { href: "/vehicles", label: "Vehicles", icon: Tractor },
   { href: "/inventory", label: "Inventory", icon: Package },
   { href: "/invoices", label: "Invoices", icon: FileText },
-  { href: "/estimates", label: "Estimates", icon: FileSignature },
   { href: "/expenses", label: "Expenses", icon: Receipt },
   { href: "/reports", label: "Reports", icon: BarChart3 },
+  { href: "/analytics", label: "Analytics", icon: LineChart },
   { href: "/profile", label: "Owner Profile", icon: UserCircle2 },
   { href: "/settings", label: "Settings", icon: Settings },
 ];

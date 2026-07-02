@@ -26,6 +26,8 @@ export async function updateGarageSettings(data: {
   email?: string;
   gstNumber?: string;
   tagline?: string;
+  invoiceTheme?: string;
+  invoiceFormat?: string;
 }) {
   const existing = await getGarageSettings();
   const result = await db

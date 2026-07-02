@@ -91,6 +91,8 @@ export async function GET(
       paymentStatus: invoice.paymentStatus,
       upiQrDataUrl: qrDataUrl,
       upiVpa: upi.vpa || undefined,
+      theme: garage.invoiceTheme || "default",
+      format: garage.invoiceFormat || "standard",
     });
 
     return new NextResponse(pdfBytes as any, {

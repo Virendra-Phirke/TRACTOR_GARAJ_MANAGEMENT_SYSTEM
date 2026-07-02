@@ -545,7 +545,7 @@ async function generateGridStructured(data: InvoicePdfData, colors: any): Promis
     
     // Dynamic columns for Parts vs Labor
     const dividers = type === "parts" 
-      ? [width - margin - 180, width - margin - 100, width - margin - 60, width - margin] // Desc | Qty | Rate | Total
+      ? [width - margin - 200, width - margin - 160, width - margin - 80, width - margin] // Desc | Qty (40) | Rate (80) | Total (80)
       : [width - margin - 80, width - margin]; // Desc | Total
       
     const cTotal = type === "parts" ? dividers[2] : dividers[0];

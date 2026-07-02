@@ -202,7 +202,7 @@ export function InvoiceWizard({ customers, spareParts, taxRates }: { customers: 
   };
 
   return (
-    <div className="max-w-3xl mx-auto scroll-smooth-section">
+    <div className="max-w-7xl mx-auto scroll-smooth-section">
       {/* ── Progress Rail (sticky) ─────────────────────────────────── */}
       <div className="sticky top-16 z-20 -mx-6 px-6 py-3 mb-6" style={{ background: "oklch(0.12 0.008 260 / 92%)", backdropFilter: "blur(12px)" }}>
         <div className="flex items-center gap-1 overflow-x-auto">
@@ -234,7 +234,9 @@ export function InvoiceWizard({ customers, spareParts, taxRates }: { customers: 
         </div>
       </div>
 
-      <div className="space-y-6 block-stagger pb-24">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 pb-24">
+        {/* LEFT COLUMN */}
+        <div className="lg:col-span-7 xl:col-span-8 space-y-6 block-stagger">
         {/* ═══════════════════════════════════════════════════════════
             SECTION 1: CUSTOMER
         ═══════════════════════════════════════════════════════════ */}
@@ -528,9 +530,14 @@ export function InvoiceWizard({ customers, spareParts, taxRates }: { customers: 
           )}
         </div>
 
-        {/* ═══════════════════════════════════════════════════════════
-            SECTION 5: TAX & DISCOUNT
-        ═══════════════════════════════════════════════════════════ */}
+        </div>
+        
+        {/* RIGHT COLUMN */}
+        <div className="lg:col-span-5 xl:col-span-4">
+          <div className="lg:sticky lg:top-32 space-y-6 block-stagger">
+            {/* ═══════════════════════════════════════════════════════════
+                SECTION 5: TAX & DISCOUNT
+            ═══════════════════════════════════════════════════════════ */}
         <div className="block-section">
           <div className="block-label">Tax & Discount</div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -616,13 +623,15 @@ export function InvoiceWizard({ customers, spareParts, taxRates }: { customers: 
         <div className="sticky-action-bar md:relative md:bg-transparent md:backdrop-filter-none md:border-0 md:p-0 flex justify-end">
           <Button
             size="lg"
-            className="gap-2 cursor-pointer px-8"
+            className="w-full gap-2 cursor-pointer"
             onClick={handleSubmit}
             disabled={loading || !selectedCustomer || (!laborItems.length && !partItems.length)}
           >
             {loading ? "Creating..." : <><Check className="w-4 h-4" />Create Invoice</>}
           </Button>
         </div>
+      </div>
+      </div>
       </div>
     </div>
   );

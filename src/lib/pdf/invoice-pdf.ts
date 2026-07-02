@@ -35,6 +35,7 @@ export interface InvoicePdfData {
   upiVpa?: string;
   format?: string;
   theme?: string;
+  customLayoutConfig?: any;
 }
 
 function formatCurrency(amount: number): string {
@@ -58,10 +59,17 @@ export async function generateInvoicePdf(data: InvoicePdfData): Promise<Uint8Arr
   const colors = getPdfColors(data.theme || "default");
   const fmt = data.format || "classic_boxed";
   
-  if (fmt === "centered_pro") return generateCenteredProfessional(data, colors);
-  if (fmt === "grid_structured") return generateGridStructured(data, colors);
-  if (fmt === "modern_accent") return generateModernAccent(data, colors);
-  if (fmt === "original_standard") return generateOriginalStandard(data, colors);
+  if (fmt === "custom_layout") {
+    return generateCustomLayout(data, colors);
+  } else if (fmt === "centered_pro") {
+    return generateCenteredProfessional(data, colors);
+  } else if (fmt === "grid_structured") {
+    return generateGridStructured(data, colors);
+  } else if (fmt === "modern_accent") {
+    return generateModernAccent(data, colors);
+  } else if (fmt === "original_standard") {
+    return generateOriginalStandard(data, colors);
+  }
   
   return generateClassicBoxed(data, colors);
 }
@@ -695,6 +703,83 @@ async function generateModernAccent(data: InvoicePdfData, colors: any): Promise<
   drawRightText(page, formatCurrency(data.grandTotal), totalsX + totalsBoxWidth - 15, totY, 12, fontBold, primaryColor);
 
   await renderPaymentStatus(page, data, pdfDoc, margin, y - 10, textColor, mutedColor, primaryColor, fontBold, fontRegular);
+
+  return pdfDoc.save();
+}
+
+async function generateCustomLayout(data: InvoicePdfData, colors: any): Promise<Uint8Array> {
+  const pdfDoc = await PDFDocument.create();
+  const page = pdfDoc.addPage([595, 842]);
+  const fontRegular = await pdfDoc.embedFont(StandardFonts.Helvetica);
+  const fontBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+  const { primaryColor, textColor, mutedColor } = colors;
+
+  const elements = data.customLayoutConfig?.elements || [];
+  
+  for (const el of elements) {
+    // PDF coordinates: Y is from bottom. HTML UI Y is from top.
+    // PDF Y = 842 - HTML Y - HTML Height
+    const pdfY = 842 - el.y - (el.h || 20);
+    const font = el.bold ? fontBold : fontRegular;
+    const size = el.fontSize || 12;
+
+    if (el.type === 'text' && el.text) {
+      page.drawText(el.text, { x: el.x, y: pdfY, size, font, color: textColor });
+    } else if (el.type === 'box') {
+      page.drawRectangle({ x: el.x, y: pdfY, width: el.w, height: el.h, borderColor: textColor, borderWidth: 1 });
+    } else if (el.type === 'dynamic') {
+      let val = "";
+      if (el.dynamicField === 'garageName') val = data.garageName;
+      if (el.dynamicField === 'garageAddress') val = data.garageAddress;
+      if (el.dynamicField === 'invoiceNumber') val = `INV-${data.invoiceNumber}`;
+      if (el.dynamicField === 'invoiceDate') val = data.invoiceDate;
+      if (el.dynamicField === 'customerName') val = data.customerName;
+      if (el.dynamicField === 'customerPhone') val = data.customerPhone;
+      if (el.dynamicField === 'vehicleBrandModel') val = `${data.vehicleBrand} ${data.vehicleModel}`;
+      if (el.dynamicField === 'vehicleReg') val = data.vehicleReg;
+      page.drawText(val, { x: el.x, y: pdfY, size, font, color: textColor });
+    } else if (el.type === 'table') {
+      let ty = pdfY + (el.h || 100) - 20;
+      page.drawText(el.dynamicField === 'table_labor' ? "LABOR CHARGES" : "SPARE PARTS", { x: el.x, y: ty, size: 10, font: fontBold, color: primaryColor });
+      ty -= 15;
+      const items = el.dynamicField === 'table_labor' ? data.laborItems : data.partItems;
+      for (const item of items) {
+        const desc = (item as any).description || (item as any).partName;
+        page.drawText(desc.substring(0, 40), { x: el.x, y: ty, size: 9, font: fontRegular, color: textColor });
+        drawRightText(page, formatCurrency(item.total), el.x + el.w - 10, ty, 9, fontRegular, textColor);
+        ty -= 15;
+      }
+      page.drawLine({ start: { x: el.x, y: ty + 10 }, end: { x: el.x + el.w, y: ty + 10 }, thickness: 1, color: rgb(0.8, 0.8, 0.8) });
+      page.drawText("Total", { x: el.x, y: ty - 5, size: 9, font: fontBold, color: textColor });
+      const total = el.dynamicField === 'table_labor' ? data.laborTotal : data.partsTotal;
+      drawRightText(page, formatCurrency(total), el.x + el.w - 10, ty - 5, 9, fontBold, textColor);
+    } else if (el.type === 'totals') {
+      let ty = pdfY + (el.h || 100) - 15;
+      page.drawText("Subtotal:", { x: el.x, y: ty, size: 9, font: fontRegular, color: textColor });
+      drawRightText(page, formatCurrency(data.subtotal), el.x + el.w - 10, ty, 9, fontRegular, textColor);
+      ty -= 15;
+      if (data.taxRate > 0) {
+        page.drawText(`Tax (${data.taxRate}%):`, { x: el.x, y: ty, size: 9, font: fontRegular, color: textColor });
+        drawRightText(page, formatCurrency(data.taxAmount), el.x + el.w - 10, ty, 9, fontRegular, textColor);
+        ty -= 15;
+      }
+      if (data.discountAmount > 0) {
+        page.drawText("Discount:", { x: el.x, y: ty, size: 9, font: fontRegular, color: textColor });
+        drawRightText(page, `-${formatCurrency(data.discountAmount)}`, el.x + el.w - 10, ty, 9, fontRegular, textColor);
+        ty -= 15;
+      }
+      page.drawRectangle({ x: el.x, y: ty - 5, width: el.w, height: 20, color: rgb(0.95, 0.95, 0.95) });
+      page.drawText("GRAND TOTAL:", { x: el.x + 5, y: ty, size: 10, font: fontBold, color: primaryColor });
+      drawRightText(page, formatCurrency(data.grandTotal), el.x + el.w - 10, ty, 10, fontBold, primaryColor);
+    } else if (el.type === 'qr') {
+      if (data.upiQrDataUrl) {
+        try {
+          const qrImage = await pdfDoc.embedPng(data.upiQrDataUrl);
+          page.drawImage(qrImage, { x: el.x, y: pdfY, width: el.w, height: el.h });
+        } catch(e) {}
+      }
+    }
+  }
 
   return pdfDoc.save();
 }

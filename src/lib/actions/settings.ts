@@ -104,3 +104,14 @@ export async function setDefaultTax(id: number) {
     .where(eq(taxSettings.id, id));
   revalidatePath("/settings");
 }
+
+export async function updateCustomLayout(data: any) {
+  const existing = await getGarageSettings();
+  const result = await db
+    .update(garageSettings)
+    .set({ customLayoutConfig: data, updatedAt: new Date() })
+    .where(eq(garageSettings.id, existing.id))
+    .returning();
+  revalidatePath("/settings");
+  return { success: true, data: result[0].customLayoutConfig };
+}

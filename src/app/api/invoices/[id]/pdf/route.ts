@@ -93,6 +93,7 @@ export async function GET(
       upiVpa: upi.vpa || undefined,
       theme: garage.invoiceTheme || "default",
       format: garage.invoiceFormat || "standard",
+      customLayoutConfig: (garage as any).customLayoutConfig || undefined,
     });
 
     return new NextResponse(pdfBytes as any, {

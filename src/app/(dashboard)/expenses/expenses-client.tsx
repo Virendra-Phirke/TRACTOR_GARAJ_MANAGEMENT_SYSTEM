@@ -73,6 +73,8 @@ export function ExpensesClient({
   const [category, setCategory] = useState("");
   const [selectedInvoiceIds, setSelectedInvoiceIds] = useState<number[]>([]);
   const [date, setDate] = useState<DateRange | undefined>(undefined);
+  const [invoicePageIndex, setInvoicePageIndex] = useState(0);
+  const [invoicePageSize, setInvoicePageSize] = useState(20);
 
   // ── Monthly filter for expense list ────────────────────────────────
   const now = new Date();
@@ -102,6 +104,8 @@ export function ExpensesClient({
     return isWithinInterval(invDate, { start: date.from, end: date.to });
   });
 
+  const paginatedInvoices = filteredInvoices.slice(invoicePageIndex * invoicePageSize, (invoicePageIndex + 1) * invoicePageSize);
+
   const totalExpenses = filteredExpenses.reduce((sum, exp) => sum + exp.amount, 0);
 
   const expensesByCategory = filteredExpenses.reduce((acc, curr) => {
@@ -119,6 +123,7 @@ export function ExpensesClient({
   // Automatically select all filtered invoices when date range changes
   const handleDateChange = (d: DateRange | undefined) => {
     setDate(d);
+    setInvoicePageIndex(0);
     if (d?.from && d?.to) {
       const ids = recentInvoices
         .filter(inv => {
@@ -285,7 +290,7 @@ export function ExpensesClient({
                                     No invoices found.
                                   </TableCell>
                                 </TableRow>
-                              ) : filteredInvoices.map(inv => (
+                              ) : paginatedInvoices.map(inv => (
                                 <TableRow key={inv.id} className={selectedInvoiceIds.includes(inv.id) ? "bg-primary/5" : ""}>
                                   <TableCell className="text-center">
                                     <Checkbox 
@@ -303,6 +308,13 @@ export function ExpensesClient({
                             </TableBody>
                           </Table>
                         </div>
+                        <PaginationFooter
+                          pageIndex={invoicePageIndex}
+                          pageSize={invoicePageSize}
+                          totalRows={filteredInvoices.length}
+                          setPageIndex={setInvoicePageIndex}
+                          setPageSize={setInvoicePageSize}
+                        />
                       </div>
                     </div>
                   </div>

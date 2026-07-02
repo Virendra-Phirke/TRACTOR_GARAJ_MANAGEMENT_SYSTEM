@@ -1,29 +1,43 @@
 import { NextRequest, NextResponse } from "next/server";
 import { generateInvoicePdf, InvoicePdfData } from "@/lib/pdf/invoice-pdf";
 import { format } from "date-fns";
+import { getGarageSettings, getUpiSettings } from "@/lib/actions/settings";
+import { generateUpiQrDataUrl } from "@/lib/qr/upi-qr";
 
 export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams;
     const theme = searchParams.get("theme") || "default";
     const formatStr = searchParams.get("format") || "standard";
+    const [garage, upi] = await Promise.all([getGarageSettings(), getUpiSettings()]);
 
-    // Create some dummy data for the preview
+    // Generate a real QR code for the preview
+    let qrDataUrl: string | undefined;
+    if (upi.isEnabled && upi.vpa) {
+      qrDataUrl = await generateUpiQrDataUrl({
+        vpa: upi.vpa,
+        payeeName: upi.payeeName,
+        amount: 3803,
+        transactionNote: "INV-PREVIEW-01",
+      });
+    }
+
+    // Use actual garage data in the preview so it looks realistic
     const dummyData: InvoicePdfData = {
-      garageName: "My Tractor Garage",
-      ownerName: "John Doe",
-      garageAddress: "123 Tractor Road, Farmville, TX 75001",
-      garagePhone: "+1 (555) 123-4567",
-      garageEmail: "contact@mytractorgarage.com",
-      gstNumber: "22AAAAA0000A1Z5",
-      garageTagline: "Trusted Tractor Service Center",
+      garageName: garage.name || "My Tractor Garage",
+      ownerName: upi.payeeName || "Owner",
+      garageAddress: garage.address || "123 Tractor Road, Pune 412108",
+      garagePhone: garage.phone || "+91 9373099032",
+      garageEmail: garage.email || "contact@garage.com",
+      gstNumber: garage.gstNumber || "22AAAAA0000A1Z5",
+      garageTagline: garage.tagline || "Trusted Tractor Service Center",
       invoiceNumber: "INV-PREVIEW-01",
-      invoiceDate: format(new Date(), "dd MMM yyyy"),
-      paymentDate: format(new Date(), "dd MMM yyyy"),
-      customerName: "Jane Smith",
-      customerPhone: "+1 (555) 987-6543",
-      customerAddress: "456 Harvest Lane, Cropville, TX 75002",
-      vehicleReg: "TX-77-FARM",
+      invoiceDate: format(new Date(), "dd MMM yyyy, hh:mm a"),
+      paymentDate: format(new Date(), "dd MMM yyyy, hh:mm a"),
+      customerName: "Rajesh Kumar Patil",
+      customerPhone: "+91 98765 43210",
+      customerAddress: "456 Harvest Lane, Near Bus Stand, Akola",
+      vehicleReg: "MH-12-AB-1234",
       vehicleBrand: "Mahindra",
       vehicleModel: "575 DI",
       laborItems: [
@@ -43,9 +57,14 @@ export async function GET(request: NextRequest) {
       grandTotal: 3803,
       amountPaid: 3803,
       paymentStatus: "paid",
-      cashAmount: 3803,
+      cashAmount: 2000,
+      upiAmount: 1803,
+      paymentMethod: "split",
+      upiQrDataUrl: qrDataUrl,
+      upiVpa: upi.vpa || undefined,
       theme: theme,
       format: formatStr,
+      customLayoutConfig: (garage as any).customLayoutConfig || undefined,
     };
 
     const pdfBytes = await generateInvoicePdf(dummyData);

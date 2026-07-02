@@ -8,9 +8,11 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Building, QrCode, Percent, Check, Palette, Eye, FileText } from "lucide-react";
+import { Building, QrCode, Percent, Check, Palette, Eye, FileText, Settings2, Moon, Sun, ChevronDown } from "lucide-react";
 import { updateGarageSettings, updateUpiSettings, setDefaultTax } from "@/lib/actions/settings";
 import { toast } from "sonner";
+import { LayoutEditor } from "./layout-editor";
+import { useTheme, COLOR_SCHEMES } from "@/components/theme-provider";
 
 interface GarageSettings { id: number; name: string; address: string | null; phone: string | null; email: string | null; gstNumber: string | null; tagline: string | null; invoiceTheme: string | null; invoiceFormat: string | null; }
 interface UpiSettings { id: number; vpa: string; payeeName: string; merchantCode: string | null; isEnabled: boolean | null; }
@@ -238,6 +240,10 @@ export function SettingsClient({ garage, upi, taxes }: { garage: GarageSettings;
   const [uLoading, setULoading] = useState(false);
   const [selectedTheme, setSelectedTheme] = useState(garage.invoiceTheme || "default");
   const [selectedFormat, setSelectedFormat] = useState(garage.invoiceFormat || "standard");
+  const [isLayoutEditorOpen, setIsLayoutEditorOpen] = useState(false);
+  const { theme: appTheme, toggleTheme: toggleAppTheme, accentColor, setAccentColor } = useTheme();
+  const [showAccentPicker, setShowAccentPicker] = useState(false);
+  const activeScheme = COLOR_SCHEMES.find(s => s.primary === accentColor);
 
   const handleGarage = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -288,37 +294,85 @@ export function SettingsClient({ garage, upi, taxes }: { garage: GarageSettings;
       case "grid_structured": return <GridStructuredPreview theme={selectedTheme} />;
       case "modern_accent": return <ModernAccentPreview theme={selectedTheme} />;
       case "original_standard": return <StandardInvoicePreview theme={selectedTheme} />;
+      case "custom_layout": return <div className="w-full aspect-[1/1.35] bg-gray-50 rounded border flex flex-col items-center justify-center text-gray-500"><Settings2 className="w-8 h-8 mb-2 opacity-50"/><span className="text-xs">Custom Layout Active</span></div>;
       case "classic_boxed":
       default: return <ClassicBoxedPreview theme={selectedTheme} />;
     }
   };
 
   return (
-    <div className="max-w-4xl space-y-6">
-      {/* Garage Info */}
-      <Card className="bg-card/50">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-base"><Building className="w-4 h-4" />Garage Information</CardTitle>
-          <CardDescription>This info appears on your invoices.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form key={JSON.stringify(garage)} onSubmit={handleGarage} className="space-y-4">
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-2"><Label htmlFor="name">Garage Name *</Label><Input id="name" name="name" required defaultValue={garage.name} /></div>
-              <div className="space-y-2"><Label htmlFor="phone">Phone</Label><Input id="phone" name="phone" defaultValue={garage.phone || ""} /></div>
-            </div>
-            <div className="space-y-2"><Label htmlFor="address">Address</Label><Textarea id="address" name="address" rows={2} defaultValue={garage.address || ""} /></div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-2"><Label htmlFor="email">Email</Label><Input id="email" name="email" type="email" defaultValue={garage.email || ""} /></div>
-              <div className="space-y-2"><Label htmlFor="gstNumber">GST Number</Label><Input id="gstNumber" name="gstNumber" defaultValue={garage.gstNumber || ""} placeholder="22AAAAA0000A1Z5" /></div>
-            </div>
-            <div className="space-y-2"><Label htmlFor="tagline">Tagline</Label><Input id="tagline" name="tagline" defaultValue={garage.tagline || ""} placeholder="Trusted Tractor Service Center" /></div>
-            <Button type="submit" className="cursor-pointer" disabled={gLoading}>{gLoading ? "Saving..." : "Save Changes"}</Button>
-          </form>
-        </CardContent>
-      </Card>
+    <div className="space-y-6">
+      {/* ═══ TOP ROW: Garage Info + UPI/Tax side by side ═══ */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Garage Info (left) */}
+        <Card className="bg-card/50">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base"><Building className="w-4 h-4" />Garage Information</CardTitle>
+            <CardDescription>This info appears on your invoices.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form key={JSON.stringify(garage)} onSubmit={handleGarage} className="space-y-4">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-2"><Label htmlFor="name">Garage Name *</Label><Input id="name" name="name" required defaultValue={garage.name} /></div>
+                <div className="space-y-2"><Label htmlFor="phone">Phone</Label><Input id="phone" name="phone" defaultValue={garage.phone || ""} /></div>
+              </div>
+              <div className="space-y-2"><Label htmlFor="address">Address</Label><Textarea id="address" name="address" rows={2} defaultValue={garage.address || ""} /></div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-2"><Label htmlFor="email">Email</Label><Input id="email" name="email" type="email" defaultValue={garage.email || ""} /></div>
+                <div className="space-y-2"><Label htmlFor="gstNumber">GST Number</Label><Input id="gstNumber" name="gstNumber" defaultValue={garage.gstNumber || ""} placeholder="22AAAAA0000A1Z5" /></div>
+              </div>
+              <div className="space-y-2"><Label htmlFor="tagline">Tagline</Label><Input id="tagline" name="tagline" defaultValue={garage.tagline || ""} placeholder="Trusted Tractor Service Center" /></div>
+              <Button type="submit" className="cursor-pointer" disabled={gLoading}>{gLoading ? "Saving..." : "Save Changes"}</Button>
+            </form>
+          </CardContent>
+        </Card>
 
-      {/* Invoice Format & Theme */}
+        {/* Right column: UPI + Tax stacked */}
+        <div className="space-y-6">
+          <Card className="bg-card/50">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-base"><QrCode className="w-4 h-4" />UPI Payment Settings</CardTitle>
+              <CardDescription>Configure UPI QR code for invoices.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <form key={JSON.stringify(upi)} onSubmit={handleUpi} className="space-y-4">
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-2"><Label htmlFor="vpa">UPI VPA / ID *</Label><Input id="vpa" name="vpa" required defaultValue={upi.vpa} placeholder="yourname@upi" /></div>
+                  <div className="space-y-2"><Label htmlFor="payeeName">Payee Name *</Label><Input id="payeeName" name="payeeName" required defaultValue={upi.payeeName} placeholder="Garage Name" /></div>
+                </div>
+                <div className="space-y-2"><Label htmlFor="merchantCode">Merchant Code (optional)</Label><Input id="merchantCode" name="merchantCode" defaultValue={upi.merchantCode || ""} /></div>
+                <Button type="submit" className="cursor-pointer" disabled={uLoading}>{uLoading ? "Saving..." : "Save UPI Settings"}</Button>
+              </form>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-card/50">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-base"><Percent className="w-4 h-4" />Tax Rates</CardTitle>
+              <CardDescription>Select the default tax rate for new invoices.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                {taxes.map((tax) => (
+                  <div key={tax.id} className="flex items-center justify-between p-3 rounded-lg border border-border/30 hover:bg-accent/20 transition-colors">
+                    <div className="flex items-center gap-3">
+                      <span className="font-medium">{tax.name}</span>
+                      <Badge variant="outline">{tax.rate}%</Badge>
+                    </div>
+                    {tax.isDefault ? (
+                      <Badge className="bg-primary/10 text-primary border-primary/20"><Check className="w-3 h-3 mr-1" />Default</Badge>
+                    ) : (
+                      <Button variant="ghost" size="sm" className="text-xs cursor-pointer" onClick={() => handleDefaultTax(tax.id)}>Set Default</Button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+
+      {/* ═══ INVOICE LAYOUT & THEME — full width ═══ */}
       <Card className="bg-card/50">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base"><FileText className="w-4 h-4" />Invoice Layout & Theme</CardTitle>
@@ -339,37 +393,36 @@ export function SettingsClient({ garage, upi, taxes }: { garage: GarageSettings;
                 <Label className="text-sm font-semibold">Invoice Layout Format</Label>
                 <p className="text-xs text-muted-foreground mt-0.5">Select the structural layout for your invoices</p>
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
                 {[
-                  { id: "original_standard", label: "Original Standard", desc: "The original classic layout with light gray data boxes." },
-                  { id: "classic_boxed", label: "Classic Boxed", desc: "Rounded outline boxes for details, alternating row colors, very clean." },
-                  { id: "centered_pro", label: "Centered Pro", desc: "Centered header, solid dark table headers, professional presentation." },
-                  { id: "grid_structured", label: "Grid Structured", desc: "Full rigid grid layout for maximum clarity and traditional accounting style." },
-                  { id: "modern_accent", label: "Modern Accent", desc: "Shaded accent columns and a prominent PAID watermark stamp." },
+                  { id: "original_standard", label: "Original Standard", desc: "Classic layout with light gray data boxes." },
+                  { id: "classic_boxed", label: "Classic Boxed", desc: "Rounded outline boxes, alternating rows." },
+                  { id: "centered_pro", label: "Centered Pro", desc: "Centered header, solid dark table headers." },
+                  { id: "grid_structured", label: "Grid Structured", desc: "Full rigid grid, traditional accounting." },
+                  { id: "modern_accent", label: "Modern Accent", desc: "Accent columns and PAID watermark." },
+                  { id: "custom_layout", label: "Custom Builder", desc: "Build your own drag-and-drop layout." },
                 ].map((fmt) => (
                   <label key={fmt.id} className="cursor-pointer group">
                     <input
                       type="radio"
                       name="invoiceFormat"
                       value={fmt.id}
-                      defaultChecked={(garage.invoiceFormat || "classic_boxed") === fmt.id}
+                      checked={selectedFormat === fmt.id}
                       onChange={() => setSelectedFormat(fmt.id)}
                       className="peer sr-only"
                     />
                     <div className="rounded-xl border-2 border-border/50 bg-card hover:border-border peer-checked:border-primary peer-checked:ring-2 peer-checked:ring-primary/20 transition-all overflow-hidden">
-                      {/* Invoice Preview */}
-                      <div className="p-3 pb-2">
+                      <div className="p-2 pb-1">
                         <PreviewForFormat format={fmt.id} />
                       </div>
-                      {/* Label */}
-                      <div className="px-3 pb-3 pt-1">
-                        <div className="font-semibold text-sm flex items-center gap-1.5">
+                      <div className="px-2 pb-2 pt-1">
+                        <div className="font-semibold text-[11px] flex items-center gap-1">
                           {fmt.label}
-                          {(garage.invoiceFormat || "classic_boxed") === fmt.id && (
-                            <Badge variant="outline" className="text-[10px] px-1.5 py-0 bg-primary/10 text-primary border-primary/20">Active</Badge>
+                          {selectedFormat === fmt.id && (
+                            <Badge variant="outline" className="text-[8px] px-1 py-0 bg-primary/10 text-primary border-primary/20">Active</Badge>
                           )}
                         </div>
-                        <div className="text-[11px] text-muted-foreground mt-0.5 leading-tight">{fmt.desc}</div>
+                        <div className="text-[10px] text-muted-foreground mt-0.5 leading-tight line-clamp-2">{fmt.desc}</div>
                       </div>
                     </div>
                   </label>
@@ -399,7 +452,7 @@ export function SettingsClient({ garage, upi, taxes }: { garage: GarageSettings;
                       type="radio"
                       name="invoiceTheme"
                       value={theme.id}
-                      defaultChecked={(garage.invoiceTheme || "default") === theme.id}
+                      checked={selectedTheme === theme.id}
                       onChange={() => setSelectedTheme(theme.id)}
                       className="peer sr-only"
                     />
@@ -423,52 +476,100 @@ export function SettingsClient({ garage, upi, taxes }: { garage: GarageSettings;
                 Preview Full PDF
               </Button>
             </div>
-          </form>
-        </CardContent>
-      </Card>
-
-      {/* UPI Settings */}
-      <Card className="bg-card/50">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-base"><QrCode className="w-4 h-4" />UPI Payment Settings</CardTitle>
-          <CardDescription>Configure UPI QR code for invoices.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form key={JSON.stringify(upi)} onSubmit={handleUpi} className="space-y-4">
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-2"><Label htmlFor="vpa">UPI VPA / ID *</Label><Input id="vpa" name="vpa" required defaultValue={upi.vpa} placeholder="yourname@upi" /></div>
-              <div className="space-y-2"><Label htmlFor="payeeName">Payee Name *</Label><Input id="payeeName" name="payeeName" required defaultValue={upi.payeeName} placeholder="Garage Name" /></div>
-            </div>
-            <div className="space-y-2"><Label htmlFor="merchantCode">Merchant Code (optional)</Label><Input id="merchantCode" name="merchantCode" defaultValue={upi.merchantCode || ""} /></div>
-            <Button type="submit" className="cursor-pointer" disabled={uLoading}>{uLoading ? "Saving..." : "Save UPI Settings"}</Button>
-          </form>
-        </CardContent>
-      </Card>
-
-      {/* Tax Rates */}
-      <Card className="bg-card/50">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-base"><Percent className="w-4 h-4" />Tax Rates</CardTitle>
-          <CardDescription>Select the default tax rate for new invoices.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-2">
-            {taxes.map((tax) => (
-              <div key={tax.id} className="flex items-center justify-between p-3 rounded-lg border border-border/30 hover:bg-accent/20 transition-colors">
-                <div className="flex items-center gap-3">
-                  <span className="font-medium">{tax.name}</span>
-                  <Badge variant="outline">{tax.rate}%</Badge>
+            {selectedFormat === "custom_layout" && (
+              <div className="mt-4 p-4 border border-primary/20 rounded-lg bg-primary/5 flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div>
+                  <h4 className="font-semibold text-foreground">Custom Layout Editor</h4>
+                  <p className="text-sm text-muted-foreground">Drag and drop elements to build your perfect invoice layout.</p>
                 </div>
-                {tax.isDefault ? (
-                  <Badge className="bg-primary/10 text-primary border-primary/20"><Check className="w-3 h-3 mr-1" />Default</Badge>
-                ) : (
-                  <Button variant="ghost" size="sm" className="text-xs cursor-pointer" onClick={() => handleDefaultTax(tax.id)}>Set Default</Button>
-                )}
+                <Button type="button" onClick={() => setIsLayoutEditorOpen(true)} className="gap-2">
+                  <Settings2 className="w-4 h-4"/> Open Visual Editor
+                </Button>
               </div>
-            ))}
+            )}
+          </form>
+        </CardContent>
+      </Card>
+
+      {/* ═══ SITE APPEARANCE — full width ═══ */}
+      <Card className="bg-card/50">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-base"><Palette className="w-4 h-4" />Site Appearance</CardTitle>
+          <CardDescription>Customize the look and feel of this application. Changes apply instantly.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          {/* Dark / Light toggle */}
+          <div className="flex items-center justify-between p-3 rounded-lg border border-border/30 bg-muted/20">
+            <div className="flex items-center gap-3">
+              {appTheme === "dark" ? <Moon className="w-4 h-4 text-primary" /> : <Sun className="w-4 h-4 text-primary" />}
+              <div>
+                <p className="text-sm font-medium">Theme Mode</p>
+                <p className="text-xs text-muted-foreground">Currently using <span className="font-semibold text-foreground">{appTheme === "dark" ? "Dark" : "Light"}</span> mode</p>
+              </div>
+            </div>
+            <Button variant="outline" size="sm" className="gap-1.5 cursor-pointer" onClick={toggleAppTheme}>
+              {appTheme === "dark" ? <Sun className="w-3.5 h-3.5" /> : <Moon className="w-3.5 h-3.5" />}
+              Switch to {appTheme === "dark" ? "Light" : "Dark"}
+            </Button>
+          </div>
+
+          {/* Accent Color Scheme — collapsible dropdown */}
+          <div>
+            <Label className="text-sm font-semibold">Accent Color Scheme</Label>
+            <p className="text-xs text-muted-foreground mt-0.5 mb-2">Choose a primary accent color for buttons, links, and highlights</p>
+
+            {/* Dropdown trigger — shows current color */}
+            <button
+              type="button"
+              onClick={() => setShowAccentPicker(!showAccentPicker)}
+              className="flex items-center gap-2.5 w-full p-2.5 rounded-lg border border-border/50 hover:border-border bg-muted/20 hover:bg-muted/30 transition-all cursor-pointer"
+            >
+              <div
+                className="w-6 h-6 rounded-full border-2 border-foreground/20 shrink-0"
+                style={{ backgroundColor: activeScheme?.hex || "#10b981" }}
+              />
+              <span className="text-sm font-medium flex-1 text-left">{activeScheme?.name || "Emerald"}</span>
+              <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform duration-200 ${showAccentPicker ? "rotate-180" : ""}`} />
+            </button>
+
+            {/* Collapsible grid */}
+            {showAccentPicker && (
+              <div className="mt-2 p-3 rounded-lg border border-border/40 bg-muted/10 animate-in-page">
+              <div className="flex flex-wrap gap-1.5">
+                  {COLOR_SCHEMES.map((scheme) => {
+                    const isActive = accentColor === scheme.primary;
+                    return (
+                      <button
+                        key={scheme.name}
+                        type="button"
+                        onClick={() => { setAccentColor(scheme.primary); }}
+                        title={scheme.name}
+                        className={`group relative w-6 h-6 rounded-full border-2 transition-all duration-150 cursor-pointer hover:scale-125 hover:z-10 ${
+                          isActive
+                            ? "border-foreground scale-125 z-10 ring-2 ring-primary/30"
+                            : "border-transparent hover:border-foreground/40"
+                        }`}
+                        style={{ backgroundColor: scheme.hex }}
+                      >
+                        {isActive && (
+                          <Check className="w-3 h-3 text-white absolute inset-0 m-auto drop-shadow-[0_1px_2px_rgba(0,0,0,0.6)]" />
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>
+
+      {isLayoutEditorOpen && (
+        <LayoutEditor 
+          initialConfig={(garage as any).customLayoutConfig || {}}
+          onClose={() => setIsLayoutEditorOpen(false)}
+        />
+      )}
     </div>
   );
 }

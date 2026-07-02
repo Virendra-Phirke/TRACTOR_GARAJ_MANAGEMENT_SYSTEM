@@ -9,6 +9,7 @@ import {
   varchar,
   index,
   uniqueIndex,
+  jsonb,
 } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 
@@ -23,6 +24,7 @@ export const garageSettings = pgTable("garage_settings", {
   tagline: text("tagline").default(""),
   invoiceTheme: varchar("invoice_theme", { length: 50 }).default("default"),
   invoiceFormat: varchar("invoice_format", { length: 50 }).default("standard"),
+  customLayoutConfig: jsonb("custom_layout_config").default({}),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });

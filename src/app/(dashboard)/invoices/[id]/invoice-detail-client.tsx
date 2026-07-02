@@ -396,7 +396,7 @@ export function InvoiceDetailClient({
   };
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6 block-stagger">
+    <div className="max-w-7xl mx-auto space-y-6 block-stagger">
       {/* ── Header ──────────────────────────────────────────────────── */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-4">
@@ -517,7 +517,10 @@ export function InvoiceDetailClient({
         </div>
       </div>
 
-      {/* ── Customer & Vehicle ──────────────────────────────────────── */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        {/* LEFT COLUMN */}
+        <div className="lg:col-span-7 xl:col-span-8 space-y-6">
+          {/* ── Customer & Vehicle ──────────────────────────────────────── */}
       <div className="block-section">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
           <div>
@@ -586,11 +589,12 @@ export function InvoiceDetailClient({
           <p className="text-sm text-muted-foreground">{invoice.notes}</p>
         </div>
       )}
+        </div>
 
-      {/* ── Bill Summary + QR ───────────────────────────────────────── */}
-      <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
-        {/* Summary */}
-        <div className={`block-section-elevated ${qrDataUrl && status !== "paid" ? "lg:col-span-3" : "lg:col-span-5"}`}>
+        {/* RIGHT COLUMN */}
+        <div className="lg:col-span-5 xl:col-span-4 space-y-6 lg:sticky lg:top-24">
+          {/* ── Bill Summary ───────────────────────────────────────── */}
+          <div className="block-section-elevated">
           <div className="block-label">Bill Summary</div>
 
           <div className="space-y-0.5">
@@ -668,7 +672,7 @@ export function InvoiceDetailClient({
 
         {/* QR Code */}
         {qrDataUrl && status !== "paid" && (
-          <div className="block-section lg:col-span-2 flex flex-col items-center justify-center gap-4">
+          <div className="block-section flex flex-col items-center justify-center gap-4">
             <div className="flex items-center gap-2 text-xs text-muted-foreground">
               <QrCode className="w-3.5 h-3.5" />
               <span>Scan to Pay</span>
@@ -688,7 +692,9 @@ export function InvoiceDetailClient({
             </div>
           </div>
         )}
+        </div>
       </div>
+
       {/* ── PDF Viewer Overlay ──────────────────────────────────────── */}
       {isPdfViewerOpen && pdfViewerUrl && (
         <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ background: "oklch(0 0 0 / 80%)" }}>

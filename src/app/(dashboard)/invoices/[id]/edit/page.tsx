@@ -25,14 +25,12 @@ export default async function EditInvoicePage({
     <>
       <Header title={`Edit Invoice #${invoice.invoiceNumber}`} />
       <div className="p-4 sm:p-6 lg:p-8 animate-in-page">
-        <div className="max-w-5xl mx-auto">
-          <EditInvoiceWizard 
-            customers={customers} 
-            spareParts={spareParts} 
-            taxRates={taxRates} 
-            invoice={invoice}
-          />
-        </div>
+        <EditInvoiceWizard 
+          customers={customers} 
+          spareParts={spareParts} 
+          taxRates={taxRates} 
+          invoice={invoice}
+        />
       </div>
     </>
   );

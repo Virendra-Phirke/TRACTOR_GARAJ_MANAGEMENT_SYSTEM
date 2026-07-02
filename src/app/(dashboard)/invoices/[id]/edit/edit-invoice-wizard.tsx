@@ -82,8 +82,7 @@ export function EditInvoiceWizard({
   const [selectedPartId, setSelectedPartId] = useState("");
   const [partPrice, setPartPrice] = useState("");
 
-  // ── Items tab (Labor vs Parts) ──────────────────────────────────────
-  const [itemsTab, setItemsTab] = useState<"labor" | "parts">("labor");
+  // ── Items tab (Removed) ──────────────────────────────────────
 
   // ── Tax & Discount ──────────────────────────────────────────────────
   const [selectedTaxRate, setSelectedTaxRate] = useState(invoice.taxRate?.toString() || "0");
@@ -230,7 +229,7 @@ export function EditInvoiceWizard({
   return (
     <div className="max-w-7xl mx-auto scroll-smooth-section">
       {/* ── Progress Rail (sticky) ─────────────────────────────────── */}
-      <div className="sticky top-16 z-20 -mx-6 px-6 py-3 mb-6" style={{ background: "oklch(0.12 0.008 260 / 92%)", backdropFilter: "blur(12px)" }}>
+      <div className="sticky top-16 z-20 -mx-6 px-6 py-3 mb-6 bg-background/90 backdrop-blur-md border-b border-border/50">
         <div className="flex items-center gap-1 overflow-x-auto">
           {sections.map((s, i) => (
             <button
@@ -404,35 +403,18 @@ export function EditInvoiceWizard({
         </div>
 
         {/* ═══════════════════════════════════════════════════════════
-            SECTION 3 & 4: INVOICE ITEMS (Labor + Parts tabs)
+            SECTION 3: LABOR
         ═══════════════════════════════════════════════════════════ */}
-        <div className="block-section">
+        <div ref={(el) => { sectionRefs.current.labor = el; }} id="labor" className="block-section">
           <div className="flex items-center justify-between mb-4">
-            <div className="block-label !mb-0">Invoice Items</div>
-            {/* Inline tabs */}
-            <div className="flex gap-1">
-              <button
-                ref={(el) => { sectionRefs.current.labor = el; }}
-                onClick={() => setItemsTab("labor")}
-                className={`inline-tab ${itemsTab === "labor" ? "inline-tab-active" : ""}`}
-              >
-                <Wrench className="w-3 h-3 inline mr-1" />Labor
-                {laborItems.length > 0 && <span className="ml-1 text-emerald-400">({laborItems.length})</span>}
-              </button>
-              <button
-                ref={(el) => { sectionRefs.current.parts = el; }}
-                onClick={() => setItemsTab("parts")}
-                className={`inline-tab ${itemsTab === "parts" ? "inline-tab-active" : ""}`}
-              >
-                <Package className="w-3 h-3 inline mr-1" />Parts
-                {partItems.length > 0 && <span className="ml-1 text-emerald-400">({partItems.length})</span>}
-              </button>
+            <div className="block-label !mb-0">Labor</div>
+            <div className="flex items-center gap-2">
+              <Wrench className="w-4 h-4 text-muted-foreground" />
+              {laborItems.length > 0 && <span className="text-emerald-400 text-xs font-medium">{laborItems.length} items</span>}
             </div>
           </div>
 
-          {/* ── Labor Tab ──────────────────────────────────────────── */}
-          {itemsTab === "labor" && (
-            <div className="space-y-3">
+          <div className="space-y-3">
               <div className="grid grid-cols-12 gap-2 items-end">
                 <div className="col-span-7 sm:col-span-8 space-y-1">
                   <Label className="text-xs text-muted-foreground">Service</Label>
@@ -481,11 +463,21 @@ export function EditInvoiceWizard({
                 </div>
               )}
             </div>
-          )}
+        </div>
 
-          {/* ── Parts Tab ──────────────────────────────────────────── */}
-          {itemsTab === "parts" && (
-            <div className="space-y-3">
+        {/* ═══════════════════════════════════════════════════════════
+            SECTION 4: PARTS
+        ═══════════════════════════════════════════════════════════ */}
+        <div ref={(el) => { sectionRefs.current.parts = el; }} id="parts" className="block-section">
+          <div className="flex items-center justify-between mb-4">
+            <div className="block-label !mb-0">Parts</div>
+            <div className="flex items-center gap-2">
+              <Package className="w-4 h-4 text-muted-foreground" />
+              {partItems.length > 0 && <span className="text-emerald-400 text-xs font-medium">{partItems.length} items</span>}
+            </div>
+          </div>
+
+          <div className="space-y-3">
               <div className="grid grid-cols-12 gap-2 items-end">
                 <div className="col-span-7 sm:col-span-8 space-y-1">
                   <Label className="text-xs text-muted-foreground">Part</Label>
@@ -553,7 +545,6 @@ export function EditInvoiceWizard({
                 </div>
               )}
             </div>
-          )}
         </div>
 
         </div>

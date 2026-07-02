@@ -222,8 +222,8 @@ async function generateOriginalStandard(data: InvoicePdfData, colors: any): Prom
     
     const cIdx = margin + 10;
     const cDesc = margin + 40;
-    const cQty = margin + 300;
-    const cRate = margin + 380;
+    const cQty = margin + 280;
+    const cRate = margin + 370;
     const cAmt = width - margin - 10;
     
     const thY = y;
@@ -545,8 +545,8 @@ async function generateGridStructured(data: InvoicePdfData, colors: any): Promis
     
     // Dynamic columns for Parts vs Labor
     const dividers = type === "parts" 
-      ? [width - margin - 200, width - margin - 160, width - margin - 80, width - margin] // Desc | Qty (40) | Rate (80) | Total (80)
-      : [width - margin - 80, width - margin]; // Desc | Total
+      ? [width - margin - 220, width - margin - 180, width - margin - 90, width - margin] // Desc | Qty (40) | Rate (90) | Total (90)
+      : [width - margin - 90, width - margin]; // Desc | Total
       
     const cTotal = type === "parts" ? dividers[2] : dividers[0];
     const cEnd = type === "parts" ? dividers[3] : dividers[1];
@@ -661,8 +661,8 @@ async function generateModernAccent(data: InvoicePdfData, colors: any): Promise<
     
     page.drawRectangle({ x: margin, y: y - 5, width: width - (margin * 2), height: 20, color: rgb(0.95, 0.95, 0.95) });
     const cDesc = margin + 10;
-    const cQty = margin + 300;
-    const cRate = margin + 380;
+    const cQty = margin + 280;
+    const cRate = margin + 370;
     const cAmt = width - margin - 10;
     
     page.drawText(type === "labor" ? "DESCRIPTION" : "PART NAME", { x: cDesc, y, size: 9, font: fontBold, color: textColor });

@@ -1,0 +1,347 @@
+﻿
+{"step_index":449,"source":"MODEL","type":"PLANNER_RESPONSE","status":"DONE","created_at":"2026-07-02T13:05:22Z","think
+ing":"**Prioritizing Tool Specificity**\n\nI'm focusing intently on tool specificity. I've been refining my approach 
+to avoid unnecessary use of bash for file operations. I'm prioritizing the use of tools like `grep_search` and 
+avoiding the use of `cat` within bash commands for file creation or appending, whenever possible. I am avoiding `grep` 
+usage inside of bash whenever possible.\n\n\n","tool_calls":[{"name":"write_to_file","args":{"CodeContent":"import { 
+PDFDocument, StandardFonts, rgb, PDFFont, PDFPage, degrees } from \"pdf-lib\";\n\nexport interface InvoicePdfData {\n  
+garageName: string;\n  ownerName?: string;\n  garageAddress: string;\n  garagePhone: string;\n  garageEmail: string;\n 
+ gstNumber: string;\n  garageTagline: string;\n  invoiceNumber: string;\n  invoiceDate: string;\n  paymentDate?: 
+string;\n  customerName: string;\n  customerPhone: string;\n  customerAddress: string;\n  vehicleReg: string;\n  
+vehicleBrand: string;\n  vehicleModel: string;\n  laborItems: { description: string; hours: number; rate: number; 
+total: number }[];\n  partItems: { partName: string; quantity: number; unitPrice: number; total: number }[];\n  
+laborTotal: number;\n  partsTotal: number;\n  subtotal: number;\n  taxRate: number;\n  taxAmount: number;\n  
+discountAmount: number;\n  grandTotal: number;\n  amountPaid: number;\n  cashAmount?: number;\n  upiAmount?: number;\n 
+ paymentMethod?: string;\n  paymentStatus: string;\n  upiQrDataUrl?: string;\n  upiVpa?: string;\n  theme?: string; // 
+\"default\", \"modern\", \"minimal\", \"bold\", \"sunset\", \"purple\", \"teal\", \"slate\"\n  format?: string; // 
+\"classic_boxed\", \"centered_pro\", \"grid_structured\", \"modern_accent\"\n}\n\nfunction formatCurrency(amount: 
+number): string {\n  return `Rs. ${amount.toLocaleString(\"en-IN\", { minimumFractionDigits: 2, maximumFractionDigits: 
+2 })}`;\n}\n\nexport async function generateInvoicePdf(\n  data: InvoicePdfData\n): Promise<Uint8Array> {\n  const 
+formatStr = data.format || \"classic_boxed\";\n  \n  if (formatStr === \"centered_pro\") {\n    return 
+generateCenteredProfessional(data);\n  } else if (formatStr === \"grid_structured\") {\n    return 
+generateGridStructured(data);\n  } else if (formatStr === \"modern_accent\") {\n    return 
+generateModernAccent(data);\n  } else {\n    return generateClassicBoxed(data);\n  }\n}\n\n// â”€â”€â”€ Theme Colors 
+Helper â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â
+”€â”€â”€â”€â”€â”€â”€â”€â”€\nfunction getThemeColors(themeStr: string) {\n  let primaryColor = rgb(0.1, 0.5, 0.3); // 
+Deep Green (default)\n  let secondaryColor = rgb(0.98, 0.98, 0.98);\n  let textColor = rgb(0.2, 0.2, 0.2);\n  let 
+mutedColor = rgb(0.4, 0.4, 0.4);\n  let lightGray = rgb(0.95, 0.95, 0.95);\n  let borderColor = rgb(0.85, 0.85, 
+0.85);\n  let headerTextColor = primaryColor;\n  let tableHeaderBg = primaryColor;\n  let tableHeaderTextColor = 
+rgb(1,1,1);\n  let showBorders = true;\n  let borderWidth = 1;\n\n  if (themeStr === \"modern\") {\n    primaryColor = 
+rgb(0.15, 0.38, 0.82); // Blue\n    headerTextColor = rgb(0.1, 0.1, 0.1);\n    tableHeaderBg = rgb(0.92, 0.95, 
+0.99);\n    tableHeaderTextColor = rgb(0.1, 0.1, 0.2);\n    borderColor = rgb(0.9, 0.9, 0.9);\n  } else if (themeStr 
+=== \"minimal\") {\n    primaryColor = rgb(0.1, 0.1, 0.1); // Black\n    headerTextColor = rgb(0.1, 0.1, 0.1);\n    
+tableHeaderBg = rgb(1, 1, 1);\n    tableHeaderTextColor = rgb(0.1, 0.1, 0.1);\n    secondaryColor = rgb(1, 1, 1);\n    
+lightGray = rgb(1, 1, 1);\n    showBorders = false;\n  } else if (themeStr === \"bold\") {\n    primaryColor = 
+rgb(0.8, 0.2, 0.2); // Red\n    headerTextColor = rgb(0.8, 0.2, 0.2);\n    tableHeaderBg = rgb(0.1, 0.1, 0.1);\n    
+tableHeaderTextColor = rgb(1, 1, 1);\n    borderColor = rgb(0.1, 0.1, 0.1);\n    secondaryColor = rgb(0.96, 0.96, 
+0.96);\n    borderWidth = 2;\n  } else if (themeStr === \"sunset\") {\n    primaryColor = rgb(0.85, 0.45, 0.15); // 
+Orange\n    headerTextColor = rgb(0.8, 0.4, 0.1);\n    tableHeaderBg = rgb(1, 0.95, 0.9);\n    tableHeaderTextColor = 
+rgb(0.3, 0.15, 0);\n    borderColor = rgb(0.95, 0.8, 0.7);\n  } else if (themeStr === \"purple\") {\n    primaryColor 
+= rgb(0.5, 0.25, 0.7); // Purple\n    headerTextColor = rgb(0.4, 0.15, 0.6);\n    tableHeaderBg = rgb(0.96, 0.92, 
+1);\n    tableHeaderTextColor = rgb(0.2, 0.05, 0.3);\n    borderColor = rgb(0.85, 0.75, 0.95);\n  } else if (themeStr 
+=== \"teal\") {\n    primaryColor = rgb(0.1, 0.6, 0.6); // Teal\n    headerTextColor = rgb(0.05, 0.5, 0.5);\n    
+tableHeaderBg = rgb(0.9, 0.98, 0.98);\n    tableHeaderTextColor = rgb(0, 0.25, 0.25);\n    borderColor = rgb(0.7, 0.9, 
+0.9);\n  } else if (themeStr === \"slate\") {\n    primaryColor = rgb(0.3, 0.35, 0.4); // Slate\n    headerTextColor = 
+rgb(0.2, 0.25, 0.3);\n    tableHeaderBg = rgb(0.94, 0.95, 0.96);\n    tableHeaderTextColor = rgb(0.1, 0.15, 0.2);\n    
+borderColor = rgb(0.8, 0.85, 0.9);\n  }\n\n  return { primaryColor, secondaryColor, textColor, mutedColor, lightGray, 
+borderColor, headerTextColor, tableHeaderBg, tableHeaderTextColor, showBorders, borderWidth };\n}\n\n// â”€â”€â”€ 
+Shared Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
+€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€\n\nconst drawRightText = (page: PDFPage, text: string, xPos: number, 
+yPos: number, size: number, font: PDFFont, color: any) => {\n  const textWidth = font.widthOfTextAtSize(text, size);\n 
+ page.drawText(text, { x: xPos - textWidth, y: yPos, size, font, color });\n};\n\nconst drawCenterText = (page: 
+PDFPage, text: string, yPos: number, size: number, font: PDFFont, color: any, width: number) => {\n  const textWidth = 
+font.widthOfTextAtSize(text, size);\n  page.drawText(text, { x: (width - textWidth) / 2, y: yPos, size, font, color 
+});\n};\n\nasync function drawPaymentInfoAndFooter(pdfDoc: PDFDocument, page: PDFPage, data: InvoicePdfData, margin: 
+number, width: number, startY: number, fontRegular: PDFFont, fontBold: PDFFont, colors: any, withWatermark = false) 
+{\n  let leftY = startY;\n  \n  if (withWatermark && data.paymentStatus === \"paid\") {\n    // Draw rotated stamp\n   
+ page.drawText(\"PAID IN FULL\", { \n      x: margin + 30, y: leftY - 40, size: 40, font: fontBold, \n      color: 
+rgb(0.2, 0.7, 0.3), opacity: 0.2, rotate: degrees(25) \n    });\n  }\n\n  if (data.paymentStatus === \"paid\") {\n    
+page.drawText(\"PAID IN FULL\", { x: margin, y: leftY - 15, size: 16, font: fontBold, color: rgb(0.2, 0.7, 0.3) });\n  
+  leftY -= 35;\n    if ((data.cashAmount && data.cashAmount > 0) || (data.upiAmount && data.upiAmount > 0)) {\n      
+if (data.cashAmount && data.cashAmount > 0) { page.drawText(`Via Cash: ${formatCurrency(data.cashAmount)}`, { x: 
+margin, y: leftY, size: 10, font: fontRegular, color: colors.textColor }); leftY -= 14; }\n      if (data.upiAmount && 
+data.upiAmount > 0) { page.drawText(`Via UPI: ${formatCurrency(data.upiAmount)}`, { x: margin, y: leftY, size: 10, 
+font: fontRegular, color: colors.textColor }); leftY -= 14; }\n    }\n  } else if (data.paymentStatus === \"partial\" 
+&& data.amountPaid > 0) {\n    const balanceDue = data.grandTotal - data.amountPaid;\n    page.drawText(\"PARTIALLY 
+PAID\", { x: margin, y: leftY - 15, size: 14, font: fontBold, color: rgb(0.9, 0.55, 0.1) });\n    leftY -= 35;\n    
+page.drawText(`Paid: ${formatCurrency(data.amountPaid)}`, { x: margin, y: leftY, size: 10, font: fontRegular, color: 
+rgb(0.15, 0.55, 0.3) });\n    leftY -= 15;\n    page.drawText(`Balance Due: ${formatCurrency(balanceDue)}`, { x: 
+margin, y: leftY, size: 10, font: fontBold, color: rgb(0.7, 0.15, 0.15) });\n    leftY -= 20;\n  } else if 
+(data.paymentStatus === \"unpaid\") {\n    page.drawText(\"UNPAID\", { x: margin, y: leftY - 15, size: 16, font: 
+fontBold, color: rgb(0.8, 0.2, 0.2) });\n    leftY -= 30;\n  }\n\n  // QR Code\n  if (data.upiQrDataUrl && data.upiVpa 
+&& data.paymentStatus !== \"paid\") {\n    const qrSize = 60;\n    try {\n      const base64Data = 
+data.upiQrDataUrl.split(\",\")[1];\n      if (base64Data) {\n        const qrImageBytes = 
+Uint8Array.from(atob(base64Data), (c) => c.charCodeAt(0));\n        const qrImage = await 
+pdfDoc.embedPng(qrImageBytes);\n        page.drawImage(qrImage, { x: margin, y: leftY - qrSize, width: qrSize, height: 
+qrSize });\n        page.drawText(\"Scan to Pay\", { x: margin + qrSize + 10, y: leftY - 15, size: 9, font: fontBold, 
+color: colors.textColor });\n        page.drawText(`UPI ID: ${data.upiVpa}`, { x: margin + qrSize + 10, y: leftY - 28, 
+size: 8, font: fontRegular, color: colors.mutedColor });\n      }\n    } catch {}\n  }\n\n  // Footer\n  
+page.drawText(\"Authorized Signature\", { x: width - margin - 110, y: 50, size: 10, font: fontRegular, color: 
+colors.textColor });\n  page.drawLine({ start: { x: width - margin - 130, y: 65 }, end: { x: width - margin, y: 65 }, 
+thickness: 1, color: colors.textColor });\n  page.drawText(\"Thank you for your business!\", { x: margin, y: 30, size: 
+10, font: fontBold, color: colors.primaryColor });\n}\n\n\n// â”€â”€â”€ 1. Classic Boxed Format (Image 1) 
+â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€\nasync function 
+generateClassicBoxed(data: InvoicePdfData) {\n  const pdfDoc = await PDFDocument.create();\n  const page = 
+pdfDoc.addPage([595, 842]);\n  const fontRegular = await pdfDoc.embedFont(StandardFonts.Helvetica);\n  const fontBold 
+= await pdfDoc.embedFont(StandardFonts.HelveticaBold);\n  const { width, height } = page.getSize();\n  const margin = 
+40;\n  let y = height - margin;\n  const colors = getThemeColors(data.theme || \"default\");\n\n  // Logo Placeholder 
+& Header\n  page.drawText(data.garageName.toUpperCase(), { x: margin, y: y - 10, size: 20, font: fontBold, color: 
+colors.headerTextColor });\n  y -= 25;\n  if (data.ownerName) { page.drawText(`Proprietor: ${data.ownerName}`, { x: 
+margin, y, size: 10, font: fontBold, color: colors.textColor }); y -= 14; }\n  if (data.garageAddress) { 
+page.drawText(data.garageAddress, { x: margin, y, size: 9, font: fontRegular, color: colors.mutedColor }); y -= 14; 
+}\n  const contactParts = [data.garagePhone, data.garageEmail].filter(Boolean);\n  if (contactParts.length) { 
+page.drawText(contactParts.join(\" | \"), { x: margin, y, size: 9, font: fontRegular, color: colors.mutedColor }); y 
+-= 14; }\n  if (data.gstNumber) { page.drawText(`GSTIN: ${data.gstNumber}`, { x: margin, y, size: 9, font: fontBold, 
+color: colors.textColor }); }\n\n  let invY = height - margin - 10;\n  drawRightText(page, \"TAX INVOICE\", width - 
+margin, invY, 22, fontBold, colors.textColor);\n  invY -= 22;\n  drawRightText(page, `Invoice No: 
+${data.invoiceNumber}`, width - margin, invY, 10, fontRegular, colors.textColor);\n  invY -= 14;\n  
+drawRightText(page, `Created: ${data.invoiceDate}`, width - margin, invY, 10, fontRegular, colors.textColor);\n  if 
+(data.paymentDate && data.paymentStatus === \"paid\") {\n    invY -= 14;\n    drawRightText(page, `Paid On: 
+${data.paymentDate}`, width - margin, invY, 10, fontRegular, rgb(0.2, 0.6, 0.3));\n  }\n\n  y = Math.min(y - 20, invY 
+- 20);\n\n  // Boxed Info\n  const boxWidth = (width - (margin * 2) - 20) / 2;\n  page.drawRectangle({ x: margin, y: y 
+- 80, width: boxWidth, height: 80, borderColor: colors.primaryColor, borderWidth: 1 });\n  page.drawRectangle({ x: 
+margin + boxWidth + 20, y: y - 80, width: boxWidth, height: 80, borderColor: colors.primaryColor, borderWidth: 1 });\n 
+ \n  // Box titles with background clip\n  page.drawRectangle({ x: margin + 10, y: y - 10, width: 50, height: 20, 
+color: rgb(1,1,1) });\n  page.drawText(\"BILL TO\", { x: margin + 15, y: y - 5, size: 10, font: fontBold, color: 
+colors.textColor });\n  \n  page.drawRectangle({ x: margin + boxWidth + 30, y: y - 10, width: 100, height: 20, color: 
+rgb(1,1,1) });\n  page.drawText(\"VEHICLE DETAILS\", { x: margin + boxWidth + 35, y: y - 5, size: 10, font: fontBold, 
+color: colors.textColor });\n\n  let b1Y = y - 25;\n  page.drawText(data.customerName, { x: margin + 10, y: b1Y, size: 
+11, font: fontBold, color: colors.textColor }); b1Y -= 16;\n  if (data.customerAddress) { 
+page.drawText(data.customerAddress.substring(0, 45), { x: margin + 10, y: b1Y, size: 9, font: fontRegular, color: 
+colors.textColor }); b1Y -= 14; }\n  page.drawText(`Phone: ${data.customerPhone}`, { x: margin + 10, y: b1Y, size: 9, 
+font: fontRegular, color: colors.textColor });\n\n  let b2Y = y - 25;\n  page.drawText(`${data.vehicleBrand} 
+${data.vehicleModel}`.trim(), { x: margin + boxWidth + 30, y: b2Y, size: 11, font: fontBold, color: colors.textColor 
+}); b2Y -= 16;\n  page.drawText(`Reg No: ${data.vehicleReg}`, { x: margin + boxWidth + 30, y: b2Y, size: 9, font: 
+fontRegular, color: colors.textColor });\n  \n  y -= 110;\n\n  // Tables\n  const drawTable = (title: string, items: 
+any[], type: \"labor\" | \"parts\") => {\n    if (items.length === 0) return;\n    page.drawText(title, { x: margin, 
+y, size: 11, font: fontBold, color: colors.textColor });\n    y -= 15;\n    // Header row background\n    
+page.drawRectangle({ x: margin, y: y - 5, width: width - (margin * 2), height: 18, color: rgb(0.92, 0.92, 0.92) });\n  
+  const cDesc = margin + 5;\n    const cQty = margin + 300;\n    const cRate = margin + 380;\n    const cAmt = width - 
+margin - 5;\n    page.drawText(type === \"labor\" ? \"Description\" : \"Part Name\", { x: cDesc, y, size: 9, font: 
+fontBold, color: colors.textColor });\n    if (type === \"parts\") {\n      drawRightText(page, \"Qty\", cQty, y, 9, 
+fontBold, colors.textColor);\n      drawRightText(page, \"Rate\", cRate, y, 9, fontBold, colors.textColor);\n    }\n   
+ drawRightText(page, \"Total\", cAmt, y, 9, fontBold, colors.textColor);\n    y -= 18;\n\n    items.forEach((item, 
+index) => {\n      if (index % 2 !== 0) {\n        page.drawRectangle({ x: margin, y: y - 5, width: width - (margin * 
+2), height: 18, color: rgb(0.96, 0.96, 0.96) });\n      }\n      const desc = type === \"labor\" ? item.description : 
+item.partName;\n      page.drawText(desc.substring(0, 50), { x: cDesc, y, size: 9, font: fontRegular, color: 
+colors.textColor });\n      if (type === \"parts\") {\n        drawRightText(page, `${item.quantity}`, cQty, y, 9, 
+fontRegular, colors.textColor);\n        drawRightText(page, formatCurrency(item.unitPrice), cRate, y, 9, fontRegular, 
+colors.textColor);\n      }\n      drawRightText(page, formatCurrency(item.total), cAmt, y, 9, fontBold, 
+colors.textColor);\n      y -= 18;\n    });\n    y -= 15;\n  };\n\n  drawTable(\"LABOR CHARGES\", data.laborItems, 
+\"labor\");\n  drawTable(\"SPARE PARTS\", data.partItems, \"parts\");\n\n  // Totals Box\n  const totalsBoxWidth = 
+220;\n  const totalsX = width - margin - totalsBoxWidth;\n  page.drawRectangle({ x: totalsX, y: y - 105, width: 
+totalsBoxWidth, height: 115, borderColor: colors.primaryColor, borderWidth: 1 });\n  \n  let totY = y - 15;\n  const 
+drawSummaryRow = (label: string, value: string, bold = false) => {\n    const f = bold ? fontBold : fontRegular;\n    
+page.drawText(label, { x: totalsX + 10, y: totY, size: 10, font: f, color: colors.textColor });\n    
+drawRightText(page, value, totalsX + totalsBoxWidth - 10, totY, 10, f, colors.textColor);\n    totY -= 18;\n  };\n  \n 
+ drawSummaryRow(\"Labor Total\", formatCurrency(data.laborTotal));\n  drawSummaryRow(\"Parts Total\", 
+formatCurrency(data.partsTotal));\n  drawSummaryRow(\"Subtotal\", formatCurrency(data.subtotal), true);\n  if 
+(data.taxRate > 0) drawSummaryRow(`Tax (${data.taxRate}%)`, formatCurrency(data.taxAmount));\n  if 
+(data.discountAmount > 0) drawSummaryRow(\"Discount\", `-${formatCurrency(data.discountAmount)}`);\n  \n  
+page.drawRectangle({ x: totalsX, y: totY - 5, width: totalsBoxWidth, height: 25, color: rgb(1, 0.94, 0.94) });\n  
+page.drawLine({ start: { x: totalsX, y: totY - 5 + 25 }, end: { x: totalsX + totalsBoxWidth, y: totY - 5 + 25 }, 
+thickness: 1, color: colors.primaryColor });\n  page.drawText(\"GRAND TOTAL\", { x: totalsX + 10, y: totY + 2, size: 
+11, font: fontBold, color: colors.primaryColor });\n  drawRightText(page, formatCurrency(data.grandTotal), totalsX + 
+totalsBoxWidth - 10, totY + 2, 11, fontBold, colors.primaryColor);\n\n  await drawPaymentInfoAndFooter(pdfDoc, page, 
+data, margin, width, y - 10, fontRegular, fontBold, colors);\n  return pdfDoc.save();\n}\n\n// â”€â”€â”€ 2. Centered 
+Professional Format (Image 2) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€\nasync function 
+generateCenteredProfessional(data: InvoicePdfData) {\n  const pdfDoc = await PDFDocument.create();\n  const page = 
+pdfDoc.addPage([595, 842]);\n  const fontRegular = await pdfDoc.embedFont(StandardFonts.Helvetica);\n  const fontBold 
+= await pdfDoc.embedFont(StandardFonts.HelveticaBold);\n  const { width, height } = page.getSize();\n  const margin = 
+40;\n  let y = height - margin;\n  const colors = getThemeColors(data.theme || \"bold\");\n\n  drawCenterText(page, 
+data.garageName.toUpperCase(), y, 20, fontBold, colors.primaryColor, width); y -= 16;\n  if (data.ownerName) { 
+drawCenterText(page, `Proprietor: ${data.ownerName}`, y, 9, fontRegular, colors.textColor, width); y -= 12; }\n  if 
+(data.garageTagline) { drawCenterText(page, data.garageTagline, y, 9, fontRegular, colors.textColor, width); y -= 12; 
+}\n  if (data.garageAddress) { drawCenterText(page, data.garageAddress, y, 9, fontRegular, colors.textColor, width); y 
+-= 12; }\n  const contactParts = [data.garagePhone, data.garageEmail].filter(Boolean);\n  if (contactParts.length) { 
+drawCenterText(page, contactParts.join(\" | \"), y, 9, fontRegular, colors.textColor, width); y -= 12; }\n  if 
+(data.gstNumber) { drawCenterText(page, `GSTIN: ${data.gstNumber}`, y, 9, fontBold, colors.textColor, width); }\n  \n  
+y -= 25;\n  // Thick horizontal line\n  page.drawRectangle({ x: 0, y: y, width: width, height: 4, color: 
+colors.primaryColor });\n  y -= 15;\n  \n  // Invoice bar\n  page.drawRectangle({ x: margin, y: y - 10, width: width - 
+(margin * 2), height: 25, color: rgb(0.95, 0.95, 0.95) });\n  page.drawText(`Invoice No: ${data.invoiceNumber}`, { x: 
+margin + 10, y: y - 2, size: 9, font: fontBold, color: colors.textColor });\n  drawCenterText(page, `Created: 
+${data.invoiceDate}`, y - 2, 9, fontBold, colors.textColor, width);\n  drawRightText(page, `Paid On: 
+${data.paymentDate || 'N/A'}`, width - margin - 10, y - 2, 9, fontBold, colors.textColor);\n  y -= 30;\n\n  // Side by 
+side info with simple borders\n  page.drawRectangle({ x: margin, y: y - 70, width: width - (margin * 2), height: 70, 
+borderColor: rgb(0.8, 0.8, 0.8), borderWidth: 1 });\n  page.drawLine({ start: { x: width/2, y: y }, end: { x: width/2, 
+y: y - 70 }, thickness: 1, color: rgb(0.8, 0.8, 0.8) });\n  \n  page.drawText(\"BILL TO\", { x: margin + 10, y: y - 
+15, size: 9, font: fontBold, color: colors.textColor });\n  page.drawText(\"VEHICLE DETAILS\", { x: width/2 + 10, y: y 
+- 15, size: 9, font: fontBold, color: colors.textColor });\n  \n  page.drawText(data.customerName, { x: margin + 10, 
+y: y - 35, size: 10, font: fontRegular, color: colors.textColor });\n  page.drawText(`Phone: ${data.customerPhone}`, { 
+x: margin + 10, y: y - 48, size: 10, font: fontRegular, color: colors.textColor });\n  if (data.customerAddress) { 
+page.drawText(data.customerAddress.substring(0, 45), { x: margin + 10, y: y - 61, size: 10, font: fontRegular, color: 
+colors.textColor }); }\n\n  page.drawText(`${data.vehicleBrand} ${data.vehicleModel}`.trim(), { x: width/2 + 10, y: y 
+- 35, size: 10, font: fontRegular, color: colors.textColor });\n  page.drawText(`Reg No: ${data.vehicleReg}`, { x: 
+width/2 + 10, y: y - 48, size: 10, font: fontRegular, color: colors.textColor });\n  \n  y -= 90;\n\n  // Tables with 
+dark headers\n  const drawTable = (title: string, items: any[], type: \"labor\" | \"parts\") => {\n    if 
+(items.length === 0) return;\n    page.drawRectangle({ x: margin, y: y - 15, width: width - (margin * 2), height: 20, 
+color: rgb(0.1, 0.1, 0.15) });\n    const cIdx = margin + 10;\n    const cDesc = margin + 30;\n    const cQty = margin 
++ 300;\n    const cRate = margin + 380;\n    const cAmt = width - margin - 10;\n    page.drawText(\"#\", { x: cIdx, y: 
+y - 10, size: 9, font: fontBold, color: rgb(1,1,1) });\n    page.drawText(\"Description\", { x: cDesc, y: y - 10, 
+size: 9, font: fontBold, color: rgb(1,1,1) });\n    drawRightText(page, \"Qty\", cQty, y - 10, 9, fontBold, 
+rgb(1,1,1));\n    drawRightText(page, \"Rate\", cRate, y - 10, 9, fontBold, rgb(1,1,1));\n    drawRightText(page, 
+\"Total\", cAmt, y - 10, 9, fontBold, rgb(1,1,1));\n    y -= 15;\n\n    page.drawText(title, { x: margin + 10, y: y - 
+15, size: 10, font: fontBold, color: colors.primaryColor });\n    y -= 25;\n\n    items.forEach((item, index) => {\n   
+   page.drawLine({ start: { x: margin, y: y + 10 }, end: { x: width - margin, y: y + 10 }, thickness: 1, color: 
+rgb(0.9, 0.9, 0.9) });\n      page.drawText(`${index + 1}`, { x: cIdx, y, size: 9, font: fontRegular, color: 
+colors.textColor });\n      const desc = type === \"labor\" ? item.description : item.partName;\n      
+page.drawText(desc.substring(0, 50), { x: cDesc, y, size: 9, font: fontRegular, color: colors.textColor });\n      
+drawRightText(page, `${type === \"labor\" ? 1 : item.quantity}`, cQty, y, 9, fontRegular, colors.textColor);\n      
+drawRightText(page, formatCurrency(type === \"labor\" ? item.total : item.unitPrice), cRate, y, 9, fontRegular, 
+colors.textColor);\n      drawRightText(page, formatCurrency(item.total), cAmt, y, 9, fontRegular, 
+colors.textColor);\n      y -= 18;\n    });\n    \n    // Bottom border for table\n    page.drawLine({ start: { x: 
+margin, y: y + 10 }, end: { x: width - margin, y: y + 10 }, thickness: 1, color: rgb(0.8, 0.8, 0.8) });\n    y -= 
+15;\n  };\n\n  drawTable(\"LABOR CHARGES\", data.laborItems, \"labor\");\n  drawTable(\"SPARE PARTS\", data.partItems, 
+\"parts\");\n\n  // Modern Totals (Full width row)\n  y -= 10;\n  \n  const rightAlign = width - margin;\n  let totY = 
+y;\n  \n  const drawTot = (lbl: string, val: string, isBold: boolean, offY: number) => {\n    drawRightText(page, val, 
+rightAlign, totY - offY, 10, isBold ? fontBold : fontRegular, colors.textColor);\n    drawRightText(page, lbl, 
+rightAlign - 80, totY - offY, 10, isBold ? fontBold : fontRegular, colors.textColor);\n  }\n  \n  drawTot(\"Labor 
+Total:\", formatCurrency(data.laborTotal), false, 0);\n  drawTot(\"Parts Total:\", formatCurrency(data.partsTotal), 
+false, 16);\n  drawTot(\"Subtotal:\", formatCurrency(data.subtotal), true, 32);\n  let off = 48;\n  if (data.taxRate > 
+0) { drawTot(`Tax (${data.taxRate}%):`, formatCurrency(data.taxAmount), false, off); off += 16; }\n  if 
+(data.discountAmount > 0) { drawTot(\"Discount:\", `-${formatCurrency(data.discountAmount)}`, false, off); off += 16; 
+}\n  \n  drawRightText(page, formatCurrency(data.grandTotal), rightAlign, totY - off - 10, 12, fontBold, 
+colors.primaryColor);\n  drawRightText(page, \"GRAND TOTAL\", rightAlign - 100, totY - off - 10, 12, fontBold, 
+colors.primaryColor);\n  \n  await drawPaymentInfoAndFooter(pdfDoc, page, data, margin, width, totY, fontRegular, 
+fontBold, colors);\n  return pdfDoc.save();\n}\n\n// â”€â”€â”€ 3. Grid Structured Format (Image 3) 
+â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€\nasync function 
+generateGridStructured(data: InvoicePdfData) {\n  const pdfDoc = await PDFDocument.create();\n  const page = 
+pdfDoc.addPage([595, 842]);\n  const fontRegular = await pdfDoc.embedFont(StandardFonts.Helvetica);\n  const fontBold 
+= await pdfDoc.embedFont(StandardFonts.HelveticaBold);\n  const { width, height } = page.getSize();\n  const margin = 
+40;\n  let y = height - margin;\n  const colors = getThemeColors(data.theme || \"teal\");\n\n  // Header similar to 
+Boxed\n  page.drawText(data.garageName.toUpperCase(), { x: margin, y: y - 10, size: 20, font: fontBold, color: 
+colors.headerTextColor });\n  y -= 25;\n  if (data.garageAddress) { page.drawText(data.garageAddress, { x: margin, y, 
+size: 9, font: fontRegular, color: colors.textColor }); y -= 14; }\n  page.drawText(`${data.garagePhone} | 
+${data.garageEmail}`, { x: margin, y, size: 9, font: fontRegular, color: colors.textColor }); y -= 14;\n\n  let invY = 
+height - margin - 10;\n  drawRightText(page, \"TAX INVOICE\", width - margin, invY, 22, fontBold, colors.textColor);\n 
+ invY -= 22;\n  drawRightText(page, `Invoice No: ${data.invoiceNumber}`, width - margin, invY, 10, fontRegular, 
+colors.textColor);\n  invY -= 14;\n  drawRightText(page, `Created: ${data.invoiceDate}`, width - margin, invY, 10, 
+fontRegular, colors.textColor);\n  if (data.paymentDate && data.paymentStatus === \"paid\") {\n    invY -= 14;\n    
+drawRightText(page, `Paid On: ${data.paymentDate}`, width - margin, invY, 10, fontRegular, rgb(0.2, 0.6, 0.3));\n  
+}\n\n  y = Math.min(y - 20, invY - 20);\n\n  // Boxed Info\n  const boxWidth = (width - (margin * 2) - 20) / 2;\n  
+page.drawRectangle({ x: margin, y: y - 80, width: boxWidth, height: 80, borderColor: colors.primaryColor, borderWidth: 
+1 });\n  page.drawRectangle({ x: margin + boxWidth + 20, y: y - 80, width: boxWidth, height: 80, borderColor: 
+colors.primaryColor, borderWidth: 1 });\n  \n  page.drawRectangle({ x: margin + 10, y: y - 10, width: 50, height: 20, 
+color: rgb(1,1,1) });\n  page.drawText(\"BILL TO\", { x: margin + 15, y: y - 5, size: 10, font: fontBold, color: 
+colors.textColor });\n  \n  page.drawRectangle({ x: margin + boxWidth + 30, y: y - 10, width: 100, height: 20, color: 
+rgb(1,1,1) });\n  page.drawText(\"VEHICLE DETAILS\", { x: margin + boxWidth + 35, y: y - 5, size: 10, font: fontBold, 
+color: colors.textColor });\n\n  let b1Y = y - 25;\n  page.drawText(data.customerName, { x: margin + 10, y: b1Y, size: 
+11, font: fontBold, color: colors.textColor }); b1Y -= 16;\n  if (data.customerAddress) { 
+page.drawText(data.customerAddress.substring(0, 45), { x: margin + 10, y: b1Y, size: 9, font: fontRegular, color: 
+colors.textColor }); b1Y -= 14; }\n\n  let b2Y = y - 25;\n  page.drawText(`${data.vehicleBrand} 
+${data.vehicleModel}`.trim(), { x: margin + boxWidth + 30, y: b2Y, size: 11, font: fontBold, color: colors.textColor 
+}); b2Y -= 16;\n  page.drawText(`Reg No: ${data.vehicleReg}`, { x: margin + boxWidth + 30, y: b2Y, size: 9, font: 
+fontRegular, color: colors.textColor });\n  \n  y -= 100;\n\n  // Grid Tables\n  const drawTable = (title: string, 
+items: any[], type: \"labor\" | \"parts\") => {\n    if (items.length === 0) return;\n    \n    const rowHeight = 
+20;\n    const startY = y;\n    const cols = [margin, width - margin - 120, width - margin - 60, width - margin];\n    
+\n    // Header\n    page.drawRectangle({ x: margin, y: y - rowHeight, width: width - (margin * 2), height: rowHeight, 
+color: rgb(0.9, 0.9, 0.9), borderColor: rgb(0.5, 0.5, 0.5), borderWidth: 1 });\n    page.drawText(\"DESCRIPTION\", { 
+x: margin + 5, y: y - 14, size: 9, font: fontBold, color: colors.textColor });\n    drawRightText(page, \"QTY\", 
+cols[1] + 25, y - 14, 9, fontBold, colors.textColor);\n    drawRightText(page, \"RATE\", cols[2] + 25, y - 14, 9, 
+fontBold, colors.textColor);\n    drawRightText(page, \"TOTAL\", cols[3] - 5, y - 14, 9, fontBold, 
+colors.textColor);\n    \n    // Vertical lines for header\n    page.drawLine({ start: { x: cols[1], y: startY }, end: 
+{ x: cols[1], y: startY - rowHeight }, thickness: 1, color: rgb(0.5, 0.5, 0.5) });\n    page.drawLine({ start: { x: 
+cols[2], y: startY }, end: { x: cols[2], y: startY - rowHeight }, thickness: 1, color: rgb(0.5, 0.5, 0.5) });\n    \n  
+  y -= rowHeight;\n    page.drawText(title, { x: margin + 5, y: y - 14, size: 10, font: fontBold, color: 
+colors.textColor });\n    \n    // Section title row grid\n    page.drawRectangle({ x: margin, y: y - rowHeight, 
+width: width - (margin * 2), height: rowHeight, borderColor: rgb(0.5, 0.5, 0.5), borderWidth: 1 });\n    
+page.drawLine({ start: { x: cols[1], y: y }, end: { x: cols[1], y: y - rowHeight }, thickness: 1, color: rgb(0.5, 0.5, 
+0.5) });\n    page.drawLine({ start: { x: cols[2], y: y }, end: { x: cols[2], y: y - rowHeight }, thickness: 1, color: 
+rgb(0.5, 0.5, 0.5) });\n    y -= rowHeight;\n\n    items.forEach((item) => {\n      page.drawRectangle({ x: margin, y: 
+y - rowHeight, width: width - (margin * 2), height: rowHeight, borderColor: rgb(0.5, 0.5, 0.5), borderWidth: 1 });\n   
+   page.drawLine({ start: { x: cols[1], y: y }, end: { x: cols[1], y: y - rowHeight }, thickness: 1, color: rgb(0.5, 
+0.5, 0.5) });\n      page.drawLine({ start: { x: cols[2], y: y }, end: { x: cols[2], y: y - rowHeight }, thickness: 1, 
+color: rgb(0.5, 0.5, 0.5) });\n      \n      const desc = type === \"labor\" ? item.description : item.partName;\n     
+ page.drawText(desc.substring(0, 50), { x: margin + 5, y: y - 14, size: 9, font: fontRegular, color: colors.textColor 
+});\n      drawRightText(page, `${type === \"labor\" ? \"\" : item.quantity}`, cols[1] + 25, y - 14, 9, fontRegular, 
+colors.textColor);\n      drawRightText(page, type === \"labor\" ? \"\" : formatCurrency(item.unitPrice), cols[2] + 
+25, y - 14, 9, fontRegular, colors.textColor);\n      drawRightText(page, formatCurrency(item.total), cols[3] - 5, y - 
+14, 9, fontRegular, colors.textColor);\n      \n      y -= rowHeight;\n    });\n    \n    // Section total\n    if 
+(type === \"labor\") {\n      page.drawRectangle({ x: margin, y: y - rowHeight, width: width - (margin * 2), height: 
+rowHeight, borderColor: rgb(0.5, 0.5, 0.5), borderWidth: 1 });\n      page.drawLine({ start: { x: cols[1], y: y }, 
+end: { x: cols[1], y: y - rowHeight }, thickness: 1, color: rgb(0.5, 0.5, 0.5) });\n      page.drawLine({ start: { x: 
+cols[2], y: y }, end: { x: cols[2], y: y - rowHeight }, thickness: 1, color: rgb(0.5, 0.5, 0.5) });\n      
+page.drawText(\"Total Labor Charges\", { x: margin + 5, y: y - 14, size: 9, font: fontBold, color: colors.textColor 
+});\n      drawRightText(page, formatCurrency(data.laborTotal), cols[3] - 5, y - 14, 9, fontBold, colors.textColor);\n 
+     y -= rowHeight;\n    }\n    y -= 15;\n  };\n\n  drawTable(\"LABOR CHARGES\", data.laborItems, \"labor\");\n  
+drawTable(\"SPARE PARTS\", data.partItems, \"parts\");\n\n  // Totals Box\n  const totalsBoxWidth = 240;\n  const 
+totalsX = width - margin - totalsBoxWidth;\n  const rH = 20;\n  const lblColW = 120;\n  \n  let totY = y - rH;\n  
+const drawGridRow = (label: string, value: string, bold = false, bg = false) => {\n    if (bg) {\n      
+page.drawRectangle({ x: totalsX, y: totY, width: totalsBoxWidth, height: rH, color: rgb(0.95, 0.9, 0.9) });\n    }\n   
+ page.drawRectangle({ x: totalsX, y: totY, width: totalsBoxWidth, height: rH, borderColor: rgb(0.5, 0.5, 0.5), 
+borderWidth: 1 });\n    page.drawLine({ start: { x: totalsX + lblColW, y: totY + rH }, end: { x: totalsX + lblColW, y: 
+totY }, thickness: 1, color: rgb(0.5, 0.5, 0.5) });\n    \n    const f = bold ? fontBold : fontRegular;\n    const c = 
+bg ? colors.primaryColor : colors.textColor;\n    page.drawText(label, { x: totalsX + 5, y: totY + 6, size: 10, font: 
+f, color: c });\n    drawRightText(page, value, totalsX + totalsBoxWidth - 5, totY + 6, 10, f, c);\n    totY -= rH;\n  
+};\n  \n  drawGridRow(\"Labor Total\", formatCurrency(data.laborTotal));\n  drawGridRow(\"Parts Total\", 
+formatCurrency(data.partsTotal));\n  drawGridRow(\"Subtotal\", formatCurrency(data.subtotal), true);\n  if 
+(data.taxRate > 0) drawGridRow(`Tax (${data.taxRate}%)`, formatCurrency(data.taxAmount));\n  if (data.discountAmount > 
+0) drawGridRow(\"Discount\", `-${formatCurrency(data.discountAmount)}`);\n  drawGridRow(\"GRAND TOTAL\", 
+formatCurrency(data.grandTotal), true, true);\n\n  await drawPaymentInfoAndFooter(pdfDoc, page, data, margin, width, y 
+- 10, fontRegular, fontBold, colors);\n  return pdfDoc.save();\n}\n\n// â”€â”€â”€ 4. Modern Accent Format (Image 4) 
+â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€\nasync function 
+generateModernAccent(data: InvoicePdfData) {\n  const pdfDoc = await PDFDocument.create();\n  const page = 
+pdfDoc.addPage([595, 842]);\n  const fontRegular = await pdfDoc.embedFont(StandardFonts.Helvetica);\n  const fontBold 
+= await pdfDoc.embedFont(StandardFonts.HelveticaBold);\n  const { width, height } = page.getSize();\n  const margin = 
+40;\n  let y = height - margin;\n  const colors = getThemeColors(data.theme || \"purple\");\n\n  // Top Accent Line\n  
+page.drawRectangle({ x: 0, y: height - 5, width: width, height: 5, color: colors.primaryColor });\n\n  // Header 
+similar to Boxed\n  page.drawText(data.garageName.toUpperCase(), { x: margin, y: y - 10, size: 20, font: fontBold, 
+color: colors.textColor });\n  y -= 25;\n  if (data.garageAddress) { page.drawText(data.garageAddress, { x: margin, y, 
+size: 9, font: fontRegular, color: colors.textColor }); y -= 14; }\n  page.drawText(`${data.garagePhone} | 
+${data.garageEmail}`, { x: margin, y, size: 9, font: fontRegular, color: colors.textColor }); y -= 14;\n\n  let invY = 
+height - margin - 10;\n  drawRightText(page, \"TAX INVOICE\", width - margin, invY, 22, fontBold, colors.textColor);\n 
+ invY -= 22;\n  drawRightText(page, `Invoice No: ${data.invoiceNumber}`, width - margin, invY, 10, fontRegular, 
+colors.textColor);\n  invY -= 14;\n  drawRightText(page, `Created: ${data.invoiceDate}`, width - margin, invY, 10, 
+fontRegular, colors.textColor);\n\n  y = Math.min(y - 20, invY - 20);\n\n  // Boxed Info\n  const boxWidth = (width - 
+(margin * 2) - 20) / 2;\n  page.drawRectangle({ x: margin, y: y - 80, width: boxWidth, height: 80, borderColor: 
+colors.primaryColor, borderWidth: 1 });\n  page.drawRectangle({ x: margin + boxWidth + 20, y: y - 80, width: boxWidth, 
+height: 80, borderColor: colors.primaryColor, borderWidth: 1 });\n  \n  page.drawRectangle({ x: margin + 10, y: y - 
+10, width: 50, height: 20, color: rgb(1,1,1) });\n  page.drawText(\"BILL TO\", { x: margin + 15, y: y - 5, size: 10, 
+font: fontBold, color: colors.textColor });\n  \n  page.drawRectangle({ x: margin + boxWidth + 30, y: y - 10, width: 
+100, height: 20, color: rgb(1,1,1) });\n  page.drawText(\"VEHICLE DETAILS\", { x: margin + boxWidth + 35, y: y - 5, 
+size: 10, font: fontBold, color: colors.textColor });\n\n  let b1Y = y - 25;\n  page.drawText(data.customerName, { x: 
+margin + 10, y: b1Y, size: 11, font: fontBold, color: colors.textColor }); b1Y -= 16;\n  if (data.customerAddress) { 
+page.drawText(data.customerAddress.substring(0, 45), { x: margin + 10, y: b1Y, size: 9, font: fontRegular, color: 
+colors.textColor }); b1Y -= 14; }\n\n  let b2Y = y - 25;\n  page.drawText(`${data.vehicleBrand} 
+${data.vehicleModel}`.trim(), { x: margin + boxWidth + 30, y: b2Y, size: 11, font: fontBold, color: colors.textColor 
+}); b2Y -= 16;\n  page.drawText(`Reg No: ${data.vehicleReg}`, { x: margin + boxWidth + 30, y: b2Y, size: 9, font: 
+fontRegular, color: colors.textColor });\n  \n  y -= 100;\n\n  // Tables with Accent Column\n  const drawTable = 
+(title: string, items: any[], type: \"labor\" | \"parts\") => {\n    if (items.length === 0) return;\n    \n    // 
+Header\n    page.drawRectangle({ x: margin, y: y - 20, width: width - (margin * 2), height: 20, color: rgb(0.9, 0.9, 
+0.9) });\n    const cDesc = margin + 5;\n    const cQty = margin + 300;\n    const cRate = margin + 380;\n    const 
+cAmt = width - margin - 5;\n    page.drawText(\"DESCRIPTION\", { x: cDesc, y: y - 14, size: 9, font: fontBold, color: 
+colors.textColor });\n    if (type === \"parts\") {\n      drawRightText(page, \"QTY\", cQty, y - 14, 9, fontBold, 
+colors.textColor);\n      drawRightText(page, \"RATE\", cRate, y - 14, 9, fontBold, colors.textColor);\n    }\n    
+drawRightText(page, \"TOTAL\", cAmt, y - 14, 9, fontBold, colors.textColor);\n    \n    y -= 20;\n    
+page.drawText(title, { x: margin + 5, y: y - 14, size: 10, font: fontBold, color: colors.textColor });\n    y -= 
+20;\n\n    items.forEach((item) => {\n      // Left accent bar\n      page.drawRectangle({ x: margin, y: y - 20, 
+width: 200, height: 20, color: rgb(0.96, 0.96, 0.96) });\n      const desc = type === \"labor\" ? item.description : 
+item.partName;\n      page.drawText(desc.substring(0, 45), { x: cDesc, y: y - 14, size: 9, font: fontRegular, color: 
+colors.textColor });\n      if (type === \"parts\") {\n        drawRightText(page, `${item.quantity}`, cQty, y - 14, 
+9, fontRegular, colors.textColor);\n        drawRightText(page, formatCurrency(item.unitPrice), cRate, y - 14, 9, 
+fontRegular, colors.textColor);\n      }\n      drawRightText(page, formatCurrency(item.total), cAmt, y - 14, 9, 
+fontRegular, colors.textColor);\n      y -= 20;\n    });\n    \n    // Section total\n    if (type === \"labor\") {\n  
+    page.drawRectangle({ x: margin, y: y - 20, width: 200, height: 20, color: rgb(0.96, 0.96, 0.96) });\n      
+page.drawText(\"Total Labor Charges\", { x: margin + 5, y: y - 14, size: 9, font: fontBold, color: colors.textColor 
+});\n      drawRightText(page, formatCurrency(data.laborTotal), cAmt, y - 14, 9, fontBold, colors.textColor);\n      y 
+-= 20;\n    }\n    y -= 15;\n  };\n\n  drawTable(\"LABOR CHARGES\", data.laborItems, \"labor\");\n  drawTable(\"SPARE 
+PARTS\", data.partItems, \"parts\");\n\n  // Totals Box\n  const totalsBoxWidth = 220;\n  const totalsX = width - 
+margin - totalsBoxWidth;\n  \n  let totY = y - 15;\n  const drawSummaryRow = (label: string, value: string, bold = 
+false) => {\n    const f = bold ? fontBold : fontRegular;\n    page.drawText(label, { x: totalsX + 10, y: totY, size: 
+10, font: f, color: colors.textColor });\n    drawRightText(page, value, totalsX + totalsBoxWidth, totY, 10, f, 
+colors.textColor);\n    totY -= 18;\n  };\n  \n  drawSummaryRow(\"Labor Total\", formatCurrency(data.laborTotal));\n  
+drawSummaryRow(\"Parts Total\", formatCurrency(data.partsTotal));\n  drawSummaryRow(\"Subtotal\", 
+formatCurrency(data.subtotal), true);\n  if (data.taxRate > 0) drawSummaryRow(`Tax (${data.taxRate}%)`, 
+formatCurrency(data.taxAmount));\n  if (data.discountAmount > 0) drawSummaryRow(\"Discount\", 
+`-${formatCurrency(data.discountAmount)}`);\n  \n  page.drawRectangle({ x: totalsX, y: totY - 5, width: 
+totalsBoxWidth, height: 25, color: rgb(1, 0.94, 0.94) });\n  page.drawLine({ start: { x: totalsX, y: totY - 5 + 25 }, 
+end: { x: totalsX + totalsBoxWidth, y: totY - 5 + 25 }, thickness: 1, color: colors.primaryColor });\n  
+page.drawText(\"GRAND TOTAL\", { x: totalsX + 10, y: totY + 2, size: 11, font: fontBold, color: colors.primaryColor 
+});\n  drawRightText(page, formatCurrency(data.grandTotal), totalsX + totalsBoxWidth - 5, totY + 2, 11, fontBold, 
+colors.primaryColor);\n\n  // Pass true for watermark\n  await drawPaymentInfoAndFooter(pdfDoc, page, data, margin, 
+width, y - 10, fontRegular, fontBold, colors, true);\n  return pdfDoc.save();\n}\n","Description":"Rewrite invoice PDF 
+engine with 4 new formats","Overwrite":true,"TargetFile":"c:\\Users\\viren\\Videos\\0000 
+PROJECTS\\TG\\gbms\\src\\lib\\pdf\\invoice-pdf.ts","toolAction":"Rewriting invoice formats","toolSummary":"Rewrite 
+invoice formats"}}]}
+
+

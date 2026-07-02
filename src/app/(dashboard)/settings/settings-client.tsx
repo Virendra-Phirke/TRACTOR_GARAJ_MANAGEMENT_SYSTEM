@@ -17,11 +17,172 @@ interface UpiSettings { id: number; vpa: string; payeeName: string; merchantCode
 interface TaxSetting { id: number; name: string; rate: number; isDefault: boolean | null; isActive: boolean | null; }
 
 // Mini invoice preview components for each format
+function ClassicBoxedPreview({ theme }: { theme: string }) {
+  const colors = getPreviewColors(theme);
+  return (
+    <div className="w-full aspect-[1/1.35] bg-white rounded-md border shadow-sm overflow-hidden flex flex-col text-[5px] leading-[7px] text-gray-800 p-2">
+      <div className="flex justify-between items-start mb-2">
+        <div>
+          <div className="font-bold text-[7px]" style={{ color: colors.primary }}>GARAGE NAME</div>
+          <div className="text-gray-400 text-[4px]">Address | Contact</div>
+        </div>
+        <div className="text-right">
+          <div className="font-bold text-[7px]" style={{ color: colors.primary }}>TAX INVOICE</div>
+          <div className="text-[4px] text-gray-500">INV-001 | 01 Jul</div>
+        </div>
+      </div>
+      <div className="flex gap-1 mb-2">
+        <div className="flex-1 border rounded p-1" style={{ borderColor: colors.primary }}>
+          <div className="font-bold text-[4.5px] -mt-1.5 bg-white w-fit px-0.5" style={{ color: colors.primary }}>BILL TO</div>
+          <div className="text-[4px]">Customer Name</div>
+        </div>
+        <div className="flex-1 border rounded p-1" style={{ borderColor: colors.primary }}>
+          <div className="font-bold text-[4.5px] -mt-1.5 bg-white w-fit px-0.5" style={{ color: colors.primary }}>VEHICLE</div>
+          <div className="text-[4px]">Tractor Model</div>
+        </div>
+      </div>
+      <div className="flex-1">
+        <div className="font-bold mb-0.5" style={{ color: colors.primary }}>LABOR CHARGES</div>
+        <div className="flex text-gray-800 text-[4px] font-bold p-0.5 bg-gray-100">
+          <span className="flex-1">Description</span><span className="w-10 text-right">Amount</span>
+        </div>
+        <div className="flex p-0.5 text-[4px]"><span className="flex-1">Service</span><span className="w-10 text-right">₹800</span></div>
+        <div className="flex p-0.5 text-[4px] bg-gray-50"><span className="flex-1">Cleaning</span><span className="w-10 text-right">₹350</span></div>
+      </div>
+      <div className="flex justify-end mt-1">
+        <div className="w-24 border p-1" style={{ borderColor: colors.primary }}>
+          <div className="flex justify-between text-[4px]"><span>Subtotal</span><span>₹1,150</span></div>
+          <div className="flex justify-between font-bold text-[5px] pt-0.5 mt-0.5 border-t" style={{ borderColor: colors.primary, color: colors.primary }}>
+            <span>TOTAL</span><span>₹1,250</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function CenteredProPreview({ theme }: { theme: string }) {
+  const colors = getPreviewColors(theme);
+  return (
+    <div className="w-full aspect-[1/1.35] bg-white rounded-md border shadow-sm overflow-hidden flex flex-col text-[5px] leading-[7px] text-gray-800 p-0 relative">
+      <div className="h-1 w-full absolute top-0 left-0" style={{ background: colors.primary }} />
+      <div className="p-2 flex-1 flex flex-col pt-3">
+        <div className="text-center mb-1">
+          <div className="font-bold text-[7px]" style={{ color: colors.primary }}>GARAGE NAME</div>
+          <div className="text-gray-400 text-[4px]">Address | Contact</div>
+        </div>
+        <div className="bg-gray-100 p-0.5 px-1 flex justify-between text-[4.5px] font-bold mb-2">
+          <span>INV-001</span><span>01 Jul 2026</span>
+        </div>
+        <div className="flex gap-2 border p-1 mb-2">
+          <div className="flex-1 border-r text-[4px]">
+             <span className="font-bold">BILL TO</span><br/>Customer Name
+          </div>
+          <div className="flex-1 text-[4px]">
+             <span className="font-bold">VEHICLE</span><br/>Tractor Model
+          </div>
+        </div>
+        <div className="flex-1">
+          <div className="flex text-white text-[4px] font-bold p-0.5" style={{ background: '#222' }}>
+            <span className="flex-1">Description</span><span className="w-10 text-right">Total</span>
+          </div>
+          <div className="font-bold text-[4px] p-0.5" style={{ color: colors.primary }}>LABOR</div>
+          <div className="flex px-0.5 pb-0.5 text-[4px] border-b"><span className="flex-1">Service</span><span className="w-10 text-right">₹800</span></div>
+        </div>
+        <div className="text-right pt-1">
+          <div className="text-[4px]">Subtotal: ₹800</div>
+          <div className="font-bold text-[6px]" style={{ color: colors.primary }}>TOTAL: ₹800</div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function GridStructuredPreview({ theme }: { theme: string }) {
+  const colors = getPreviewColors(theme);
+  return (
+    <div className="w-full aspect-[1/1.35] bg-white rounded-md border shadow-sm overflow-hidden flex flex-col text-[5px] leading-[7px] text-gray-800 p-2">
+      <div className="flex justify-between items-start mb-2">
+        <div>
+          <div className="font-bold text-[7px]" style={{ color: colors.primary }}>GARAGE NAME</div>
+          <div className="text-gray-400 text-[4px]">Contact Info</div>
+        </div>
+        <div className="text-right">
+          <div className="font-bold text-[6px]" style={{ color: colors.primary }}>TAX INVOICE</div>
+          <div className="text-[4px]">INV-001</div>
+        </div>
+      </div>
+      <div className="flex gap-1 mb-2">
+        <div className="flex-1 border p-1" style={{ borderColor: colors.primary }}>
+          <div className="font-bold text-[4px]">BILL TO: Customer</div>
+        </div>
+        <div className="flex-1 border p-1" style={{ borderColor: colors.primary }}>
+          <div className="font-bold text-[4px]">VEHICLE: Tractor</div>
+        </div>
+      </div>
+      <div className="flex-1">
+        <div className="flex font-bold bg-gray-100 border text-[4px]">
+          <span className="flex-1 p-0.5 border-r">DESC</span><span className="w-10 p-0.5 text-right">TOTAL</span>
+        </div>
+        <div className="border border-t-0 p-0.5 font-bold text-[4.5px]">LABOR</div>
+        <div className="flex border border-t-0 text-[4px]">
+          <span className="flex-1 p-0.5 border-r">Service</span><span className="w-10 p-0.5 text-right">₹800</span>
+        </div>
+        <div className="flex border border-t-0 text-[4px] font-bold">
+          <span className="flex-1 p-0.5 border-r">Total Labor</span><span className="w-10 p-0.5 text-right">₹800</span>
+        </div>
+      </div>
+      <div className="flex justify-end mt-1">
+        <div className="w-24">
+          <div className="flex border text-[4px]"><span className="flex-1 p-0.5 border-r">Subtotal</span><span className="w-10 p-0.5 text-right">₹800</span></div>
+          <div className="flex border border-t-0 font-bold text-[5px] bg-red-50" style={{ color: colors.primary }}>
+            <span className="flex-1 p-0.5 border-r">TOTAL</span><span className="w-10 p-0.5 text-right">₹800</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ModernAccentPreview({ theme }: { theme: string }) {
+  const colors = getPreviewColors(theme);
+  return (
+    <div className="w-full aspect-[1/1.35] bg-white rounded-md border shadow-sm overflow-hidden flex flex-col text-[5px] leading-[7px] text-gray-800 p-2 relative">
+      <div className="absolute top-12 left-6 text-green-500 opacity-20 font-bold text-2xl -rotate-12">PAID</div>
+      <div className="flex justify-between mb-2">
+        <div><div className="font-bold text-[7px]" style={{ color: colors.primary }}>GARAGE NAME</div><div className="text-[4px]">Contact</div></div>
+        <div className="text-right font-bold text-[6px]" style={{ color: colors.primary }}>INVOICE</div>
+      </div>
+      <div className="flex gap-1 mb-2">
+        <div className="flex-1 border p-1" style={{ borderColor: colors.primary }}>
+          <div className="font-bold text-[4px]">BILL TO: Name</div>
+        </div>
+      </div>
+      <div className="flex-1">
+        <div className="flex bg-gray-100 p-0.5 text-[4px] font-bold mb-1">
+          <span className="flex-1">DESCRIPTION</span><span className="w-8 text-right">TOTAL</span>
+        </div>
+        <div className="flex text-[4px]">
+          <div className="w-16 bg-gray-100 p-0.5">Service</div>
+          <div className="flex-1 p-0.5 text-right">₹800</div>
+        </div>
+      </div>
+      <div className="flex justify-end">
+        <div className="w-20">
+          <div className="flex justify-between text-[4px]"><span>Subtotal</span><span>₹800</span></div>
+          <div className="flex justify-between font-bold text-[5px] bg-red-50 p-0.5 mt-0.5 border-t" style={{ borderColor: colors.primary, color: colors.primary }}>
+            <span>TOTAL</span><span>₹800</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function StandardInvoicePreview({ theme }: { theme: string }) {
   const colors = getPreviewColors(theme);
   return (
     <div className="w-full aspect-[1/1.35] bg-white rounded-md border shadow-sm overflow-hidden flex flex-col text-[5px] leading-[7px] text-gray-800 p-2">
-      {/* Header */}
       <div className="flex justify-between items-start mb-1.5">
         <div>
           <div className="font-bold text-[7px]" style={{ color: colors.primary }}>GARAGE NAME</div>
@@ -30,108 +191,29 @@ function StandardInvoicePreview({ theme }: { theme: string }) {
         </div>
         <div className="text-right">
           <div className="font-bold text-[6px]" style={{ color: colors.primary }}>TAX INVOICE</div>
-          <div className="text-[4px] text-gray-500">INV-001 | 01 Jul 2026</div>
+          <div className="text-[4px] text-gray-500">INV-001 | 01 Jul</div>
         </div>
       </div>
       <div className="h-[1px] mb-1.5" style={{ background: colors.primary }} />
-      {/* Bill To / Vehicle */}
-      <div className="grid grid-cols-2 gap-1 p-1 rounded text-[4px] mb-1.5" style={{ background: colors.lightBg }}>
+      <div className="grid grid-cols-2 gap-1 p-1 rounded text-[4px] mb-1.5" style={{ background: '#f5f5f5' }}>
         <div><span className="font-bold" style={{ color: colors.primary }}>BILL TO</span><br/>Customer Name<br/>Phone: 9876543210</div>
         <div><span className="font-bold" style={{ color: colors.primary }}>VEHICLE</span><br/>Mahindra 575 DI<br/>Reg: MH-XX-1234</div>
       </div>
-      {/* Table */}
       <div className="flex-1">
-        <div className="flex text-white text-[4px] font-bold p-0.5 rounded-sm" style={{ background: colors.tableHeader }}>
+        <div className="flex text-white text-[4px] font-bold p-0.5 rounded-sm" style={{ background: colors.primary }}>
           <span className="flex-1">Description</span><span className="w-8 text-right">Qty</span><span className="w-10 text-right">Amount</span>
         </div>
         <div className="flex p-0.5 text-[4px] bg-gray-50"><span className="flex-1">Engine Oil</span><span className="w-8 text-right">2</span><span className="w-10 text-right">₹1,200</span></div>
         <div className="flex p-0.5 text-[4px]"><span className="flex-1">Oil Filter</span><span className="w-8 text-right">1</span><span className="w-10 text-right">₹350</span></div>
-        <div className="flex p-0.5 text-[4px] bg-gray-50"><span className="flex-1">Labor Charge</span><span className="w-8 text-right">-</span><span className="w-10 text-right">₹800</span></div>
+        <div className="flex p-0.5 text-[4px] bg-gray-50"><span className="flex-1">Labor</span><span className="w-8 text-right">-</span><span className="w-10 text-right">₹800</span></div>
       </div>
-      {/* Totals */}
-      <div className="text-right mt-auto space-y-0.5 pt-1 border-t border-gray-200">
-        <div className="text-[4px]">Subtotal: ₹2,350</div>
-        <div className="text-[4px]">CGST @9%: ₹211.50</div>
-        <div className="text-[4px]">SGST @9%: ₹211.50</div>
-        <div className="font-bold text-[6px] pt-0.5 border-t border-gray-300" style={{ color: colors.primary }}>Total: ₹2,773</div>
-      </div>
-    </div>
-  );
-}
-
-function ModernInvoicePreview({ theme }: { theme: string }) {
-  const colors = getPreviewColors(theme);
-  return (
-    <div className="w-full aspect-[1/1.35] bg-white rounded-md border shadow-sm overflow-hidden flex flex-col text-[5px] leading-[7px] text-gray-800">
-      {/* Centered Header */}
-      <div className="text-center py-2 px-2" style={{ background: `${colors.primary}10` }}>
-        <div className="font-bold text-[8px]" style={{ color: colors.primary }}>GARAGE NAME</div>
-        <div className="text-gray-400 text-[4px]">Trusted Tractor Service Center</div>
-        <div className="text-gray-400 text-[4px]">GSTIN: 22AAAAA0000A1Z5</div>
-      </div>
-      <div className="px-2 flex-1 flex flex-col">
-        {/* Invoice Title */}
-        <div className="flex justify-between items-center my-1.5">
-          <span className="font-bold text-[6px]" style={{ color: colors.primary }}>INVOICE</span>
-          <span className="text-[4px] text-gray-500">#INV-001 | 01 Jul 2026</span>
-        </div>
-        {/* Info Row */}
-        <div className="grid grid-cols-2 gap-1 text-[4px] mb-1.5">
-          <div><span className="font-bold" style={{ color: colors.primary }}>Bill To:</span><br/>Customer Name</div>
-          <div><span className="font-bold" style={{ color: colors.primary }}>Vehicle:</span><br/>Mahindra 575 DI</div>
-        </div>
-        {/* Table */}
-        <div className="flex-1">
-          <div className="flex text-[4px] font-bold p-0.5 border-b-2" style={{ borderColor: colors.primary, color: colors.primary }}>
-            <span className="flex-1">Item</span><span className="w-10 text-right">Amount</span>
-          </div>
-          <div className="flex p-0.5 text-[4px] border-b border-gray-100"><span className="flex-1">Engine Oil (2x)</span><span className="w-10 text-right">₹1,200</span></div>
-          <div className="flex p-0.5 text-[4px] border-b border-gray-100"><span className="flex-1">Oil Filter</span><span className="w-10 text-right">₹350</span></div>
-          <div className="flex p-0.5 text-[4px] border-b border-gray-100"><span className="flex-1">Labor Charge</span><span className="w-10 text-right">₹800</span></div>
-        </div>
-        {/* Totals */}
-        <div className="mt-auto pt-1">
-          <div className="flex justify-between text-[4px] text-gray-500"><span>Subtotal</span><span>₹2,350</span></div>
-          <div className="flex justify-between text-[4px] text-gray-500"><span>GST (18%)</span><span>₹423</span></div>
-          <div className="flex justify-between font-bold text-[6px] pt-0.5 border-t mt-0.5" style={{ borderColor: colors.primary, color: colors.primary }}>
-            <span>TOTAL</span><span>₹2,773</span>
+      <div className="text-right mt-auto pt-1 flex justify-end">
+        <div className="w-24 bg-gray-100 p-1 border">
+          <div className="flex justify-between text-[4px]"><span>Subtotal</span><span>₹2,350</span></div>
+          <div className="flex justify-between font-bold text-[5px] pt-0.5 mt-0.5 border-t" style={{ color: colors.primary }}>
+             <span>TOTAL</span><span>₹2,350</span>
           </div>
         </div>
-      </div>
-      <div className="text-center text-[3.5px] text-gray-400 py-1">Thank you for your business!</div>
-    </div>
-  );
-}
-
-function CompactInvoicePreview({ theme }: { theme: string }) {
-  const colors = getPreviewColors(theme);
-  return (
-    <div className="w-full aspect-[1/1.35] bg-white rounded-md border shadow-sm overflow-hidden flex flex-col text-[5px] leading-[7px] text-gray-800 p-1.5">
-      {/* Centered Header */}
-      <div className="text-center mb-1">
-        <div className="font-bold text-[6px]" style={{ color: colors.primary }}>GARAGE NAME</div>
-        <div className="text-gray-400 text-[3.5px]">Address | Phone</div>
-      </div>
-      <div className="border-t border-dashed border-gray-300 mb-1" />
-      {/* Invoice Info */}
-      <div className="flex justify-between text-[4px] mb-1">
-        <span className="font-bold">INV-001</span>
-        <span className="text-gray-500">01 Jul 2026</span>
-      </div>
-      <div className="text-[4px] mb-0.5">Customer: <span className="font-bold">Customer Name</span></div>
-      <div className="text-[4px] mb-1">Vehicle: <span className="font-bold">MH-XX-1234</span></div>
-      <div className="border-t border-dashed border-gray-300 mb-1" />
-      {/* Items */}
-      <div className="flex-1 space-y-0.5">
-        <div className="flex justify-between text-[4px]"><span>Engine Oil x2</span><span>₹1,200</span></div>
-        <div className="flex justify-between text-[4px]"><span>Oil Filter x1</span><span>₹350</span></div>
-        <div className="flex justify-between text-[4px]"><span>Labor</span><span>₹800</span></div>
-      </div>
-      <div className="border-t border-dashed border-gray-300 my-1" />
-      <div className="flex justify-between text-[4px]"><span>Subtotal</span><span>₹2,350</span></div>
-      <div className="flex justify-between text-[4px]"><span>GST (18%)</span><span>₹423</span></div>
-      <div className="flex justify-between font-bold text-[6px] pt-0.5 border-t border-gray-300 mt-0.5" style={{ color: colors.primary }}>
-        <span>TOTAL</span><span>₹2,773</span>
       </div>
     </div>
   );
@@ -202,9 +284,12 @@ export function SettingsClient({ garage, upi, taxes }: { garage: GarageSettings;
 
   const PreviewForFormat = ({ format }: { format: string }) => {
     switch (format) {
-      case "modern": return <ModernInvoicePreview theme={selectedTheme} />;
-      case "compact": return <CompactInvoicePreview theme={selectedTheme} />;
-      default: return <StandardInvoicePreview theme={selectedTheme} />;
+      case "centered_pro": return <CenteredProPreview theme={selectedTheme} />;
+      case "grid_structured": return <GridStructuredPreview theme={selectedTheme} />;
+      case "modern_accent": return <ModernAccentPreview theme={selectedTheme} />;
+      case "original_standard": return <StandardInvoicePreview theme={selectedTheme} />;
+      case "classic_boxed":
+      default: return <ClassicBoxedPreview theme={selectedTheme} />;
     }
   };
 
@@ -256,16 +341,18 @@ export function SettingsClient({ garage, upi, taxes }: { garage: GarageSettings;
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
                 {[
-                  { id: "standard", label: "Standard", desc: "Classic two-column layout with bordered sections. Company info on left, invoice details on right." },
-                  { id: "modern", label: "Modern", desc: "Centered company header with clean lines and a professional look." },
-                  { id: "compact", label: "Compact", desc: "Space-saving receipt style layout, ideal for quick prints." },
+                  { id: "original_standard", label: "Original Standard", desc: "The original classic layout with light gray data boxes." },
+                  { id: "classic_boxed", label: "Classic Boxed", desc: "Rounded outline boxes for details, alternating row colors, very clean." },
+                  { id: "centered_pro", label: "Centered Pro", desc: "Centered header, solid dark table headers, professional presentation." },
+                  { id: "grid_structured", label: "Grid Structured", desc: "Full rigid grid layout for maximum clarity and traditional accounting style." },
+                  { id: "modern_accent", label: "Modern Accent", desc: "Shaded accent columns and a prominent PAID watermark stamp." },
                 ].map((fmt) => (
                   <label key={fmt.id} className="cursor-pointer group">
                     <input
                       type="radio"
                       name="invoiceFormat"
                       value={fmt.id}
-                      defaultChecked={(garage.invoiceFormat || "standard") === fmt.id}
+                      defaultChecked={(garage.invoiceFormat || "classic_boxed") === fmt.id}
                       onChange={() => setSelectedFormat(fmt.id)}
                       className="peer sr-only"
                     />
@@ -278,7 +365,7 @@ export function SettingsClient({ garage, upi, taxes }: { garage: GarageSettings;
                       <div className="px-3 pb-3 pt-1">
                         <div className="font-semibold text-sm flex items-center gap-1.5">
                           {fmt.label}
-                          {(garage.invoiceFormat || "standard") === fmt.id && (
+                          {(garage.invoiceFormat || "classic_boxed") === fmt.id && (
                             <Badge variant="outline" className="text-[10px] px-1.5 py-0 bg-primary/10 text-primary border-primary/20">Active</Badge>
                           )}
                         </div>

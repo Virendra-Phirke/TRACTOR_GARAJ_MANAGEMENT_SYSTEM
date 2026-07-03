@@ -21,7 +21,7 @@ export default async function InvoicesPage(props: {
   return (
     <>
       <Header title="Invoices" />
-      <div className="p-6 animate-in-page">
+      <div className="p-4 md:p-6 animate-in-page">
         <Suspense fallback={<div className="flex items-center justify-center h-64"><div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div></div>}>
           <InvoicesClient invoices={invoicesList} />
         </Suspense>

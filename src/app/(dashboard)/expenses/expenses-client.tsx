@@ -9,6 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Combobox } from "@/components/ui/combobox";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Plus, Trash2, Receipt } from "lucide-react";
@@ -239,7 +240,7 @@ export function ExpensesClient({
           </Select>
           <p className="text-sm text-muted-foreground">{filteredExpenses.length} expenses • Total: ₹{totalExpenses.toLocaleString("en-IN")}</p>
         </div>
-        <div className="flex gap-3">
+        <div className="flex flex-wrap gap-2 sm:gap-3">
           <Dialog open={partnerOpen} onOpenChange={setPartnerOpen}>
             <DialogTrigger render={
               <Button variant="secondary" className="gap-2 cursor-pointer">
@@ -414,10 +415,14 @@ export function ExpensesClient({
             <form onSubmit={handleCreate} className="space-y-4">
               <div className="space-y-2">
                 <Label>Category *</Label>
-                <Select value={category} onValueChange={(v) => setCategory(v || "")}>
-                  <SelectTrigger><SelectValue placeholder="Select category" /></SelectTrigger>
-                  <SelectContent>{EXPENSE_CATEGORIES.map((c) => (<SelectItem key={c} value={c}>{c}</SelectItem>))}</SelectContent>
-                </Select>
+                <Combobox
+                  options={EXPENSE_CATEGORIES.map((c) => ({ value: c, label: c }))}
+                  value={category}
+                  onChange={(v) => setCategory(v || "")}
+                  placeholder="Search category..."
+                  emptyText="No category found."
+                  allowCustomValue
+                />
               </div>
               <div className="space-y-2"><Label htmlFor="amount">Amount (₹) *</Label><Input id="amount" name="amount" type="number" step="0.01" required placeholder="0.00" /></div>
               <div className="space-y-2"><Label htmlFor="description">Description</Label><Textarea id="description" name="description" rows={2} placeholder="Optional details" /></div>

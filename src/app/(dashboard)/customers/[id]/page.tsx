@@ -28,7 +28,7 @@ export default async function CustomerDetailPage({
   return (
     <>
       <Header title={customer.name} />
-      <div className="p-6 animate-in-page space-y-6">
+      <div className="p-4 md:p-6 animate-in-page space-y-6">
         {/* Customer Info */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <Card className="bg-card/50 relative">

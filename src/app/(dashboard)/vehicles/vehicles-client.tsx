@@ -12,9 +12,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from "@/components/ui/select";
+import { Combobox } from "@/components/ui/combobox";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -159,31 +157,28 @@ export function VehiclesClient({
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div className="flex items-center gap-2 flex-1 max-w-md">
-          <Input placeholder="Search by reg number, brand, or owner..." value={search} onChange={(e) => setSearch(e.target.value)} onKeyDown={(e) => e.key === "Enter" && handleSearch()} className="bg-card/50" />
+          <Input placeholder="Search vehicles..." value={search} onChange={(e) => setSearch(e.target.value)} onKeyDown={(e) => e.key === "Enter" && handleSearch()} className="bg-card/50" />
           <Button variant="secondary" size="icon" onClick={handleSearch} className="cursor-pointer shrink-0">
             <Search className="w-4 h-4" />
           </Button>
         </div>
 
         <Dialog open={open} onOpenChange={setOpen}>
-          <DialogTrigger render={<Button className="gap-2 cursor-pointer"><Plus className="w-4 h-4" />Add Vehicle</Button>} />
+          <DialogTrigger render={<Button className="gap-2 cursor-pointer w-full sm:w-auto"><Plus className="w-4 h-4" />Add Vehicle</Button>} />
           <DialogContent className="sm:max-w-[30vw] w-full">
             <DialogHeader><DialogTitle>Add Vehicle</DialogTitle></DialogHeader>
             <form onSubmit={handleCreate} className="space-y-4">
               <div className="space-y-2">
                 <Label>Owner *</Label>
-                <Select value={selectedCustomer} onValueChange={(v) => setSelectedCustomer(v || "")}>
-                  <SelectTrigger><SelectValue placeholder="Select customer" /></SelectTrigger>
-                  <SelectContent>
-                    {customers.map((c) => (
-                      <SelectItem key={c.id} value={c.id.toString()}>
-                        {c.name} ({c.phone})
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Combobox
+                  options={customers.map((c) => ({ value: c.id.toString(), label: `${c.name} (${c.phone})` }))}
+                  value={selectedCustomer}
+                  onChange={(v) => setSelectedCustomer(v || "")}
+                  placeholder="Search customer..."
+                  emptyText="No customer found."
+                />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-2">
@@ -192,27 +187,28 @@ export function VehiclesClient({
                 </div>
                 <div className="space-y-2">
                   <Label>Brand *</Label>
-                  <Select value={newBrand} onValueChange={(v) => { setNewBrand(v || ""); setNewModel(""); }}>
-                    <SelectTrigger><SelectValue placeholder="Select Brand" /></SelectTrigger>
-                    <SelectContent>
-                      {tractorBrands.map((b) => (
-                        <SelectItem key={b} value={b}>{b}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <Combobox
+                    options={tractorBrands.map((b) => ({ value: b, label: b }))}
+                    value={newBrand}
+                    onChange={(v) => { setNewBrand(v || ""); setNewModel(""); }}
+                    placeholder="Search brand..."
+                    emptyText="No brand found."
+                    allowCustomValue
+                  />
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-2">
                   <Label>Model</Label>
-                  <Select value={newModel} onValueChange={(v) => setNewModel(v || "")} disabled={!newBrand}>
-                    <SelectTrigger><SelectValue placeholder="Select Model" /></SelectTrigger>
-                    <SelectContent>
-                      {((tractorModelsMap as Record<string, string[]>)[newBrand] || []).map((m) => (
-                        <SelectItem key={m} value={m}>{m}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <Combobox
+                    options={((tractorModelsMap as Record<string, string[]>)[newBrand] || []).map((m) => ({ value: m, label: m }))}
+                    value={newModel}
+                    onChange={(v) => setNewModel(v || "")}
+                    placeholder="Search model..."
+                    emptyText={newBrand ? "No model found." : "Select brand first"}
+                    disabled={!newBrand}
+                    allowCustomValue
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="year">Year</Label>
@@ -238,8 +234,8 @@ export function VehiclesClient({
       </div>
 
       <Card className="bg-card/50">
-        <CardContent className="p-0">
-          <Table>
+        <CardContent className="p-0 overflow-x-auto">
+          <Table className="min-w-[600px]">
             <TableHeader>
               <TableRow className="border-border/50">
                 <TableHead>Reg Number</TableHead>

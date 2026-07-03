@@ -33,7 +33,7 @@ export default async function ReportsPage(props: {
   return (
     <>
       <Header title="Reports" />
-      <div className="p-6 animate-in-page">
+      <div className="p-4 md:p-6 animate-in-page">
         <Suspense fallback={<div>Loading reports...</div>}>
           <ReportsClient stats={stats} expenses={expenses} />
         </Suspense>

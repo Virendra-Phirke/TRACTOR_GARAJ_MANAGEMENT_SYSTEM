@@ -11,7 +11,7 @@ export default async function ProfilePage() {
   return (
     <>
       <Header title="Owner Profile" />
-      <div className="p-6 animate-in-page">
+      <div className="p-4 md:p-6 animate-in-page">
         <ProfileClient garage={garage} upi={upi} />
       </div>
     </>

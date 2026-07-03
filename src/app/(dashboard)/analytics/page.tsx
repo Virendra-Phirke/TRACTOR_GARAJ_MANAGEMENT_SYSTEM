@@ -12,7 +12,7 @@ export default async function AnalyticsPage() {
   return (
     <>
       <Header title="Analytics" />
-      <div className="p-6 animate-in-page">
+      <div className="p-4 md:p-6 animate-in-page">
         <AnalyticsClient data={data} />
       </div>
     </>

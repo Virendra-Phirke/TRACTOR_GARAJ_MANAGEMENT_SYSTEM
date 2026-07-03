@@ -170,58 +170,53 @@ export function DashboardClient({
   return (
     <div className="space-y-6">
       {/* Quick Action */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        {/* <div>
-          <h1 className="text-2xl font-bold tracking-tight">
-            Welcome back, Owner
-          </h1>
-          <p className="text-muted-foreground text-sm mt-1">
-            Here&apos;s your garage at a glance
-          </p>
-        </div> */}
+      <div className="flex flex-col gap-4">
+        {/* Filters Row */}
+        <div className="flex flex-wrap gap-2 items-center">
+          <Select value={filterMonth.toString()} onValueChange={(v) => handleMonthYearChange(Number(v), filterYear)}>
+            <SelectTrigger className="w-[100px] sm:w-[120px] h-9 text-xs">
+              {monthNames[filterMonth]}
+            </SelectTrigger>
+            <SelectContent>
+              {monthNames.map((m, i) => (
+                <SelectItem key={i} value={i.toString()}>{m}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select value={filterYear.toString()} onValueChange={(v) => handleMonthYearChange(filterMonth, Number(v))}>
+            <SelectTrigger className="w-[80px] sm:w-[90px] h-9 text-xs">
+              {filterYear}
+            </SelectTrigger>
+            <SelectContent>
+              {availableYears.map((y) => (
+                <SelectItem key={y} value={y.toString()}>{y}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <DatePickerWithRange date={date} setDate={setDate} onClear={handleClearFilters} />
+          <Button size="sm" variant="secondary" onClick={handleApplyFilters} className="h-9 cursor-pointer">
+            Apply
+          </Button>
+        </div>
 
-        {/* Actions & Filters */}
-        <div className="flex flex-wrap gap-3 items-center">
-          <div className="flex items-center gap-2">
-            <Select value={filterMonth.toString()} onValueChange={(v) => handleMonthYearChange(Number(v), filterYear)}>
-              <SelectTrigger className="w-[120px] h-9 text-xs">
-                {monthNames[filterMonth]}
-              </SelectTrigger>
-              <SelectContent>
-                {monthNames.map((m, i) => (
-                  <SelectItem key={i} value={i.toString()}>{m}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Select value={filterYear.toString()} onValueChange={(v) => handleMonthYearChange(filterMonth, Number(v))}>
-              <SelectTrigger className="w-[90px] h-9 text-xs">
-                {filterYear}
-              </SelectTrigger>
-              <SelectContent>
-                {availableYears.map((y) => (
-                  <SelectItem key={y} value={y.toString()}>{y}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <DatePickerWithRange date={date} setDate={setDate} onClear={handleClearFilters} />
-            <Button size="sm" variant="secondary" onClick={handleApplyFilters} className="h-9 cursor-pointer">
-              Apply
-            </Button>
-          </div>
-          <a href="/api/export/csv" download>
-            <Button variant="outline" className="gap-2 cursor-pointer border-blue-500/30 text-blue-400 hover:bg-blue-500/10">
+        {/* Action Buttons */}
+        <div className="flex flex-wrap gap-2">
+          <a href="/api/export/csv" download className="flex-1 min-w-[120px] sm:flex-none">
+            <Button variant="outline" className="w-full sm:w-auto gap-2 cursor-pointer border-blue-500/30 text-blue-400 hover:bg-blue-500/10">
               <Download className="w-4 h-4" />
-              Export Report
+              <span className="hidden sm:inline">Export Report</span>
+              <span className="sm:hidden">Export</span>
             </Button>
           </a>
-          <a href="/api/backup" download>
-            <Button variant="outline" className="gap-2 cursor-pointer border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10">
+          <a href="/api/backup" download className="flex-1 min-w-[120px] sm:flex-none">
+            <Button variant="outline" className="w-full sm:w-auto gap-2 cursor-pointer border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10">
               <DatabaseBackup className="w-4 h-4" />
-              Backup Data
+              <span className="hidden sm:inline">Backup Data</span>
+              <span className="sm:hidden">Backup</span>
             </Button>
           </a>
-          <Link href="/invoices/new">
-            <Button className="gap-2 cursor-pointer">
+          <Link href="/invoices/new" className="flex-1 min-w-[120px] sm:flex-none">
+            <Button className="w-full sm:w-auto gap-2 cursor-pointer">
               <Plus className="w-4 h-4" />
               New Invoice
             </Button>

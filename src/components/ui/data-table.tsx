@@ -146,8 +146,8 @@ export function DataTable<TData, TValue>({
           </Select>
         )}
       </div>
-      <div className="rounded-lg border border-border/60 bg-card overflow-hidden">
-        <Table>
+      <div className="rounded-lg border border-border/60 bg-card overflow-x-auto">
+        <Table className="min-w-[600px]">
           <TableHeader className="bg-muted/30">
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id}>

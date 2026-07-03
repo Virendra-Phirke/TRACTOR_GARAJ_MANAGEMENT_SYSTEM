@@ -9,7 +9,6 @@ import {
   Tractor,
   Package,
   FileText,
-  FileSignature,
   Settings,
   Receipt,
   BarChart3,
@@ -18,8 +17,9 @@ import {
   ChevronRight,
   UserCircle2,
   LineChart,
+  X,
 } from "lucide-react";
-import { useState } from "react";
+import { useState, createContext, useContext, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Tooltip,
@@ -40,29 +40,61 @@ const navItems = [
   { href: "/settings", label: "Settings", icon: Settings },
 ];
 
+// ── Sidebar context for mobile toggle ────────────────────────────────
+interface SidebarContextType {
+  mobileOpen: boolean;
+  setMobileOpen: (open: boolean) => void;
+  toggle: () => void;
+}
+
+const SidebarContext = createContext<SidebarContextType>({
+  mobileOpen: false,
+  setMobileOpen: () => {},
+  toggle: () => {},
+});
+
+export function useSidebar() {
+  return useContext(SidebarContext);
+}
+
+export function SidebarProvider({ children }: { children: React.ReactNode }) {
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const toggle = useCallback(() => setMobileOpen((prev) => !prev), []);
+  return (
+    <SidebarContext.Provider value={{ mobileOpen, setMobileOpen, toggle }}>
+      {children}
+    </SidebarContext.Provider>
+  );
+}
+
 export function Sidebar() {
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
+  const { mobileOpen, setMobileOpen } = useSidebar();
 
-  return (
-    <aside
-      className={cn(
-        "h-screen sticky top-0 flex flex-col border-r border-sidebar-border bg-sidebar transition-all duration-300 ease-in-out no-print",
-        collapsed ? "w-[68px]" : "w-[240px]"
-      )}
-    >
+  const navContent = (
+    <>
       {/* Logo */}
-      <div className="flex items-center gap-3 px-4 h-16 border-b border-sidebar-border shrink-0">
+      <div className="flex items-center gap-3 px-4 h-14 md:h-16 border-b border-sidebar-border shrink-0">
         <div className="w-9 h-9 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0">
           <Wrench className="w-5 h-5 text-primary" />
         </div>
-        {!collapsed && (
-          <div className="overflow-hidden">
+        {(!collapsed || mobileOpen) && (
+          <div className="overflow-hidden flex-1">
             <h1 className="text-sm font-bold tracking-tight truncate">GBMS</h1>
             <p className="text-[10px] text-muted-foreground truncate">
               Garage Billing
             </p>
           </div>
+        )}
+        {/* Close button on mobile */}
+        {mobileOpen && (
+          <button
+            onClick={() => setMobileOpen(false)}
+            className="md:hidden p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-colors cursor-pointer"
+          >
+            <X className="w-5 h-5" />
+          </button>
         )}
       </div>
 
@@ -73,10 +105,16 @@ export function Sidebar() {
             pathname === item.href ||
             (item.href !== "/" && pathname.startsWith(item.href));
 
+          const handleClick = () => {
+            // Close mobile sidebar on nav
+            setMobileOpen(false);
+          };
+
           const linkContent = (
             <Link
               key={item.href}
               href={item.href}
+              onClick={handleClick}
               className={cn(
                 "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200",
                 isActive
@@ -90,11 +128,14 @@ export function Sidebar() {
                   isActive ? "text-primary" : ""
                 )}
               />
-              {!collapsed && <span className="truncate">{item.label}</span>}
+              {/* Always show label on mobile, respect collapsed on desktop */}
+              <span className={cn("truncate", !mobileOpen && collapsed ? "hidden" : "")}>
+                {item.label}
+              </span>
             </Link>
           );
 
-          if (collapsed) {
+          if (collapsed && !mobileOpen) {
             return (
               <Tooltip key={item.href}>
                 <TooltipTrigger render={linkContent} />
@@ -109,8 +150,8 @@ export function Sidebar() {
         })}
       </nav>
 
-      {/* Collapse toggle */}
-      <div className="px-2 py-3 border-t border-sidebar-border shrink-0">
+      {/* Collapse toggle — desktop only */}
+      <div className="px-2 py-3 border-t border-sidebar-border shrink-0 hidden md:block">
         <Button
           variant="ghost"
           size="sm"
@@ -127,6 +168,41 @@ export function Sidebar() {
           )}
         </Button>
       </div>
-    </aside>
+    </>
+  );
+
+  return (
+    <>
+      {/* ── Desktop Sidebar ───────────────────────────────────────── */}
+      <aside
+        className={cn(
+          "h-screen sticky top-0 flex-col border-r border-sidebar-border bg-sidebar transition-all duration-300 ease-in-out no-print",
+          "hidden md:flex",
+          collapsed ? "w-[68px]" : "w-[240px]"
+        )}
+      >
+        {navContent}
+      </aside>
+
+      {/* ── Mobile Sidebar Overlay ────────────────────────────────── */}
+      {/* Backdrop */}
+      <div
+        className={cn(
+          "fixed inset-0 z-40 bg-black/60 backdrop-blur-sm transition-opacity duration-300 md:hidden",
+          mobileOpen ? "opacity-100" : "opacity-0 pointer-events-none"
+        )}
+        onClick={() => setMobileOpen(false)}
+      />
+
+      {/* Slide-in panel */}
+      <aside
+        className={cn(
+          "fixed inset-y-0 left-0 z-50 w-[280px] flex flex-col bg-sidebar border-r border-sidebar-border shadow-2xl transition-transform duration-300 ease-in-out md:hidden no-print",
+          mobileOpen ? "translate-x-0" : "-translate-x-full"
+        )}
+      >
+        {navContent}
+      </aside>
+    </>
   );
 }

@@ -12,7 +12,7 @@ export default async function ExpensesPage() {
   return (
     <>
       <Header title="Expenses" />
-      <div className="p-6 animate-in-page">
+      <div className="p-4 md:p-6 animate-in-page">
         <ExpensesClient expenses={expensesList} recentInvoices={recentInvoices} />
       </div>
     </>

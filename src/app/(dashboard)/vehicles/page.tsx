@@ -17,7 +17,7 @@ export default async function VehiclesPage({
   return (
     <>
       <Header title="Vehicles" />
-      <div className="p-6 animate-in-page">
+      <div className="p-4 md:p-6 animate-in-page">
         <VehiclesClient
           vehicles={vehiclesList}
           customers={customersList}

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useEffect, useState } from "react";
+import React, { createContext, useContext, useEffect, useState, useRef, useCallback } from "react";
 
 type Theme = "dark" | "light";
 
@@ -124,24 +124,83 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     localStorage.setItem("gbms-sound-enabled", enabled.toString());
   };
 
-  const playSound = (type: "success" | "error" | "warning" | "click" | "create" | "delete") => {
-    if (!soundEnabled) return;
-    
-    // Use gta_v.mp3 for creation/success/notification sounds
-    // Use duck.mp3 for deletion/error/destructive sounds
-    const isDestructive = type === "delete" || type === "error";
-    const audioSrc = isDestructive ? "/sounds/duck.mp3" : "/sounds/gta_v.mp3";
+  // ── Sound System (deployed-safe) ──────────────────────────────────
+  // Preload audio elements once and reuse them. Use AudioContext to
+  // "unlock" audio playback on mobile/deployed sites after first gesture.
+  const audioUnlockedRef = useRef(false);
+  const successAudioRef = useRef<HTMLAudioElement | null>(null);
+  const errorAudioRef = useRef<HTMLAudioElement | null>(null);
+
+  // Preload audio files on mount
+  useEffect(() => {
+    if (typeof window === "undefined") return;
     
     try {
-      const audio = new Audio(audioSrc);
-      audio.volume = 0.5;
-      audio.play().catch(() => {
-        // Silently fail if autoplay is blocked
-      });
+      const success = new Audio("/sounds/gta_v.mp3");
+      success.preload = "auto";
+      success.load();
+      successAudioRef.current = success;
+
+      const error = new Audio("/sounds/duck.mp3");
+      error.preload = "auto";
+      error.load();
+      errorAudioRef.current = error;
     } catch {
-      // Silently fail if Audio is not available
+      // Audio not available in this environment
     }
-  };
+  }, []);
+
+  // Unlock audio on first user gesture (click/touch/keydown)
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const unlock = () => {
+      if (audioUnlockedRef.current) return;
+      audioUnlockedRef.current = true;
+
+      // Play and immediately pause both to unlock them
+      [successAudioRef.current, errorAudioRef.current].forEach((audio) => {
+        if (audio) {
+          audio.volume = 0;
+          audio.play().then(() => {
+            audio.pause();
+            audio.currentTime = 0;
+            audio.volume = 0.5;
+          }).catch(() => {});
+        }
+      });
+    };
+
+    document.addEventListener("click", unlock, { once: true });
+    document.addEventListener("touchstart", unlock, { once: true });
+    document.addEventListener("keydown", unlock, { once: true });
+
+    return () => {
+      document.removeEventListener("click", unlock);
+      document.removeEventListener("touchstart", unlock);
+      document.removeEventListener("keydown", unlock);
+    };
+  }, []);
+
+  const playSound = useCallback((type: "success" | "error" | "warning" | "click" | "create" | "delete") => {
+    if (!soundEnabled) return;
+
+    const isDestructive = type === "delete" || type === "error";
+    const sourceAudio = isDestructive ? errorAudioRef.current : successAudioRef.current;
+
+    if (!sourceAudio) return;
+
+    try {
+      // Clone the preloaded audio so we can play concurrently without interrupting
+      const clone = sourceAudio.cloneNode() as HTMLAudioElement;
+      clone.volume = 0.5;
+      clone.play().catch(() => {});
+      // Clean up clone after it finishes
+      clone.addEventListener("ended", () => { clone.remove(); }, { once: true });
+    } catch {
+      // Silently fail
+    }
+  }, [soundEnabled]);
 
   useEffect(() => {
     // Apply theme class to <html>

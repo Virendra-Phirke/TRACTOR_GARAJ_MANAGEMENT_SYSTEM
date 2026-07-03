@@ -12,7 +12,7 @@ export default async function SettingsPage() {
   return (
     <>
       <Header title="Settings" />
-      <div className="p-6 animate-in-page">
+      <div className="p-4 md:p-6 animate-in-page">
         <SettingsClient garage={garage} upi={upi} taxes={taxes} />
       </div>
     </>

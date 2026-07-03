@@ -20,7 +20,7 @@ export default async function DashboardPage(props: {
   return (
     <>
       <Header title="Dashboard" />
-      <div className="p-6 animate-in-page">
+      <div className="p-4 md:p-6 animate-in-page">
         <Suspense fallback={<div>Loading dashboard...</div>}>
           <DashboardClient
             stats={stats}

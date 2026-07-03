@@ -21,7 +21,7 @@ export default async function InvoiceDetailPage({
   return (
     <>
       <Header title={`Invoice ${invoice.invoiceNumber}`} />
-      <div className="p-6 animate-in-page">
+      <div className="p-4 md:p-6 animate-in-page">
         <InvoiceDetailClient
           invoice={invoice}
           garage={garage}

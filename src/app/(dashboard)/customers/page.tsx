@@ -13,7 +13,7 @@ export default async function CustomersPage({
   return (
     <>
       <Header title="Customers" />
-      <div className="p-6 animate-in-page">
+      <div className="p-4 md:p-6 animate-in-page">
         <CustomersClient
           customers={customersList}
           searchQuery={params.search || ""}

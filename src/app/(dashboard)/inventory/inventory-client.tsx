@@ -8,7 +8,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Combobox } from "@/components/ui/combobox";
 import { Badge } from "@/components/ui/badge";
 import {
   AlertDialog,
@@ -139,7 +139,7 @@ export function InventoryClient({ parts, categories, searchQuery }: { parts: Par
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between gap-4 flex-wrap">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div className="flex items-center gap-2 flex-1 max-w-md">
           <Input placeholder="Search parts..." value={search} onChange={(e) => setSearch(e.target.value)} onKeyDown={(e) => e.key === "Enter" && applyFilters(search, selectedCategory)} className="bg-card/50" />
           <Button variant="secondary" size="icon" onClick={() => applyFilters(search, selectedCategory)} className="cursor-pointer shrink-0"><Search className="w-4 h-4" /></Button>
@@ -165,12 +165,13 @@ export function InventoryClient({ parts, categories, searchQuery }: { parts: Par
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-2">
                     <Label>Category</Label>
-                    <Select value={selectedCategory} onValueChange={(v) => setSelectedCategory(v || "")}>
-                      <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
-                      <SelectContent>
-                        {categories.map((c) => (<SelectItem key={c.id} value={c.id.toString()}>{c.name}</SelectItem>))}
-                      </SelectContent>
-                    </Select>
+                    <Combobox
+                      options={categories.map((c) => ({ value: c.id.toString(), label: c.name }))}
+                      value={selectedCategory}
+                      onChange={(v) => setSelectedCategory(v || "")}
+                      placeholder="Search category..."
+                      emptyText="No category found."
+                    />
                   </div>
                   <div className="space-y-2"><Label htmlFor="partNumber">Part No.</Label><Input id="partNumber" name="partNumber" placeholder="Optional" /></div>
                 </div>
@@ -191,8 +192,8 @@ export function InventoryClient({ parts, categories, searchQuery }: { parts: Par
       </div>
 
       <Card className="bg-card/50">
-        <CardContent className="p-0">
-          <Table>
+        <CardContent className="p-0 overflow-x-auto">
+          <Table className="min-w-[550px]">
             <TableHeader>
               <TableRow className="border-border/50">
                 <TableHead>Part Name</TableHead>

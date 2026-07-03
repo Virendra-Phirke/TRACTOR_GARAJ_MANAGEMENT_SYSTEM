@@ -127,79 +127,20 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const playSound = (type: "success" | "error" | "warning" | "click" | "create" | "delete") => {
     if (!soundEnabled) return;
     
-    const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
-    if (!AudioContextClass) return;
+    // Use gta_v.mp3 for creation/success/notification sounds
+    // Use duck.mp3 for deletion/error/destructive sounds
+    const isDestructive = type === "delete" || type === "error";
+    const audioSrc = isDestructive ? "/sounds/duck.mp3" : "/sounds/gta_v.mp3";
     
-    const ctx = new AudioContextClass();
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    
-    osc.connect(gain);
-    gain.connect(ctx.destination);
-    
-    const now = ctx.currentTime;
-    
-    if (type === "success") {
-      osc.type = "sine";
-      osc.frequency.setValueAtTime(600, now);
-      osc.frequency.exponentialRampToValueAtTime(800, now + 0.1);
-      gain.gain.setValueAtTime(0, now);
-      gain.gain.linearRampToValueAtTime(0.2, now + 0.05);
-      gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
-      osc.start(now);
-      osc.stop(now + 0.3);
-    } else if (type === "create") {
-      // Ascending major chord-like chime (C to G)
-      osc.type = "sine";
-      osc.frequency.setValueAtTime(523.25, now); // C5
-      osc.frequency.exponentialRampToValueAtTime(783.99, now + 0.15); // G5
-      gain.gain.setValueAtTime(0, now);
-      gain.gain.linearRampToValueAtTime(0.3, now + 0.05);
-      gain.gain.exponentialRampToValueAtTime(0.01, now + 0.4);
-      osc.start(now);
-      osc.stop(now + 0.4);
-    } else if (type === "delete") {
-      // Descending low sweep (thud)
-      osc.type = "triangle";
-      osc.frequency.setValueAtTime(250, now);
-      osc.frequency.exponentialRampToValueAtTime(80, now + 0.2);
-      gain.gain.setValueAtTime(0, now);
-      gain.gain.linearRampToValueAtTime(0.3, now + 0.02);
-      gain.gain.exponentialRampToValueAtTime(0.01, now + 0.25);
-      osc.start(now);
-      osc.stop(now + 0.25);
-    } else if (type === "error") {
-      osc.type = "sawtooth";
-      osc.frequency.setValueAtTime(150, now);
-      osc.frequency.setValueAtTime(120, now + 0.1);
-      gain.gain.setValueAtTime(0, now);
-      gain.gain.linearRampToValueAtTime(0.2, now + 0.05);
-      gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
-      osc.start(now);
-      osc.stop(now + 0.3);
-    } else if (type === "warning") {
-      osc.type = "triangle";
-      osc.frequency.setValueAtTime(400, now);
-      gain.gain.setValueAtTime(0, now);
-      gain.gain.linearRampToValueAtTime(0.2, now + 0.05);
-      gain.gain.exponentialRampToValueAtTime(0.01, now + 0.4);
-      osc.start(now);
-      osc.stop(now + 0.4);
-    } else if (type === "click") {
-      osc.type = "sine";
-      osc.frequency.setValueAtTime(800, now);
-      gain.gain.setValueAtTime(0, now);
-      gain.gain.linearRampToValueAtTime(0.1, now + 0.01);
-      gain.gain.exponentialRampToValueAtTime(0.01, now + 0.05);
-      osc.start(now);
-      osc.stop(now + 0.05);
+    try {
+      const audio = new Audio(audioSrc);
+      audio.volume = 0.5;
+      audio.play().catch(() => {
+        // Silently fail if autoplay is blocked
+      });
+    } catch {
+      // Silently fail if Audio is not available
     }
-    
-    setTimeout(() => {
-      if (ctx.state !== "closed") {
-        ctx.close();
-      }
-    }, 1000);
   };
 
   useEffect(() => {

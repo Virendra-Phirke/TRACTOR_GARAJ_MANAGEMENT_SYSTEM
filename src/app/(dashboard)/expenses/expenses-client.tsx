@@ -12,8 +12,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Combobox } from "@/components/ui/combobox";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Trash2, Receipt } from "lucide-react";
+import { Plus, Trash2, Receipt, CheckCircle } from "lucide-react";
 import { createExpense, deleteExpense } from "@/lib/actions/expenses";
+import { recordPartnerPayout } from "@/lib/actions/invoices";
 import { toast } from "sonner";
 import { format, isWithinInterval } from "date-fns";
 import { DateRange } from "react-day-picker";
@@ -33,7 +34,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { PaginationFooter } from "@/components/ui/pagination-footer";
 
-const EXPENSE_CATEGORIES = ["Rent", "Electricity", "Salary", "Tools", "Transport", "Materials", "Maintenance", "Other"];
+const EXPENSE_CATEGORIES = ["Rent", "Electricity", "Salary", "Tools", "Transport", "Materials", "Maintenance", "Partner Payment", "Other"];
 
 interface Expense {
   id: number;
@@ -57,6 +58,7 @@ interface RecentInvoice {
   invoiceNumber: string;
   customerName: string | null;
   createdAt: Date;
+  partnerPaidAt: Date | null;
   parts: InvoicePart[];
 }
 
@@ -145,6 +147,8 @@ export function ExpensesClient({
   }, 0);
 
   const [customPayoutAmount, setCustomPayoutAmount] = useState<string>("");
+  const [payoutMethod, setPayoutMethod] = useState<string>("cash");
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
   // Sync custom payout amount when total changes (if user hasn't typed anything yet)
   // Actually, better to just let it default or auto-update if empty, but we can just use an effect or calculate it.
@@ -179,17 +183,21 @@ export function ExpensesClient({
     
     setLoading(true);
     try {
-      const invoiceNumbers = selectedInvoicesData.map(i => `#${i.invoiceNumber}`).join(", ");
-      await createExpense({
-        category: "Materials", // Using Materials category for spare parts payout
-        description: `Paid partner for parts used in Invoices: ${invoiceNumbers}`,
+      await recordPartnerPayout({
+        invoiceIds: selectedInvoiceIds,
+        invoiceNumbers: selectedInvoicesData.map(i => i.invoiceNumber),
         amount: finalPayoutAmount,
-        paymentMethod: "cash",
+        paymentMethod: payoutMethod,
       });
-      toast.success("Partner payment recorded");
+      toast.success(`Partner payment of ₹${finalPayoutAmount.toLocaleString("en-IN")} recorded for ${selectedInvoiceIds.length} invoice(s)`, {
+        duration: 5000,
+        icon: <CheckCircle className="w-4 h-4 text-green-500" />,
+      });
       setPartnerOpen(false);
+      setConfirmOpen(false);
       setSelectedInvoiceIds([]);
       setCustomPayoutAmount("");
+      setPayoutMethod("cash");
       router.refresh();
     } catch {
       toast.error("Failed to record partner payment");
@@ -281,7 +289,8 @@ export function ExpensesClient({
                                 <TableHead className="w-[40px] text-center"></TableHead>
                                 <TableHead>Invoice #</TableHead>
                                 <TableHead>Customer</TableHead>
-                                <TableHead className="text-right">Parts</TableHead>
+                                <TableHead>Date</TableHead>
+                                <TableHead className="text-right">Parts Value</TableHead>
                               </TableRow>
                             </TableHeader>
                             <TableBody>
@@ -291,7 +300,9 @@ export function ExpensesClient({
                                     No invoices found.
                                   </TableCell>
                                 </TableRow>
-                              ) : paginatedInvoices.map(inv => (
+                              ) : paginatedInvoices.map(inv => {
+                                const invPartsTotal = inv.parts.reduce((sum, p) => sum + p.total, 0);
+                                return (
                                 <TableRow key={inv.id} className={selectedInvoiceIds.includes(inv.id) ? "bg-primary/5" : ""}>
                                   <TableCell className="text-center">
                                     <Checkbox 
@@ -301,11 +312,16 @@ export function ExpensesClient({
                                   </TableCell>
                                   <TableCell className="font-medium">#{inv.invoiceNumber}</TableCell>
                                   <TableCell className="text-sm">{inv.customerName || 'Unknown'}</TableCell>
-                                  <TableCell className="text-right font-semibold">
-                                    <Badge variant="secondary">{inv.parts.length}</Badge>
+                                  <TableCell className="text-sm text-muted-foreground">{format(new Date(inv.createdAt), "dd MMM yy")}</TableCell>
+                                  <TableCell className="text-right">
+                                    <div className="flex items-center justify-end gap-2">
+                                      <span className="text-xs text-muted-foreground">{inv.parts.length} parts</span>
+                                      <Badge variant="secondary" className="font-semibold">₹{invPartsTotal.toLocaleString("en-IN")}</Badge>
+                                    </div>
                                   </TableCell>
                                 </TableRow>
-                              ))}
+                                );
+                              })}
                             </TableBody>
                           </Table>
                         </div>
@@ -391,9 +407,44 @@ export function ExpensesClient({
                             </p>
                           </div>
 
-                          <Button onClick={handlePartnerPayout} disabled={loading} size="lg" className="w-full text-base font-semibold shadow-md">
-                            {loading ? "Recording Payment..." : `Record Payment of ₹${finalPayoutAmount.toLocaleString("en-IN")}`}
-                          </Button>
+                          <div className="space-y-2">
+                            <Label className="text-sm font-medium">Payment Method</Label>
+                            <Select value={payoutMethod} onValueChange={setPayoutMethod}>
+                              <SelectTrigger className="bg-background">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="cash">Cash</SelectItem>
+                                <SelectItem value="upi">UPI</SelectItem>
+                                <SelectItem value="card">Card</SelectItem>
+                                <SelectItem value="other">Other</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+
+                          <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+                            <AlertDialogTrigger render={
+                              <Button disabled={loading} size="lg" className="w-full text-base font-semibold shadow-md cursor-pointer">
+                                {loading ? "Recording Payment..." : `Record Payment of ₹${finalPayoutAmount.toLocaleString("en-IN")}`}
+                              </Button>
+                            } />
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Confirm Partner Payout</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  You are about to record a payment of <strong>₹{finalPayoutAmount.toLocaleString("en-IN")}</strong> via <strong className="capitalize">{payoutMethod}</strong> for <strong>{selectedInvoiceIds.length}</strong> invoice(s).
+                                  <br /><br />
+                                  These invoices will be marked as partner-paid and will no longer appear in future payouts.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction onClick={handlePartnerPayout} disabled={loading} className="cursor-pointer">
+                                  {loading ? "Recording..." : "Confirm Payment"}
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
                         </div>
                       </>
                     )}

@@ -52,6 +52,7 @@ interface DataTableProps<TData, TValue> {
   defaultPageSize?: number;
   rowSelection?: RowSelectionState;
   onRowSelectionChange?: OnChangeFn<RowSelectionState>;
+  onEditRow?: (row: TData) => void;
 }
 
 const PAGE_SIZE_OPTIONS = [20, 50, 100, 200];
@@ -67,6 +68,7 @@ export function DataTable<TData, TValue>({
   defaultPageSize = 20,
   rowSelection,
   onRowSelectionChange,
+  onEditRow,
 }: DataTableProps<TData, TValue>) {
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
@@ -89,6 +91,9 @@ export function DataTable<TData, TValue>({
     },
     enableRowSelection: true,
     onRowSelectionChange,
+    meta: {
+      onEditRow,
+    },
     initialState: {
       pagination: {
         pageSize: defaultPageSize,

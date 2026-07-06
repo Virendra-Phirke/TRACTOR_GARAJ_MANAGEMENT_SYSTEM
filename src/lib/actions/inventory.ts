@@ -122,6 +122,10 @@ export async function updateSparePart(
     partNumber?: string;
     unit?: string;
     description?: string;
+    stock?: number;
+    minStockAlert?: number;
+    purchasePrice?: number;
+    sellingPrice?: number;
     isActive?: boolean;
   }
 ) {

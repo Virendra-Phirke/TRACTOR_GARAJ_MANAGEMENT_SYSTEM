@@ -21,8 +21,8 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Plus, Search, Trash2, Package, AlertTriangle } from "lucide-react";
-import { createSparePart, deleteSparePart, createCategory } from "@/lib/actions/inventory";
+import { Plus, Search, Trash2, Package, AlertTriangle, Pencil } from "lucide-react";
+import { createSparePart, deleteSparePart, createCategory, updateSparePart } from "@/lib/actions/inventory";
 import { toast } from "sonner";
 import { useTheme } from "@/components/theme-provider";
 
@@ -52,6 +52,10 @@ export function InventoryClient({ parts, categories, searchQuery }: { parts: Par
   const [loading, setLoading] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string>("");
   const [hiddenIds, setHiddenIds] = useState<Set<number>>(new Set());
+  const [editOpen, setEditOpen] = useState(false);
+  const [editingPart, setEditingPart] = useState<Part | null>(null);
+  const [editCategory, setEditCategory] = useState<string>("");
+  const [editLoading, setEditLoading] = useState(false);
   const { playSound } = useTheme();
 
   const displayedParts = parts.filter((p) => !hiddenIds.has(p.id));
@@ -135,6 +139,41 @@ export function InventoryClient({ parts, categories, searchQuery }: { parts: Par
       }
     });
     playSound("delete");
+  };
+
+  const openEditDialog = (part: Part) => {
+    setEditingPart(part);
+    setEditCategory(part.categoryId?.toString() || "");
+    setEditOpen(true);
+  };
+
+  const handleEditPart = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!editingPart) return;
+    setEditLoading(true);
+    const form = new FormData(e.currentTarget);
+    try {
+      await updateSparePart(editingPart.id, {
+        name: form.get("editName") as string,
+        categoryId: editCategory ? Number(editCategory) : null,
+        partNumber: (form.get("editPartNumber") as string) || "",
+        unit: (form.get("editUnit") as string) || "piece",
+        stock: Number(form.get("editStock")) || 0,
+        minStockAlert: Number(form.get("editMinStock")) || 0,
+        purchasePrice: Number(form.get("editPurchasePrice")) || 0,
+        sellingPrice: Number(form.get("editSellingPrice")) || 0,
+      });
+      toast.success("Part updated successfully");
+      playSound("create");
+      setEditOpen(false);
+      setEditingPart(null);
+      router.refresh();
+    } catch {
+      toast.error("Failed to update part");
+      playSound("error");
+    } finally {
+      setEditLoading(false);
+    }
   };
 
   return (
@@ -232,27 +271,32 @@ export function InventoryClient({ parts, categories, searchQuery }: { parts: Par
                     </TableCell>
                     <TableCell>₹{part.sellingPrice || 0}</TableCell>
                     <TableCell className="text-right">
-                      <AlertDialog>
-                        <AlertDialogTrigger render={
-                          <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive cursor-pointer">
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
-                        } />
-                        <AlertDialogContent>
-                          <AlertDialogHeader>
-                            <AlertDialogTitle>Delete Part?</AlertDialogTitle>
-                            <AlertDialogDescription>
-                              Are you sure you want to delete &quot;{part.name}&quot;? This action cannot be undone.
-                            </AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter>
-                            <AlertDialogCancel>Cancel</AlertDialogCancel>
-                            <AlertDialogAction onClick={() => handleDelete(part.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90 cursor-pointer">
-                              Delete
-                            </AlertDialogAction>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
+                      <div className="flex items-center justify-end gap-1">
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary cursor-pointer" onClick={() => openEditDialog(part)}>
+                          <Pencil className="w-4 h-4" />
+                        </Button>
+                        <AlertDialog>
+                          <AlertDialogTrigger render={
+                            <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive cursor-pointer">
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          } />
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Delete Part?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Are you sure you want to delete &quot;{part.name}&quot;? This action cannot be undone.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction onClick={() => handleDelete(part.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90 cursor-pointer">
+                                Delete
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))
@@ -261,6 +305,41 @@ export function InventoryClient({ parts, categories, searchQuery }: { parts: Par
           </Table>
         </CardContent>
       </Card>
+
+      {/* Edit Part Dialog */}
+      <Dialog open={editOpen} onOpenChange={setEditOpen}>
+        <DialogContent className="sm:max-w-[30vw] w-full">
+          <DialogHeader><DialogTitle>Edit Spare Part</DialogTitle></DialogHeader>
+          {editingPart && (
+            <form onSubmit={handleEditPart} className="space-y-4">
+              <div className="space-y-2"><Label htmlFor="editName">Part Name *</Label><Input id="editName" name="editName" required defaultValue={editingPart.name} /></div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-2">
+                  <Label>Category</Label>
+                  <Combobox
+                    options={categories.map((c) => ({ value: c.id.toString(), label: c.name }))}
+                    value={editCategory}
+                    onChange={(v) => setEditCategory(v || "")}
+                    placeholder="Search category..."
+                    emptyText="No category found."
+                  />
+                </div>
+                <div className="space-y-2"><Label htmlFor="editPartNumber">Part No.</Label><Input id="editPartNumber" name="editPartNumber" defaultValue={editingPart.partNumber || ""} /></div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-2"><Label htmlFor="editStock">Current Stock</Label><Input type="number" id="editStock" name="editStock" defaultValue={editingPart.stock || 0} /></div>
+                <div className="space-y-2"><Label htmlFor="editMinStock">Min Alert Level</Label><Input type="number" id="editMinStock" name="editMinStock" defaultValue={editingPart.minStockAlert || 0} /></div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-2"><Label htmlFor="editPurchasePrice">Purchase Price (₹)</Label><Input type="number" id="editPurchasePrice" name="editPurchasePrice" defaultValue={editingPart.purchasePrice || 0} /></div>
+                <div className="space-y-2"><Label htmlFor="editSellingPrice">Selling Price (₹)</Label><Input type="number" id="editSellingPrice" name="editSellingPrice" defaultValue={editingPart.sellingPrice || 0} /></div>
+              </div>
+              <div className="space-y-2"><Label htmlFor="editUnit">Unit</Label><Input id="editUnit" name="editUnit" defaultValue={editingPart.unit || "piece"} /></div>
+              <Button type="submit" className="w-full cursor-pointer" disabled={editLoading}>{editLoading ? "Updating..." : "Update Part"}</Button>
+            </form>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -183,6 +183,7 @@ export const invoices = pgTable(
     paymentMethod: varchar("payment_method", { length: 20 }).default("cash"), // 'cash' | 'upi' | 'card' | 'split' | 'other'
     notes: text("notes").default(""),
     paymentDoneAt: timestamp("payment_done_at"),
+    partnerPaidAt: timestamp("partner_paid_at"),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().notNull(),
   },

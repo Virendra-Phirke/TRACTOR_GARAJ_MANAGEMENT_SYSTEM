@@ -11,7 +11,7 @@ import {
   vehicles,
   expenses,
 } from "@/db/schema";
-import { eq, desc, asc, sql, and, gte, lte, inArray } from "drizzle-orm";
+import { eq, desc, asc, sql, and, gte, lte, inArray, isNull } from "drizzle-orm";
 import { getISTDayBounds } from "@/lib/utils";
 import { revalidatePath } from "next/cache";
 
@@ -336,6 +336,7 @@ export async function getInvoiceById(id: number) {
 
 // ─── Get Recent Invoices With Parts (For Partner Payout) ─────────────
 export async function getRecentInvoicesWithParts() {
+  // Only fetch invoices that have NOT been partner-paid yet
   const recentInvoices = await db
     .select({
       id: invoices.id,
@@ -343,11 +344,12 @@ export async function getRecentInvoicesWithParts() {
       customerId: invoices.customerId,
       customerName: customers.name,
       createdAt: invoices.createdAt,
+      partnerPaidAt: invoices.partnerPaidAt,
     })
     .from(invoices)
     .leftJoin(customers, eq(invoices.customerId, customers.id))
-    .orderBy(desc(invoices.createdAt))
-    .limit(50);
+    .where(isNull(invoices.partnerPaidAt))
+    .orderBy(desc(invoices.createdAt));
 
   const invoiceIds = recentInvoices.map((inv) => inv.id);
   if (invoiceIds.length === 0) return [];
@@ -368,6 +370,53 @@ export async function getRecentInvoicesWithParts() {
   }).filter(inv => inv.parts.length > 0); // Only return invoices that actually have parts
 
   return invoicesWithParts;
+}
+
+// ─── Mark Invoices as Partner Paid ───────────────────────────────────
+export async function markInvoicesAsPartnerPaid(invoiceIds: number[]) {
+  if (!invoiceIds || invoiceIds.length === 0) return;
+  await db
+    .update(invoices)
+    .set({ partnerPaidAt: new Date(), updatedAt: new Date() })
+    .where(inArray(invoices.id, invoiceIds));
+  revalidatePath("/expenses");
+  revalidatePath("/invoices");
+}
+
+// ─── Record Partner Payout (atomic: create expense + mark invoices) ──
+export async function recordPartnerPayout(data: {
+  invoiceIds: number[];
+  invoiceNumbers: string[];
+  amount: number;
+  paymentMethod: string;
+}) {
+  if (!data.invoiceIds || data.invoiceIds.length === 0) {
+    throw new Error("No invoices selected");
+  }
+  if (data.amount <= 0) {
+    throw new Error("Amount must be greater than 0");
+  }
+
+  const invoiceNumbersStr = data.invoiceNumbers.map(n => `#${n}`).join(", ");
+
+  // 1. Create expense record
+  await db.insert(expenses).values({
+    category: "Partner Payment",
+    description: `Partner payout for parts in Invoices: ${invoiceNumbersStr}`,
+    amount: data.amount,
+    date: new Date(),
+    paymentMethod: data.paymentMethod || "cash",
+  });
+
+  // 2. Mark invoices as partner-paid
+  await db
+    .update(invoices)
+    .set({ partnerPaidAt: new Date(), updatedAt: new Date() })
+    .where(inArray(invoices.id, data.invoiceIds));
+
+  revalidatePath("/expenses");
+  revalidatePath("/invoices");
+  revalidatePath("/reports");
 }
 
 // ─── Update Payment Status (with customer balance adjustment) ────────

@@ -24,7 +24,7 @@ import {
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Plus, Trash2 } from "lucide-react";
-import { createCustomer, bulkDeleteCustomers } from "@/lib/actions/customers";
+import { createCustomer, bulkDeleteCustomers, updateCustomer } from "@/lib/actions/customers";
 import { toast } from "sonner";
 import { useTheme } from "@/components/theme-provider";
 import { RowSelectionState } from "@tanstack/react-table";
@@ -51,6 +51,9 @@ export function CustomersClient({
   const [deleting, setDeleting] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [hiddenIds, setHiddenIds] = useState<Set<number>>(new Set());
+  const [editOpen, setEditOpen] = useState(false);
+  const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
+  const [editLoading, setEditLoading] = useState(false);
   const { playSound } = useTheme();
 
   const displayedCustomers = customers.filter((c) => !hiddenIds.has(c.id));
@@ -134,6 +137,36 @@ export function CustomersClient({
       playSound("error");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const openEditDialog = (customer: Customer) => {
+    setEditingCustomer(customer);
+    setEditOpen(true);
+  };
+
+  const handleEditCustomer = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!editingCustomer) return;
+    setEditLoading(true);
+    const form = new FormData(e.currentTarget);
+    try {
+      await updateCustomer(editingCustomer.id, {
+        name: form.get("editName") as string,
+        phone: form.get("editPhone") as string,
+        email: (form.get("editEmail") as string) || "",
+        address: (form.get("editAddress") as string) || "",
+      });
+      toast.success("Customer updated successfully");
+      playSound("create");
+      setEditOpen(false);
+      setEditingCustomer(null);
+      router.refresh();
+    } catch {
+      toast.error("Failed to update customer. Phone may already exist.");
+      playSound("error");
+    } finally {
+      setEditLoading(false);
     }
   };
 
@@ -243,7 +276,40 @@ export function CustomersClient({
         searchPlaceholder="Filter customers by name..." 
         rowSelection={rowSelection}
         onRowSelectionChange={setRowSelection}
+        onEditRow={openEditDialog}
       />
+
+      {/* Edit Customer Dialog */}
+      <Dialog open={editOpen} onOpenChange={setEditOpen}>
+        <DialogContent className="sm:max-w-[30vw] w-full">
+          <DialogHeader>
+            <DialogTitle>Edit Customer</DialogTitle>
+          </DialogHeader>
+          {editingCustomer && (
+            <form onSubmit={handleEditCustomer} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="editName">Name *</Label>
+                <Input id="editName" name="editName" required defaultValue={editingCustomer.name} />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="editPhone">Phone *</Label>
+                <Input id="editPhone" name="editPhone" required defaultValue={editingCustomer.phone} />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="editEmail">Email</Label>
+                <Input id="editEmail" name="editEmail" type="email" defaultValue={editingCustomer.email || ""} />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="editAddress">Address</Label>
+                <Textarea id="editAddress" name="editAddress" rows={2} defaultValue={editingCustomer.address || ""} />
+              </div>
+              <Button type="submit" className="w-full cursor-pointer" disabled={editLoading}>
+                {editLoading ? "Updating..." : "Update Customer"}
+              </Button>
+            </form>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

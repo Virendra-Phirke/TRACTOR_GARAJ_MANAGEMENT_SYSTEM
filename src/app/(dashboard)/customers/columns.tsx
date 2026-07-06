@@ -2,7 +2,7 @@
 
 import { ColumnDef } from "@tanstack/react-table";
 import { Button } from "@/components/ui/button";
-import { ArrowUpDown, ChevronRight } from "lucide-react";
+import { ArrowUpDown, ChevronRight, Pencil } from "lucide-react";
 import Link from "next/link";
 import { Checkbox } from "@/components/ui/checkbox";
 
@@ -11,6 +11,7 @@ export type Customer = {
   id: number;
   name: string;
   phone: string;
+  email: string | null;
   address: string | null;
   totalSpent: number | null;
   outstandingBalance: number | null;
@@ -115,14 +116,22 @@ export const columns: ColumnDef<Customer>[] = [
   },
   {
     id: "actions",
-    cell: ({ row }) => {
+    cell: ({ row, table }) => {
       const customer = row.original;
+      const onEditRow = (table.options.meta as any)?.onEditRow;
       return (
-        <Link href={`/customers/${customer.id}`}>
-          <Button variant="ghost" size="sm" className="cursor-pointer">
-            View <ChevronRight className="ml-1 w-4 h-4" />
-          </Button>
-        </Link>
+        <div className="flex items-center gap-1">
+          {onEditRow && (
+            <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary cursor-pointer" onClick={() => onEditRow(customer)}>
+              <Pencil className="w-3.5 h-3.5" />
+            </Button>
+          )}
+          <Link href={`/customers/${customer.id}`}>
+            <Button variant="ghost" size="sm" className="cursor-pointer">
+              View <ChevronRight className="ml-1 w-4 h-4" />
+            </Button>
+          </Link>
+        </div>
       );
     },
   },

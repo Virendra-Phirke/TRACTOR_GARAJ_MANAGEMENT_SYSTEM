@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useOptimistic } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -50,13 +50,26 @@ export function CustomersClient({
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
   const [deleting, setDeleting] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [hiddenIds, setHiddenIds] = useState<Set<number>>(new Set());
   const [editOpen, setEditOpen] = useState(false);
   const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
   const [editLoading, setEditLoading] = useState(false);
   const { playSound } = useTheme();
 
-  const displayedCustomers = customers.filter((c) => !hiddenIds.has(c.id));
+  const [optimisticCustomers, addOptimisticCustomer] = useOptimistic(
+    customers,
+    (state: Customer[], action: { type: "add" | "update" | "delete"; payload: any }) => {
+      switch (action.type) {
+        case "add":
+          return [action.payload, ...state];
+        case "update":
+          return state.map((c) => (c.id === action.payload.id ? { ...c, ...action.payload } : c));
+        case "delete":
+          return state.filter((c) => !action.payload.includes(c.id));
+        default:
+          return state;
+      }
+    }
+  );
 
   const selectedCount = Object.keys(rowSelection).length;
   
@@ -72,43 +85,23 @@ export function CustomersClient({
     0
   );
 
-  const handleBulkDelete = () => {
-    const ids = selectedCustomers.map((c) => c.id);
+  const handleBulkDelete = async () => {
+    const ids = Object.keys(rowSelection).map((idx) => optimisticCustomers[Number(idx)].id);
     if (ids.length === 0) return;
 
-    setHiddenIds((prev) => new Set([...prev, ...ids]));
+    addOptimisticCustomer({ type: "delete", payload: ids });
     setRowSelection({});
     setDeleteDialogOpen(false);
 
-    const timeoutId = setTimeout(async () => {
-      try {
-        await bulkDeleteCustomers(ids);
-        router.refresh();
-      } catch {
-        toast.error("Failed to delete customers");
-        setHiddenIds((prev) => {
-          const next = new Set(prev);
-          ids.forEach((id) => next.delete(id));
-          return next;
-        });
-      }
-    }, 5000);
+    try {
+      await bulkDeleteCustomers(ids);
+      router.refresh();
+    } catch {
+      toast.error("Failed to delete customers");
+      router.refresh();
+    }
 
-    toast.success(`${ids.length} customer(s) deleted.`, {
-      duration: 5000,
-      action: {
-        label: "Undo",
-        onClick: () => {
-          clearTimeout(timeoutId);
-          setHiddenIds((prev) => {
-            const next = new Set(prev);
-            ids.forEach((id) => next.delete(id));
-            return next;
-          });
-          toast.success("Action undone");
-        }
-      }
-    });
+    toast.success(`${ids.length} customer(s) deleted.`);
     playSound("delete");
   };
 
@@ -116,25 +109,35 @@ export function CustomersClient({
     e.preventDefault();
     setLoading(true);
     const form = new FormData(e.currentTarget);
+    
+    const newCustomerData = {
+      name: form.get("name") as string,
+      phone: form.get("phone") as string,
+      email: (form.get("email") as string) || "",
+      address: (form.get("address") as string) || "",
+      vehicleReg: (form.get("vehicleReg") as string) || "",
+      vehicleBrand,
+      vehicleModel,
+    };
+    
+    // Optimistic UI Update
+    addOptimisticCustomer({
+      type: "add",
+      payload: { ...newCustomerData, id: Math.random(), createdAt: new Date() },
+    });
+    setOpen(false);
+
     try {
-      await createCustomer({
-        name: form.get("name") as string,
-        phone: form.get("phone") as string,
-        email: (form.get("email") as string) || "",
-        address: (form.get("address") as string) || "",
-        vehicleReg: (form.get("vehicleReg") as string) || "",
-        vehicleBrand,
-        vehicleModel,
-      });
+      await createCustomer(newCustomerData);
       toast.success("Customer created successfully");
       playSound("create");
-      setOpen(false);
       setVehicleBrand("");
       setVehicleModel("");
       router.refresh();
     } catch {
       toast.error("Failed to create customer. Phone may already exist.");
       playSound("error");
+      router.refresh(); // Revert on failure
     } finally {
       setLoading(false);
     }
@@ -150,21 +153,31 @@ export function CustomersClient({
     if (!editingCustomer) return;
     setEditLoading(true);
     const form = new FormData(e.currentTarget);
+    
+    const updatedData = {
+      name: form.get("editName") as string,
+      phone: form.get("editPhone") as string,
+      email: (form.get("editEmail") as string) || "",
+      address: (form.get("editAddress") as string) || "",
+    };
+
+    // Optimistic UI Update
+    addOptimisticCustomer({
+      type: "update",
+      payload: { id: editingCustomer.id, ...updatedData },
+    });
+    setEditOpen(false);
+    
     try {
-      await updateCustomer(editingCustomer.id, {
-        name: form.get("editName") as string,
-        phone: form.get("editPhone") as string,
-        email: (form.get("editEmail") as string) || "",
-        address: (form.get("editAddress") as string) || "",
-      });
+      await updateCustomer(editingCustomer.id, updatedData);
       toast.success("Customer updated successfully");
       playSound("create");
-      setEditOpen(false);
       setEditingCustomer(null);
       router.refresh();
     } catch {
       toast.error("Failed to update customer. Phone may already exist.");
       playSound("error");
+      router.refresh(); // Revert on failure
     } finally {
       setEditLoading(false);
     }
@@ -271,7 +284,7 @@ export function CustomersClient({
 
       <DataTable 
         columns={columns} 
-        data={displayedCustomers} 
+        data={optimisticCustomers} 
         searchKey="name" 
         searchPlaceholder="Filter customers by name..." 
         rowSelection={rowSelection}

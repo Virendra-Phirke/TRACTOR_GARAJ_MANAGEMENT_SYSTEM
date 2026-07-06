@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { useState } from "react";
+import { useState, useOptimistic } from "react";
 import { DateRange } from "react-day-picker";
 import { DatePickerWithRange } from "@/components/ui/date-range-picker";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -58,84 +58,54 @@ export function InvoicesClient({ invoices }: { invoices: Invoice[] }) {
   const [invoiceToDelete, setInvoiceToDelete] = useState<number | null>(null);
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
   const [deleting, setDeleting] = useState(false);
-  const [hiddenIds, setHiddenIds] = useState<Set<number>>(new Set());
   const { playSound } = useTheme();
 
-  const displayedInvoices = invoices.filter((i) => !hiddenIds.has(i.id));
+  const [optimisticInvoices, addOptimisticInvoice] = useOptimistic(
+    invoices,
+    (state: Invoice[], action: { type: "delete"; payload: any }) => {
+      switch (action.type) {
+        case "delete":
+          return state.filter((i) => !action.payload.includes(i.id));
+        default:
+          return state;
+      }
+    }
+  );
 
   const selectedCount = Object.keys(rowSelection).length;
 
-  const handleBulkDelete = () => {
-    const ids = Object.keys(rowSelection).map((i) => displayedInvoices[parseInt(i)].id);
+  const handleBulkDelete = async () => {
+    const ids = Object.keys(rowSelection).map((i) => optimisticInvoices[parseInt(i)].id);
     if (ids.length === 0) return;
     
-    setHiddenIds((prev) => new Set([...prev, ...ids]));
+    addOptimisticInvoice({ type: "delete", payload: ids });
     setRowSelection({});
 
-    const timeoutId = setTimeout(async () => {
-      try {
-        await bulkDeleteInvoices(ids);
-        router.refresh();
-      } catch {
-        toast.error("Failed to delete invoices");
-        setHiddenIds((prev) => {
-          const next = new Set(prev);
-          ids.forEach((id) => next.delete(id));
-          return next;
-        });
-      }
-    }, 5000);
+    try {
+      await bulkDeleteInvoices(ids);
+      router.refresh();
+    } catch {
+      toast.error("Failed to delete invoices");
+      router.refresh();
+    }
 
-    toast.success(`${ids.length} invoices deleted`, {
-      duration: 5000,
-      action: {
-        label: "Undo",
-        onClick: () => {
-          clearTimeout(timeoutId);
-          setHiddenIds((prev) => {
-            const next = new Set(prev);
-            ids.forEach((id) => next.delete(id));
-            return next;
-          });
-          toast.success("Action undone");
-        },
-      },
-    });
+    toast.success(`${ids.length} invoices deleted`);
+
     playSound("delete");
   };
 
-  const handleDelete = (id: number) => {
-    setHiddenIds((prev) => new Set([...prev, id]));
+  const handleDelete = async (id: number) => {
+    addOptimisticInvoice({ type: "delete", payload: [id] });
 
-    const timeoutId = setTimeout(async () => {
-      try {
-        await deleteInvoice(id);
-        router.refresh();
-      } catch {
-        toast.error("Failed to delete invoice");
-        setHiddenIds((prev) => {
-          const next = new Set(prev);
-          next.delete(id);
-          return next;
-        });
-      }
-    }, 5000);
+    try {
+      await deleteInvoice(id);
+      router.refresh();
+    } catch {
+      toast.error("Failed to delete invoice");
+      router.refresh();
+    }
 
-    toast.success("Invoice deleted successfully", {
-      duration: 5000,
-      action: {
-        label: "Undo",
-        onClick: () => {
-          clearTimeout(timeoutId);
-          setHiddenIds((prev) => {
-            const next = new Set(prev);
-            next.delete(id);
-            return next;
-          });
-          toast.success("Action undone");
-        },
-      },
-    });
+    toast.success("Invoice deleted successfully");
     playSound("delete");
   };
 
@@ -350,7 +320,7 @@ export function InvoicesClient({ invoices }: { invoices: Invoice[] }) {
       <div className="block-section">
         <DataTable 
           columns={columns} 
-          data={displayedInvoices} 
+          data={optimisticInvoices} 
           searchKey="customerName"
           searchPlaceholder="Search customer..."
           filterKey="paymentStatus"

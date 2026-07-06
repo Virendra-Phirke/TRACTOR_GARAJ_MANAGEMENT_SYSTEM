@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useOptimistic } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -51,14 +51,27 @@ export function InventoryClient({ parts, categories, searchQuery }: { parts: Par
   const [catOpen, setCatOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string>("");
-  const [hiddenIds, setHiddenIds] = useState<Set<number>>(new Set());
   const [editOpen, setEditOpen] = useState(false);
   const [editingPart, setEditingPart] = useState<Part | null>(null);
   const [editCategory, setEditCategory] = useState<string>("");
   const [editLoading, setEditLoading] = useState(false);
   const { playSound } = useTheme();
 
-  const displayedParts = parts.filter((p) => !hiddenIds.has(p.id));
+  const [optimisticParts, addOptimisticPart] = useOptimistic(
+    parts,
+    (state: Part[], action: { type: "add" | "update" | "delete"; payload: any }) => {
+      switch (action.type) {
+        case "add":
+          return [action.payload, ...state];
+        case "update":
+          return state.map((p) => (p.id === action.payload.id ? { ...p, ...action.payload } : p));
+        case "delete":
+          return state.filter((p) => !action.payload.includes(p.id));
+        default:
+          return state;
+      }
+    }
+  );
 
   const applyFilters = (term: string, category: string) => {
     router.push(`/inventory?search=${encodeURIComponent(search)}`);
@@ -68,24 +81,34 @@ export function InventoryClient({ parts, categories, searchQuery }: { parts: Par
     e.preventDefault();
     setLoading(true);
     const form = new FormData(e.currentTarget);
+    
+    const newPartData = {
+      name: form.get("name") as string,
+      categoryId: selectedCategory ? Number(selectedCategory) : undefined,
+      partNumber: (form.get("partNumber") as string) || "",
+      unit: (form.get("unit") as string) || "piece",
+      stock: Number(form.get("stock")) || 0,
+      minStockAlert: Number(form.get("minStockAlert")) || 0,
+      purchasePrice: Number(form.get("purchasePrice")) || 0,
+      sellingPrice: Number(form.get("sellingPrice")) || 0,
+    };
+
+    // Optimistic UI Update
+    addOptimisticPart({
+      type: "add",
+      payload: { ...newPartData, id: Math.random(), createdAt: new Date() },
+    });
+    setOpen(false);
+
     try {
-      await createSparePart({
-        name: form.get("name") as string,
-        categoryId: selectedCategory ? Number(selectedCategory) : undefined,
-        partNumber: (form.get("partNumber") as string) || "",
-        unit: (form.get("unit") as string) || "piece",
-        stock: Number(form.get("stock")) || 0,
-        minStockAlert: Number(form.get("minStockAlert")) || 0,
-        purchasePrice: Number(form.get("purchasePrice")) || 0,
-        sellingPrice: Number(form.get("sellingPrice")) || 0,
-      });
+      await createSparePart(newPartData);
       toast.success("Part added successfully");
       playSound("create");
-      setOpen(false);
       router.refresh();
     } catch {
       toast.error("Failed to add part");
       playSound("error");
+      router.refresh();
     } finally {
       setLoading(false);
     }
@@ -106,38 +129,18 @@ export function InventoryClient({ parts, categories, searchQuery }: { parts: Par
     }
   };
 
-  const handleDelete = (id: number) => {
-    setHiddenIds((prev) => new Set([...prev, id]));
+  const handleDelete = async (id: number) => {
+    addOptimisticPart({ type: "delete", payload: [id] });
 
-    const timeoutId = setTimeout(async () => {
-      try {
-        await deleteSparePart(id);
-        router.refresh();
-      } catch {
-        toast.error("Failed to delete part");
-        setHiddenIds((prev) => {
-          const next = new Set(prev);
-          next.delete(id);
-          return next;
-        });
-      }
-    }, 5000);
+    try {
+      await deleteSparePart(id);
+      router.refresh();
+    } catch {
+      toast.error("Failed to delete part");
+      router.refresh();
+    }
 
-    toast.success("Part deleted", {
-      duration: 5000,
-      action: {
-        label: "Undo",
-        onClick: () => {
-          clearTimeout(timeoutId);
-          setHiddenIds((prev) => {
-            const next = new Set(prev);
-            next.delete(id);
-            return next;
-          });
-          toast.success("Action undone");
-        }
-      }
-    });
+    toast.success("Part deleted");
     playSound("delete");
   };
 
@@ -152,25 +155,35 @@ export function InventoryClient({ parts, categories, searchQuery }: { parts: Par
     if (!editingPart) return;
     setEditLoading(true);
     const form = new FormData(e.currentTarget);
+    
+    const updatedData = {
+      name: form.get("editName") as string,
+      categoryId: editCategory ? Number(editCategory) : null,
+      partNumber: (form.get("editPartNumber") as string) || "",
+      unit: (form.get("editUnit") as string) || "piece",
+      stock: Number(form.get("editStock")) || 0,
+      minStockAlert: Number(form.get("editMinStock")) || 0,
+      purchasePrice: Number(form.get("editPurchasePrice")) || 0,
+      sellingPrice: Number(form.get("editSellingPrice")) || 0,
+    };
+
+    // Optimistic UI Update
+    addOptimisticPart({
+      type: "update",
+      payload: { id: editingPart.id, ...updatedData },
+    });
+    setEditOpen(false);
+
     try {
-      await updateSparePart(editingPart.id, {
-        name: form.get("editName") as string,
-        categoryId: editCategory ? Number(editCategory) : null,
-        partNumber: (form.get("editPartNumber") as string) || "",
-        unit: (form.get("editUnit") as string) || "piece",
-        stock: Number(form.get("editStock")) || 0,
-        minStockAlert: Number(form.get("editMinStock")) || 0,
-        purchasePrice: Number(form.get("editPurchasePrice")) || 0,
-        sellingPrice: Number(form.get("editSellingPrice")) || 0,
-      });
-      toast.success("Part updated successfully");
+      await updateSparePart(editingPart.id, updatedData);
+      toast.success("Part updated");
       playSound("create");
-      setEditOpen(false);
       setEditingPart(null);
       router.refresh();
     } catch {
       toast.error("Failed to update part");
       playSound("error");
+      router.refresh();
     } finally {
       setEditLoading(false);
     }
@@ -243,7 +256,7 @@ export function InventoryClient({ parts, categories, searchQuery }: { parts: Par
               </TableRow>
             </TableHeader>
             <TableBody>
-              {displayedParts.length === 0 ? (
+              {optimisticParts.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={7} className="text-center py-10 text-muted-foreground">
                     <Package className="w-8 h-8 mx-auto mb-2 opacity-30" />
@@ -251,7 +264,7 @@ export function InventoryClient({ parts, categories, searchQuery }: { parts: Par
                   </TableCell>
                 </TableRow>
               ) : (
-                displayedParts.map((part) => (
+                optimisticParts.map((part) => (
                   <TableRow key={part.id} className="border-border/30 hover:bg-accent/30">
                     <TableCell className="font-medium">{part.name}</TableCell>
                     <TableCell>

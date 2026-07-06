@@ -42,7 +42,25 @@ function formatCurrency(amount: number): string {
   return `Rs. ${amount.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
+function hexToRgbForPdf(hex: string) {
+  hex = hex.replace(/^#/, '');
+  if (hex.length === 3) {
+    hex = hex[0] + hex[0] + hex[1] + hex[1] + hex[2] + hex[2];
+  }
+  const r = parseInt(hex.substring(0, 2), 16) / 255;
+  const g = parseInt(hex.substring(2, 4), 16) / 255;
+  const b = parseInt(hex.substring(4, 6), 16) / 255;
+  return rgb(r, g, b);
+}
+
 export function getPdfColors(theme: string) {
+  if (theme.startsWith("#")) {
+    return { 
+      primaryColor: hexToRgbForPdf(theme), 
+      textColor: rgb(0.2, 0.2, 0.2), 
+      mutedColor: rgb(0.4, 0.4, 0.4) 
+    };
+  }
   switch (theme) {
     case "modern": return { primaryColor: rgb(37/255, 99/255, 235/255), textColor: rgb(0.2, 0.2, 0.2), mutedColor: rgb(0.4, 0.4, 0.4) }; // Ocean Blue
     case "minimal": return { primaryColor: rgb(26/255, 26/255, 26/255), textColor: rgb(0.2, 0.2, 0.2), mutedColor: rgb(0.4, 0.4, 0.4) }; // Minimal Dark

@@ -225,6 +225,9 @@ function StandardInvoicePreview({ theme }: { theme: string }) {
 }
 
 function getPreviewColors(theme: string) {
+  if (theme.startsWith("#")) {
+    return { primary: theme, lightBg: theme + "1a", tableHeader: theme };
+  }
   switch (theme) {
     case "modern": return { primary: "#2563eb", lightBg: "#eff6ff", tableHeader: "#2563eb" }; // Ocean Blue
     case "minimal": return { primary: "#1a1a1a", lightBg: "#f9fafb", tableHeader: "#1a1a1a" }; // Minimal Dark
@@ -258,8 +261,10 @@ export function SettingsClient({ garage, upi, taxes }: { garage: GarageSettings;
     playSound
   } = useTheme();
   const [showAccentPicker, setShowAccentPicker] = useState(false);
+  const [showInvoiceThemePicker, setShowInvoiceThemePicker] = useState(false);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const activeScheme = COLOR_SCHEMES.find(s => s.primary === accentColor);
+  const activeInvoiceScheme = COLOR_SCHEMES.find(s => s.hex === selectedTheme);
 
   const handleGarage = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -460,35 +465,57 @@ export function SettingsClient({ garage, upi, taxes }: { garage: GarageSettings;
                 <Label className="text-sm font-semibold">Color Theme</Label>
                 <p className="text-xs text-muted-foreground mt-0.5">Choose the color scheme applied to headers, borders, and accents</p>
               </div>
-              <div className="flex flex-wrap gap-4">
-                {[
-                  { id: "default", label: "Green", color: "#15803d" },
-                  { id: "modern", label: "Blue", color: "#2563eb" },
-                  { id: "minimal", label: "Dark", color: "#1a1a1a" },
-                  { id: "bold", label: "Red", color: "#dc2626" },
-                  { id: "sunset", label: "Orange", color: "#d97706" },
-                  { id: "purple", label: "Purple", color: "#9333ea" },
-                  { id: "teal", label: "Teal", color: "#0d9488" },
-                  { id: "slate", label: "Slate", color: "#475569" },
-                ].map((theme) => (
-                  <label key={theme.id} className="cursor-pointer group flex flex-col items-center gap-1.5" title={theme.label}>
-                    <input
-                      type="radio"
-                      name="invoiceTheme"
-                      value={theme.id}
-                      checked={selectedTheme === theme.id}
-                      onChange={() => setSelectedTheme(theme.id)}
-                      className="peer sr-only"
-                    />
-                    <div className="w-9 h-9 rounded-full shadow-sm hover:scale-110 transition-transform peer-checked:ring-2 peer-checked:ring-primary peer-checked:ring-offset-2 peer-checked:ring-offset-background flex items-center justify-center" style={{ backgroundColor: theme.color }}>
-                      {selectedTheme === theme.id && (
-                        <Check className="w-4 h-4 text-white drop-shadow-md" />
-                      )}
-                    </div>
-                    <span className="text-[10px] font-medium text-muted-foreground group-hover:text-foreground">{theme.label}</span>
-                  </label>
-                ))}
-              </div>
+              
+              {/* Dropdown trigger */}
+              <button
+                type="button"
+                onClick={() => setShowInvoiceThemePicker(!showInvoiceThemePicker)}
+                className="flex items-center gap-2.5 w-full p-2.5 rounded-lg border border-border/50 hover:border-border bg-muted/20 hover:bg-muted/30 transition-all cursor-pointer"
+              >
+                <div
+                  className="w-6 h-6 rounded-full border-2 border-foreground/20 shrink-0"
+                  style={{ backgroundColor: activeInvoiceScheme?.hex || getPreviewColors(selectedTheme).primary }}
+                />
+                <span className="text-sm font-medium flex-1 text-left">{activeInvoiceScheme?.name || selectedTheme}</span>
+                <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform duration-200 ${showInvoiceThemePicker ? "rotate-180" : ""}`} />
+              </button>
+
+              {/* Collapsible grid */}
+              {showInvoiceThemePicker && (
+                <div className="mt-2 p-3 rounded-lg border border-border/40 bg-muted/10 animate-in-page">
+                  <div className="flex flex-wrap gap-1.5">
+                    {COLOR_SCHEMES.map((scheme) => {
+                      const isActive = selectedTheme === scheme.hex;
+                      return (
+                        <button
+                          key={`inv-${scheme.name}`}
+                          type="button"
+                          onClick={() => {
+                            setSelectedTheme(scheme.hex);
+                            // Set hidden input value for form submission
+                            const formInput = document.querySelector('input[name="invoiceTheme"]') as HTMLInputElement;
+                            if (formInput) formInput.value = scheme.hex;
+                          }}
+                          title={scheme.name}
+                          className={`group relative w-6 h-6 rounded-full border-2 transition-all duration-150 cursor-pointer hover:scale-125 hover:z-10 ${
+                            isActive
+                              ? "border-foreground scale-125 z-10 ring-2 ring-primary/30"
+                              : "border-transparent hover:border-foreground/40"
+                          }`}
+                          style={{ backgroundColor: scheme.hex }}
+                        >
+                          {isActive && (
+                            <Check className="w-3 h-3 text-white absolute inset-0 m-auto drop-shadow-[0_1px_2px_rgba(0,0,0,0.6)]" />
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <input type="hidden" name="invoiceTheme" value={selectedTheme} />
+                </div>
+              )}
+              {/* Fallback hidden input if picker isn't rendered */}
+              {!showInvoiceThemePicker && <input type="hidden" name="invoiceTheme" value={selectedTheme} />}
             </div>
 
             <div className="flex gap-2 pt-2 border-t border-border/30">

@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Building, QrCode, Percent, Check, Palette, Eye, FileText, Settings2, Moon, Sun, ChevronDown, Type, ALargeSmall, Volume2, VolumeX } from "lucide-react";
+import { Building, QrCode, Percent, Check, Palette, Eye, FileText, Settings2, Moon, Sun, ChevronDown, Type, ALargeSmall, Volume2, VolumeX, Keyboard } from "lucide-react";
 import { updateGarageSettings, updateUpiSettings, setDefaultTax } from "@/lib/actions/settings";
 import { toast } from "sonner";
 import { LayoutEditor } from "./layout-editor";
@@ -605,6 +605,27 @@ export function SettingsClient({ garage, upi, taxes }: { garage: GarageSettings;
                   }
                 }}
               />
+            </div>
+
+            {/* Keyboard Shortcuts Button */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between p-3 rounded-lg border border-border/30 bg-muted/20 gap-4">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                  <Keyboard className="w-4 h-4 text-primary" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium">Keyboard Shortcuts</p>
+                  <p className="text-xs text-muted-foreground">Navigate and operate the app using keyboard shortcuts</p>
+                </div>
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => window.dispatchEvent(new Event("open-shortcuts-modal"))}
+              >
+                View Shortcuts
+              </Button>
             </div>
 
           {/* Accent Color Scheme — collapsible dropdown */}

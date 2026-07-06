@@ -1,4 +1,5 @@
 import { Sidebar, SidebarProvider } from "@/components/layout/sidebar";
+import { GlobalShortcuts } from "@/components/global-shortcuts";
 
 export default function DashboardLayout({
   children,
@@ -11,6 +12,7 @@ export default function DashboardLayout({
         <Sidebar />
         <main className="flex-1 min-w-0 overflow-auto">{children}</main>
       </div>
+      <GlobalShortcuts />
     </SidebarProvider>
   );
 }

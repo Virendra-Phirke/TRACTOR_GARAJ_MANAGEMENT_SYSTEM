@@ -74,7 +74,7 @@ export function CustomersClient({
   const selectedCount = Object.keys(rowSelection).length;
   
   const selectedCustomers = Object.keys(rowSelection).map(
-    (i) => displayedCustomers[parseInt(i)]
+    (i) => optimisticCustomers[parseInt(i)]
   );
   
   const customersWithDues = selectedCustomers.filter(

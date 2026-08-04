@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { useState, useOptimistic } from "react";
+import { useState, useOptimistic, startTransition } from "react";
 import { DateRange } from "react-day-picker";
 import { DatePickerWithRange } from "@/components/ui/date-range-picker";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -78,7 +78,9 @@ export function InvoicesClient({ invoices }: { invoices: Invoice[] }) {
     const ids = Object.keys(rowSelection).map((i) => optimisticInvoices[parseInt(i)].id);
     if (ids.length === 0) return;
     
-    addOptimisticInvoice({ type: "delete", payload: ids });
+    startTransition(() => {
+      addOptimisticInvoice({ type: "delete", payload: ids });
+    });
     setRowSelection({});
 
     try {
@@ -95,7 +97,9 @@ export function InvoicesClient({ invoices }: { invoices: Invoice[] }) {
   };
 
   const handleDelete = async (id: number) => {
-    addOptimisticInvoice({ type: "delete", payload: [id] });
+    startTransition(() => {
+      addOptimisticInvoice({ type: "delete", payload: [id] });
+    });
 
     try {
       await deleteInvoice(id);

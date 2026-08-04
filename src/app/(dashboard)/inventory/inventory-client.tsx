@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useOptimistic } from "react";
+import { useState, useOptimistic, startTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -94,9 +94,11 @@ export function InventoryClient({ parts, categories, searchQuery }: { parts: Par
     };
 
     // Optimistic UI Update
-    addOptimisticPart({
-      type: "add",
-      payload: { ...newPartData, id: Math.random(), createdAt: new Date() },
+    startTransition(() => {
+      addOptimisticPart({
+        type: "add",
+        payload: { ...newPartData, id: Math.random(), createdAt: new Date() },
+      });
     });
     setOpen(false);
 
@@ -130,7 +132,9 @@ export function InventoryClient({ parts, categories, searchQuery }: { parts: Par
   };
 
   const handleDelete = async (id: number) => {
-    addOptimisticPart({ type: "delete", payload: [id] });
+    startTransition(() => {
+      addOptimisticPart({ type: "delete", payload: [id] });
+    });
 
     try {
       await deleteSparePart(id);
@@ -168,9 +172,11 @@ export function InventoryClient({ parts, categories, searchQuery }: { parts: Par
     };
 
     // Optimistic UI Update
-    addOptimisticPart({
-      type: "update",
-      payload: { id: editingPart.id, ...updatedData },
+    startTransition(() => {
+      addOptimisticPart({
+        type: "update",
+        payload: { id: editingPart.id, ...updatedData },
+      });
     });
     setEditOpen(false);
 

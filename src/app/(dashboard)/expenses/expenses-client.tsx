@@ -409,7 +409,7 @@ export function ExpensesClient({
 
                           <div className="space-y-2">
                             <Label className="text-sm font-medium">Payment Method</Label>
-                            <Select value={payoutMethod} onValueChange={setPayoutMethod}>
+                            <Select value={payoutMethod} onValueChange={(v) => setPayoutMethod(v || "cash")}>
                               <SelectTrigger className="bg-background">
                                 <SelectValue />
                               </SelectTrigger>

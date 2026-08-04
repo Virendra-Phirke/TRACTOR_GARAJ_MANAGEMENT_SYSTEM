@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useOptimistic } from "react";
+import { useState, useOptimistic, startTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -89,7 +89,9 @@ export function CustomersClient({
     const ids = Object.keys(rowSelection).map((idx) => optimisticCustomers[Number(idx)].id);
     if (ids.length === 0) return;
 
-    addOptimisticCustomer({ type: "delete", payload: ids });
+    startTransition(() => {
+      addOptimisticCustomer({ type: "delete", payload: ids });
+    });
     setRowSelection({});
     setDeleteDialogOpen(false);
 
@@ -121,9 +123,11 @@ export function CustomersClient({
     };
     
     // Optimistic UI Update
-    addOptimisticCustomer({
-      type: "add",
-      payload: { ...newCustomerData, id: Math.random(), createdAt: new Date() },
+    startTransition(() => {
+      addOptimisticCustomer({
+        type: "add",
+        payload: { ...newCustomerData, id: Math.random(), createdAt: new Date() },
+      });
     });
     setOpen(false);
 
@@ -162,9 +166,11 @@ export function CustomersClient({
     };
 
     // Optimistic UI Update
-    addOptimisticCustomer({
-      type: "update",
-      payload: { id: editingCustomer.id, ...updatedData },
+    startTransition(() => {
+      addOptimisticCustomer({
+        type: "update",
+        payload: { id: editingCustomer.id, ...updatedData },
+      });
     });
     setEditOpen(false);
     

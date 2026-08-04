@@ -49,8 +49,8 @@ interface SidebarContextType {
 
 const SidebarContext = createContext<SidebarContextType>({
   mobileOpen: false,
-  setMobileOpen: () => {},
-  toggle: () => {},
+  setMobileOpen: () => { },
+  toggle: () => { },
 });
 
 export function useSidebar() {
@@ -76,8 +76,9 @@ export function Sidebar() {
     <>
       {/* Logo */}
       <div className="flex items-center gap-3 px-4 h-14 md:h-16 border-b border-sidebar-border shrink-0">
-        <div className="w-9 h-9 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0">
-          <Wrench className="w-5 h-5 text-primary" />
+        <div className="w-14 h-12 shrink-0">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/logo.svg" alt="Logo" width={36} height={36} className="w-full h-full object-contain" />
         </div>
         {(!collapsed || mobileOpen) && (
           <div className="overflow-hidden flex-1">

@@ -37,8 +37,9 @@ export default function LoginPage() {
       <Card className="w-full max-w-md glass border-border/50 relative z-10 shadow-2xl shadow-emerald/5">
         <CardHeader className="text-center space-y-4 pb-2">
           {/* Logo */}
-          <div className="mx-auto w-16 h-16 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center">
-            <Wrench className="w-8 h-8 text-primary" />
+          <div className="mx-auto w-14 h-12 rounded-2xl">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/logo.svg" alt="Logo" width={64} height={64} className="w-full h-full object-contain" />
           </div>
           <div>
             <CardTitle className="text-2xl font-bold tracking-tight">

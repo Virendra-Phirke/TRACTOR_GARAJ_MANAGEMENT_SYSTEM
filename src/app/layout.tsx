@@ -10,10 +10,15 @@ const inter = Inter({
   variable: "--font-sans",
 });
 
+export const viewport = {
+  themeColor: "#000000",
+};
+
 export const metadata: Metadata = {
   title: "GBMS — Garage Billing Management System",
   description:
     "Professional billing, inventory, and customer management for tractor garages",
+  manifest: "/manifest.json",
 };
 
 export default function RootLayout({

@@ -29,9 +29,25 @@ export function ShortcutsModal({
               <div className="flex items-center justify-between">
                 <span className="text-sm">Command Palette</span>
                 <div className="flex gap-1">
-                  <kbd className="px-2 py-1 bg-muted rounded text-xs font-mono border">c</kbd>
-                  <span className="text-muted-foreground text-xs my-auto">then</span>
-                  <kbd className="px-2 py-1 bg-muted rounded text-xs font-mono border">k</kbd>
+                  <kbd className="px-2 py-1 bg-muted rounded text-xs font-mono border">Ctrl</kbd>
+                  <span className="text-muted-foreground text-xs my-auto">+</span>
+                  <kbd className="px-2 py-1 bg-muted rounded text-xs font-mono border">K</kbd>
+                </div>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-sm">Save Form / Data</span>
+                <div className="flex gap-1">
+                  <kbd className="px-2 py-1 bg-muted rounded text-xs font-mono border">Ctrl</kbd>
+                  <span className="text-muted-foreground text-xs my-auto">+</span>
+                  <kbd className="px-2 py-1 bg-muted rounded text-xs font-mono border">S</kbd>
+                </div>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-sm">Print / Generate PDF</span>
+                <div className="flex gap-1">
+                  <kbd className="px-2 py-1 bg-muted rounded text-xs font-mono border">Ctrl</kbd>
+                  <span className="text-muted-foreground text-xs my-auto">+</span>
+                  <kbd className="px-2 py-1 bg-muted rounded text-xs font-mono border">P</kbd>
                 </div>
               </div>
               <div className="flex items-center justify-between">

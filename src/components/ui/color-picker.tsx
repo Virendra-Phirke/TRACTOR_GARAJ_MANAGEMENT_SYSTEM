@@ -134,14 +134,10 @@ export default function ColorPicker({ value, onChange, onClose, showAlpha = fals
     setAlphaDraft(String(Math.round(alpha)));
   }, [alpha]);
 
-  // Sync back external changes if they differ from current state
-  // We only want to update if it's a valid hex and different from current hex
-  useEffect(() => {
-    // Prevent updating internal HSV if we are actively dragging, 
-    // to avoid hue-loss when dragging through grays/blacks
-    if (dragging.current !== null) return;
-
-    if (value && value.toUpperCase() !== hex) {
+  const [prevValue, setPrevValue] = useState(value);
+  if (value !== prevValue) {
+    setPrevValue(value);
+    if (dragging.current === null && value && value.toUpperCase() !== hex) {
       const rgb = hexToRgb(value);
       if (rgb) {
         const hsv = rgbToHsv(rgb.r, rgb.g, rgb.b);
@@ -150,7 +146,7 @@ export default function ColorPicker({ value, onChange, onClose, showAlpha = fals
         setValueHsv(hsv.v);
       }
     }
-  }, [value, hex]);
+  }
 
   const clamp01 = (n: number) => Math.min(1, Math.max(0, n));
 

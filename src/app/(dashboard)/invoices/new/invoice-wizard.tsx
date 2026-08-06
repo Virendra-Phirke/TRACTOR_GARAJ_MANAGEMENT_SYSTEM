@@ -278,12 +278,12 @@ export function InvoiceWizard({ customers, spareParts, taxRates }: { customers: 
             <div className="space-y-3">
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1">
-                  <Label className="text-xs text-muted-foreground">Name *</Label>
-                  <Input placeholder="Customer name" value={newCustName} onChange={(e) => setNewCustName(e.target.value)} />
+                  <Label htmlFor="custName" className="text-xs text-muted-foreground">Name *</Label>
+                  <Input id="custName" placeholder="Customer name" value={newCustName} onChange={(e) => setNewCustName(e.target.value)} />
                 </div>
                 <div className="space-y-1">
-                  <Label className="text-xs text-muted-foreground">Phone *</Label>
-                  <Input placeholder="Mobile number" value={newCustPhone} onChange={(e) => setNewCustPhone(e.target.value)} />
+                  <Label htmlFor="custPhone" className="text-xs text-muted-foreground">Phone *</Label>
+                  <Input id="custPhone" placeholder="Mobile number" value={newCustPhone} onChange={(e) => setNewCustPhone(e.target.value)} />
                 </div>
               </div>
               <div className="flex gap-2">
@@ -334,8 +334,8 @@ export function InvoiceWizard({ customers, spareParts, taxRates }: { customers: 
           ) : (
             <div className="space-y-3">
               <div className="space-y-1">
-                <Label className="text-xs text-muted-foreground">Registration Number *</Label>
-                <Input placeholder="MH 12 AB 1234" value={newVehReg} onChange={(e) => setNewVehReg(e.target.value)} />
+                <Label htmlFor="newVehReg" className="text-xs text-muted-foreground">Registration Number *</Label>
+                <Input id="newVehReg" placeholder="MH 12 AB 1234" value={newVehReg} onChange={(e) => setNewVehReg(e.target.value)} />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1">

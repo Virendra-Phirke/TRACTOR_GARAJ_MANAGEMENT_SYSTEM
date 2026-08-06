@@ -17,7 +17,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { toast } from "sonner";
 import { DateRange } from "react-day-picker";
 import { DatePickerWithRange } from "@/components/ui/date-range-picker";
@@ -128,7 +128,7 @@ export function DashboardClient({
     setFilterYear(now.getFullYear());
     router.push("/");
   };
-  const statCards = [
+  const statCards = useMemo(() => [
     {
       title: "Today's Revenue",
       value: formatCurrency(stats.todayRevenue),
@@ -165,7 +165,7 @@ export function DashboardClient({
       bgColor: "bg-purple-400/10",
       borderColor: "border-purple-400/20",
     },
-  ];
+  ], [stats.todayRevenue, stats.todayBills, stats.pendingAmount, stats.pendingCount, stats.totalRevenue, customerCount]);
 
   return (
     <div className="space-y-6">

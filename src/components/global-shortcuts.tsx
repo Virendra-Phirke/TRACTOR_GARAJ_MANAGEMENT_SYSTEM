@@ -35,6 +35,24 @@ export function GlobalShortcuts() {
         setShortcutsOpen((open) => !open);
       }
 
+      // Cmd/Ctrl + K for Command Palette
+      if ((e.key === "k" || e.key === "K") && (e.ctrlKey || e.metaKey)) {
+        e.preventDefault();
+        setCmdOpen((open) => !open);
+      }
+
+      // Cmd/Ctrl + S for Save
+      if ((e.key === "s" || e.key === "S") && (e.ctrlKey || e.metaKey)) {
+        e.preventDefault();
+        window.dispatchEvent(new Event("save-shortcut"));
+      }
+
+      // Cmd/Ctrl + P for Print (we prevent default to handle custom PDF generation where applicable)
+      if ((e.key === "p" || e.key === "P") && (e.ctrlKey || e.metaKey)) {
+        e.preventDefault();
+        window.dispatchEvent(new Event("print-shortcut"));
+      }
+
       // Sequence 'c' (c then k, c then n)
       if (e.key === "c" && !e.ctrlKey && !e.metaKey && !e.altKey) {
         setCPressed(true);

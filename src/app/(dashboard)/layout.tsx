@@ -9,9 +9,12 @@ export default function DashboardLayout({
 }) {
   return (
     <SidebarProvider>
+      <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:p-4 focus:bg-background focus:text-primary">
+        Skip to main content
+      </a>
       <div className="flex min-h-screen">
         <Sidebar />
-        <main className="flex-1 min-w-0 overflow-auto">{children}</main>
+        <main id="main-content" className="flex-1 min-w-0 overflow-auto">{children}</main>
       </div>
       <GlobalShortcuts />
       <ThemeEditor />

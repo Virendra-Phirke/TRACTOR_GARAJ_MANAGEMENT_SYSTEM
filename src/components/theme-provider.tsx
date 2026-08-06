@@ -339,6 +339,13 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
         });
       } catch { /* ignore invalid JSON */ }
     }
+
+    // Register Service Worker for PWA
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("/sw.js").catch(() => {
+        // ignore registration errors
+      });
+    }
   }, []);
 
   const setSoundEnabled = (enabled: boolean) => {

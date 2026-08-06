@@ -703,6 +703,7 @@ export function ThemeEditor() {
           <button 
             onClick={() => setInspectResult(null)}
             className="text-white/50 hover:text-white"
+            aria-label="Close Inspector"
           >
             <X size={14} />
           </button>

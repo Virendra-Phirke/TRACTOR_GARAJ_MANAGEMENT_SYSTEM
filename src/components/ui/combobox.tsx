@@ -41,12 +41,14 @@ export function Combobox({
     return options.find((o) => o.value === value)?.label || value
   }, [value, options])
 
-  // When value changes externally, sync inputValue
-  React.useEffect(() => {
+  const [prevValue, setPrevValue] = React.useState(value)
+  
+  if (value !== prevValue) {
+    setPrevValue(value)
     if (!open) {
       setInputValue(displayLabel)
     }
-  }, [displayLabel, open])
+  }
 
   // Filter options based on input
   const filtered = React.useMemo(() => {

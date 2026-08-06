@@ -96,6 +96,7 @@ export function Sidebar() {
           <button
             onClick={() => setMobileOpen(false)}
             className="md:hidden p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-colors cursor-pointer"
+            aria-label="Close Sidebar"
           >
             <X className="w-5 h-5" />
           </button>
@@ -197,6 +198,7 @@ export function Sidebar() {
           size="sm"
           onClick={() => setCollapsed(!collapsed)}
           className="w-full justify-center text-muted-foreground hover:text-foreground cursor-pointer"
+          aria-label={collapsed ? "Expand Sidebar" : "Collapse Sidebar"}
         >
           {collapsed ? (
             <ChevronRight className="w-4 h-4" />

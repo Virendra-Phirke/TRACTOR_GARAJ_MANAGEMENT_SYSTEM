@@ -451,6 +451,11 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       }
     }
 
+    // Re-apply custom theme overrides to ensure they win over the default accent color during hydration
+    Object.entries(customTheme).forEach(([token, value]) => {
+      document.documentElement.style.setProperty(token, value as string);
+    });
+
     localStorage.setItem("gbms-accent", accentColor);
   }, [accentColor, customTheme]);
 

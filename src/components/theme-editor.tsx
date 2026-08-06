@@ -89,7 +89,6 @@ function ColorTokenRow({
   token,
   label,
   currentValue,
-  defaultValue,
   onChangeColor,
   onReset,
   isOverridden,
@@ -102,10 +101,12 @@ function ColorTokenRow({
   onReset: (token: string) => void;
   isOverridden: boolean;
 }) {
+  const [open, setOpen] = useState(false);
+
   return (
     <div className="flex items-center gap-2 py-1.5 px-1 group">
       {/* Color swatch trigger for custom picker */}
-      <Popover>
+      <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger
           render={
             <button className="relative w-7 h-7 rounded-md border border-border/50 cursor-pointer overflow-hidden shrink-0 transition-all hover:scale-110 hover:shadow-md">
@@ -120,6 +121,7 @@ function ColorTokenRow({
           <ColorPicker
             value={currentValue}
             onChange={(hex) => onChangeColor(token, hex)}
+            onClose={() => setOpen(false)}
           />
         </PopoverContent>
       </Popover>
@@ -192,16 +194,16 @@ function TokenGroup({
   onResetToken: (token: string) => void;
   initialOpen?: boolean;
 }) {
-  const [open, setOpen] = useState(initialOpen);
+  const [isOpen, setIsOpen] = useState(initialOpen);
   const overriddenCount = tokens.filter((t) => customTheme[t.token]).length;
 
   return (
     <div className="border border-border/30 rounded-lg overflow-hidden">
       <button
-        onClick={() => setOpen(!open)}
+        onClick={() => setIsOpen(!isOpen)}
         className="w-full flex items-center gap-2 px-3 py-2.5 text-left hover:bg-accent/30 transition-colors cursor-pointer"
       >
-        {open ? (
+        {isOpen ? (
           <ChevronDown className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
         ) : (
           <ChevronRight className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
@@ -226,7 +228,7 @@ function TokenGroup({
         )}
       </button>
 
-      {open && (
+      {isOpen && (
         <div className="px-2 pb-2 space-y-0.5 border-t border-border/20">
           {tokens.map((t) => (
             <ColorTokenRow
@@ -278,6 +280,9 @@ export function ThemeEditor() {
     resetCustomTheme,
     importTheme,
     exportTheme,
+    userPreset,
+    saveUserPreset,
+    applyUserPreset,
     themeEditorOpen,
     setThemeEditorOpen,
   } = useTheme();
@@ -375,7 +380,6 @@ export function ThemeEditor() {
 
   return (
     <Sheet open={themeEditorOpen} onOpenChange={setThemeEditorOpen}>
-
       <SheetContent
         side="right"
         overlayClassName="bg-transparent backdrop-blur-none"
@@ -435,6 +439,48 @@ export function ThemeEditor() {
                 </Tooltip>
               ))}
             </div>
+          </div>
+
+          {/* ── My Custom Preset ─────────────────────────────────────── */}
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1">
+                <Paintbrush className="w-3 h-3" />
+                My Preset
+              </p>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-6 text-[10px] px-2 cursor-pointer"
+                onClick={() => {
+                  saveUserPreset();
+                  toast.success("Saved as your custom preset!");
+                }}
+              >
+                Save Current
+              </Button>
+            </div>
+            {userPreset ? (
+              <button
+                onClick={() => {
+                  applyUserPreset();
+                  setTimeout(refreshColors, 50);
+                  toast.success("Applied your custom preset!");
+                }}
+                className="w-full flex items-center gap-2 p-2 rounded-lg border border-border/30 hover:border-primary/40 hover:bg-accent/30 transition-all cursor-pointer group"
+              >
+                <div className="flex gap-0.5">
+                  <div className="w-4 h-4 rounded-full" style={{ backgroundColor: userPreset["--background"] || "#000" }} />
+                  <div className="w-4 h-4 rounded-full" style={{ backgroundColor: userPreset["--primary"] || "#000" }} />
+                  <div className="w-4 h-4 rounded-full" style={{ backgroundColor: userPreset["--card"] || "#000" }} />
+                </div>
+                <span className="text-xs font-medium flex-1 text-left">My Saved Preset</span>
+              </button>
+            ) : (
+              <div className="p-3 rounded-lg border border-border/30 border-dashed text-center text-[10px] text-muted-foreground">
+                No preset saved yet. Modify colors and click "Save Current".
+              </div>
+            )}
           </div>
 
           {/* ── Token Groups ─────────────────────────────────────── */}

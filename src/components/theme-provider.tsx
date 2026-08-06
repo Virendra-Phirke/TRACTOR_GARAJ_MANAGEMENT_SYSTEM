@@ -23,6 +23,9 @@ interface ThemeContextType {
   resetCustomTheme: () => void;
   importTheme: (theme: Record<string, string>) => void;
   exportTheme: () => Record<string, string>;
+  userPreset: Record<string, string> | null;
+  saveUserPreset: () => void;
+  applyUserPreset: () => void;
   // Theme editor panel open state
   themeEditorOpen: boolean;
   setThemeEditorOpen: (open: boolean) => void;
@@ -118,19 +121,20 @@ export const THEME_TOKENS: { token: string; label: string; group: string; defaul
   { token: "--popover", label: "Popover Background", group: "Popovers", defaultDark: "oklch(0.22 0 0)", defaultLight: "oklch(1 0 0)" },
   { token: "--popover-foreground", label: "Popover Text", group: "Popovers", defaultDark: "oklch(0.98 0 0)", defaultLight: "oklch(0.15 0.01 260)" },
   // Primary
-  { token: "--primary", label: "Primary", group: "Primary", defaultDark: "oklch(0.648 0.17 160)", defaultLight: "oklch(0.648 0.17 160)" },
-  { token: "--primary-foreground", label: "Primary Text", group: "Primary", defaultDark: "oklch(0.98 0 0)", defaultLight: "oklch(0.98 0 0)" },
+  { token: "--primary", label: "Primary (Buttons/Active)", group: "Primary", defaultDark: "oklch(0.648 0.17 160)", defaultLight: "oklch(0.648 0.17 160)" },
+  { token: "--primary-foreground", label: "Primary Text (Buttons)", group: "Primary", defaultDark: "oklch(0.98 0 0)", defaultLight: "oklch(0.98 0 0)" },
   // Secondary
-  { token: "--secondary", label: "Secondary", group: "Secondary", defaultDark: "oklch(0.28 0 0)", defaultLight: "oklch(0.96 0.01 260)" },
+  { token: "--secondary", label: "Secondary (Buttons/Badges)", group: "Secondary", defaultDark: "oklch(0.28 0 0)", defaultLight: "oklch(0.96 0.01 260)" },
   { token: "--secondary-foreground", label: "Secondary Text", group: "Secondary", defaultDark: "oklch(0.98 0 0)", defaultLight: "oklch(0.2 0.01 260)" },
   // Muted
-  { token: "--muted", label: "Muted Background", group: "Muted", defaultDark: "oklch(0.28 0 0)", defaultLight: "oklch(0.93 0.006 260)" },
-  { token: "--muted-foreground", label: "Muted Text", group: "Muted", defaultDark: "oklch(0.70 0 0)", defaultLight: "oklch(0.46 0.015 260)" },
+  { token: "--muted", label: "Muted Background (Tabs)", group: "Muted", defaultDark: "oklch(0.28 0 0)", defaultLight: "oklch(0.93 0.006 260)" },
+  { token: "--muted-foreground", label: "Muted Text (Subtitles)", group: "Muted", defaultDark: "oklch(0.70 0 0)", defaultLight: "oklch(0.46 0.015 260)" },
   // Accent
-  { token: "--accent", label: "Accent", group: "Accent", defaultDark: "oklch(0.28 0 0)", defaultLight: "oklch(0.93 0.006 260)" },
+  { token: "--accent", label: "Accent (Hover states)", group: "Accent", defaultDark: "oklch(0.28 0 0)", defaultLight: "oklch(0.93 0.006 260)" },
   { token: "--accent-foreground", label: "Accent Text", group: "Accent", defaultDark: "oklch(0.98 0 0)", defaultLight: "oklch(0.15 0.01 260)" },
   // Destructive
-  { token: "--destructive", label: "Destructive", group: "Destructive", defaultDark: "oklch(0.62 0.22 25)", defaultLight: "oklch(0.58 0.22 25)" },
+  { token: "--destructive", label: "Destructive (Danger Buttons)", group: "Destructive", defaultDark: "oklch(0.62 0.22 25)", defaultLight: "oklch(0.58 0.22 25)" },
+  { token: "--destructive-foreground", label: "Destructive Text", group: "Destructive", defaultDark: "oklch(0.98 0 0)", defaultLight: "oklch(0.98 0 0)" },
   // Borders & Inputs
   { token: "--border", label: "Border", group: "Borders & Inputs", defaultDark: "oklch(0.35 0 0)", defaultLight: "oklch(0.88 0.008 260)" },
   { token: "--input", label: "Input Border", group: "Borders & Inputs", defaultDark: "oklch(0.35 0 0)", defaultLight: "oklch(0.9 0.008 260)" },
@@ -299,6 +303,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [fontSize, setFontSizeState] = useState("medium"); // default medium
   const [soundEnabled, setSoundEnabledState] = useState(false); // default off
   const [customTheme, setCustomThemeState] = useState<Record<string, string>>({});
+  const [userPreset, setUserPresetState] = useState<Record<string, string> | null>(null);
   const [themeEditorOpen, setThemeEditorOpen] = useState(false);
 
   useEffect(() => {
@@ -309,13 +314,20 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     const savedFontSize = localStorage.getItem("gbms-font-size");
     const savedSound = localStorage.getItem("gbms-sound-enabled");
     const savedCustomTheme = localStorage.getItem("gbms-custom-theme");
-    
+    const savedUserPreset = localStorage.getItem("gbms-user-preset");
+
     if (savedTheme) setThemeState(savedTheme);
     if (savedAccent) setAccentColorState(savedAccent);
     if (savedFontFamily) setFontFamilyState(savedFontFamily);
     if (savedFontSize) setFontSizeState(savedFontSize);
     if (savedSound !== null) setSoundEnabledState(savedSound === "true");
-    
+
+    if (savedUserPreset) {
+      try {
+        setUserPresetState(JSON.parse(savedUserPreset));
+      } catch {}
+    }
+
     // Restore custom theme overrides
     if (savedCustomTheme) {
       try {
@@ -335,16 +347,13 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   };
 
   // ── Sound System (deployed-safe) ──────────────────────────────────
-  // Preload audio elements once and reuse them. Use AudioContext to
-  // "unlock" audio playback on mobile/deployed sites after first gesture.
   const audioUnlockedRef = useRef(false);
   const successAudioRef = useRef<HTMLAudioElement | null>(null);
   const errorAudioRef = useRef<HTMLAudioElement | null>(null);
 
-  // Preload audio files on mount
   useEffect(() => {
     if (typeof window === "undefined") return;
-    
+
     try {
       const success = new Audio("/sounds/gta_v.mp3");
       success.preload = "auto";
@@ -360,7 +369,6 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  // Unlock audio on first user gesture (click/touch/keydown)
   useEffect(() => {
     if (typeof window === "undefined") return;
 
@@ -368,7 +376,6 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       if (audioUnlockedRef.current) return;
       audioUnlockedRef.current = true;
 
-      // Play and immediately pause both to unlock them
       [successAudioRef.current, errorAudioRef.current].forEach((audio) => {
         if (audio) {
           audio.volume = 0;
@@ -376,7 +383,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
             audio.pause();
             audio.currentTime = 0;
             audio.volume = 0.5;
-          }).catch(() => {});
+          }).catch(() => { });
         }
       });
     };
@@ -401,11 +408,9 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     if (!sourceAudio) return;
 
     try {
-      // Clone the preloaded audio so we can play concurrently without interrupting
       const clone = sourceAudio.cloneNode() as HTMLAudioElement;
       clone.volume = 0.5;
-      clone.play().catch(() => {});
-      // Clean up clone after it finishes
+      clone.play().catch(() => { });
       clone.addEventListener("ended", () => { clone.remove(); }, { once: true });
     } catch {
       // Silently fail
@@ -413,7 +418,6 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   }, [soundEnabled]);
 
   useEffect(() => {
-    // Apply theme class to <html>
     const root = document.documentElement;
     if (theme === "dark") {
       root.classList.add("dark");
@@ -426,13 +430,11 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   }, [theme]);
 
   useEffect(() => {
-    // Only apply accent color to tokens NOT overridden by custom theme
     if (!customTheme["--primary"]) document.documentElement.style.setProperty("--primary", accentColor);
     if (!customTheme["--ring"]) document.documentElement.style.setProperty("--ring", accentColor);
     if (!customTheme["--sidebar-primary"]) document.documentElement.style.setProperty("--sidebar-primary", accentColor);
     if (!customTheme["--chart-1"]) document.documentElement.style.setProperty("--chart-1", accentColor);
-    
-    // Automatically determine high-contrast foreground color based on lightness
+
     if (!customTheme["--primary-foreground"]) {
       const match = accentColor.match(/oklch\(([\d.]+)/);
       if (match && match[1]) {
@@ -441,13 +443,12 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
         document.documentElement.style.setProperty("--primary-foreground", foreground);
       }
     }
-    
+
     localStorage.setItem("gbms-accent", accentColor);
   }, [accentColor, customTheme]);
 
   useEffect(() => {
-    // Apply font family as CSS custom property
-    let cssFontFamily = "var(--font-sans)"; // Default fallback to next/font/google if defined
+    let cssFontFamily = "var(--font-sans)";
     if (fontFamily === "roboto") cssFontFamily = "'Roboto', sans-serif";
     if (fontFamily === "outfit") cssFontFamily = "'Outfit', sans-serif";
     if (fontFamily === "poppins") cssFontFamily = "'Poppins', sans-serif";
@@ -461,18 +462,17 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     if (fontFamily === "playfair") cssFontFamily = "'Playfair Display', serif";
     if (fontFamily === "geist") cssFontFamily = "var(--font-geist-sans), sans-serif";
     if (fontFamily === "monospace") cssFontFamily = "var(--font-geist-mono), monospace";
-    
+
     document.documentElement.style.setProperty("--font-sans", cssFontFamily);
     localStorage.setItem("gbms-font-family", fontFamily);
   }, [fontFamily]);
 
   useEffect(() => {
-    // Apply font size to document root
     let rootFontSize = "16px";
     if (fontSize === "small") rootFontSize = "14px";
     if (fontSize === "large") rootFontSize = "18px";
     if (fontSize === "xlarge") rootFontSize = "20px";
-    
+
     document.documentElement.style.fontSize = rootFontSize;
     localStorage.setItem("gbms-font-size", fontSize);
   }, [fontSize]);
@@ -497,13 +497,11 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const resetCustomTheme = useCallback(() => {
-    // Remove all overrides from the DOM
     Object.keys(customTheme).forEach((token) => {
       document.documentElement.style.removeProperty(token);
     });
     setCustomThemeState({});
     localStorage.removeItem("gbms-custom-theme");
-    // Re-apply accent color since we cleared overrides
     document.documentElement.style.setProperty("--primary", accentColor);
     document.documentElement.style.setProperty("--ring", accentColor);
     document.documentElement.style.setProperty("--sidebar-primary", accentColor);
@@ -511,11 +509,9 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   }, [customTheme, accentColor]);
 
   const importTheme = useCallback((themeOverrides: Record<string, string>) => {
-    // Clear existing overrides first
     Object.keys(customTheme).forEach((token) => {
       document.documentElement.style.removeProperty(token);
     });
-    // Apply new overrides
     Object.entries(themeOverrides).forEach(([token, value]) => {
       document.documentElement.style.setProperty(token, value);
     });
@@ -526,6 +522,17 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const exportTheme = useCallback(() => {
     return { ...customTheme };
   }, [customTheme]);
+
+  const saveUserPreset = useCallback(() => {
+    setUserPresetState(customTheme);
+    localStorage.setItem("gbms-user-preset", JSON.stringify(customTheme));
+  }, [customTheme]);
+
+  const applyUserPreset = useCallback(() => {
+    if (userPreset) {
+      importTheme(userPreset);
+    }
+  }, [userPreset, importTheme]);
 
   return (
     <ThemeContext.Provider
@@ -547,6 +554,9 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
         resetCustomTheme,
         importTheme,
         exportTheme,
+        userPreset,
+        saveUserPreset,
+        applyUserPreset,
         themeEditorOpen,
         setThemeEditorOpen,
       }}

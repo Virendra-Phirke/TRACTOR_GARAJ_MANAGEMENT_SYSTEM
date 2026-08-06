@@ -107,7 +107,7 @@ export default function ColorPicker({ value, onChange, onClose, showAlpha = fals
     const rgb = hexToRgb(value || "#888888") || { r: 136, g: 136, b: 136 };
     return rgbToHsv(rgb.r, rgb.g, rgb.b);
   };
-  
+
   const initial = getInitialHsv();
   const [hue, setHue] = useState(initial.h);
   const [saturation, setSaturation] = useState(initial.s);
@@ -129,7 +129,7 @@ export default function ColorPicker({ value, onChange, onClose, showAlpha = fals
   useEffect(() => {
     setHexDraft(hex);
   }, [hex]);
-  
+
   useEffect(() => {
     setAlphaDraft(String(Math.round(alpha)));
   }, [alpha]);
@@ -140,15 +140,15 @@ export default function ColorPicker({ value, onChange, onClose, showAlpha = fals
     // Prevent updating internal HSV if we are actively dragging, 
     // to avoid hue-loss when dragging through grays/blacks
     if (dragging.current !== null) return;
-    
+
     if (value && value.toUpperCase() !== hex) {
-       const rgb = hexToRgb(value);
-       if (rgb) {
-          const hsv = rgbToHsv(rgb.r, rgb.g, rgb.b);
-          setHue(hsv.h);
-          setSaturation(hsv.s);
-          setValueHsv(hsv.v);
-       }
+      const rgb = hexToRgb(value);
+      if (rgb) {
+        const hsv = rgbToHsv(rgb.r, rgb.g, rgb.b);
+        setHue(hsv.h);
+        setSaturation(hsv.s);
+        setValueHsv(hsv.v);
+      }
     }
   }, [value, hex]);
 
@@ -160,12 +160,12 @@ export default function ColorPicker({ value, onChange, onClose, showAlpha = fals
     const rect = el.getBoundingClientRect();
     const x = clamp01((clientX - rect.left) / rect.width);
     const y = clamp01((clientY - rect.top) / rect.height);
-    
+
     const newS = x * 100;
     const newV = (1 - y) * 100;
     setSaturation(newS);
     setValueHsv(newV);
-    
+
     // Fire onChange immediately
     const newRgb = hsvToRgb(hue, newS, newV);
     onChange(rgbToHex(newRgb.r, newRgb.g, newRgb.b));
@@ -176,10 +176,10 @@ export default function ColorPicker({ value, onChange, onClose, showAlpha = fals
     if (!el) return;
     const rect = el.getBoundingClientRect();
     const x = clamp01((clientX - rect.left) / rect.width);
-    
+
     const newH = x * 360;
     setHue(newH);
-    
+
     const newRgb = hsvToRgb(newH, saturation, valueHsv);
     onChange(rgbToHex(newRgb.r, newRgb.g, newRgb.b));
   }, [saturation, valueHsv, onChange]);
@@ -234,11 +234,11 @@ export default function ColorPicker({ value, onChange, onClose, showAlpha = fals
 
   return (
     <div
-      className="cp-root w-full max-w-[340px]"
+      className="cp-root w-[260px]"
       style={{
         background: "#232326",
         borderRadius: 20,
-        padding: 24,
+        padding: 16,
         fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
         color: "#fff",
         boxShadow: "0 20px 60px rgba(0,0,0,0.5)",
@@ -248,35 +248,32 @@ export default function ColorPicker({ value, onChange, onClose, showAlpha = fals
         .cp-root button { -webkit-tap-highlight-color: transparent; }
         .cp-root input::selection { background: rgba(167,139,250,0.4); }`}</style>
 
-      {/* Header */}
-      <div style={{ display: "flex", alignItems: "center", marginBottom: 22 }}>
-        <span
-          style={{
-            fontSize: 15,
-            fontWeight: 600,
-            color: "#A78BFA",
-            flex: 1,
-          }}
-        >
-          Solid
-        </span>
-        {onClose && (
+      {/* Top bar with close button */}
+      {onClose && (
+        <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 12 }}>
           <button
             onClick={onClose}
             aria-label="Close"
             style={{
-              background: "none",
+              background: "rgba(255,255,255,0.1)",
               border: "none",
-              cursor: "pointer",
-              color: "rgba(255,255,255,0.6)",
+              borderRadius: "50%",
+              width: 26,
+              height: 26,
               display: "flex",
-              padding: 4,
+              alignItems: "center",
+              justifyContent: "center",
+              cursor: "pointer",
+              color: "#fff",
+              transition: "background 0.2s",
             }}
+            onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(255,255,255,0.2)")}
+            onMouseLeave={(e) => (e.currentTarget.style.background = "rgba(255,255,255,0.1)")}
           >
-            <X size={18} />
+            <X size={14} />
           </button>
-        )}
-      </div>
+        </div>
+      )}
 
       {/* Saturation / Value square */}
       <div
@@ -290,7 +287,8 @@ export default function ColorPicker({ value, onChange, onClose, showAlpha = fals
           position: "relative",
           width: "100%",
           aspectRatio: "1 / 1",
-          borderRadius: 14,
+          borderRadius: 12,
+          overflow: "hidden",
           cursor: "crosshair",
           touchAction: "none",
           background: `linear-gradient(to top, #000, transparent),
@@ -326,13 +324,14 @@ export default function ColorPicker({ value, onChange, onClose, showAlpha = fals
         style={{
           position: "relative",
           width: "100%",
-          height: 10,
+          height: 14,
           borderRadius: 999,
-          marginTop: 18,
+          marginTop: 16,
           cursor: "pointer",
           touchAction: "none",
           background:
             "linear-gradient(to right, #ff0000, #ffff00, #00ff00, #00ffff, #0000ff, #ff00ff, #ff0000)",
+          boxShadow: "inset 0 1px 4px rgba(0,0,0,0.2)",
         }}
       >
         <div
@@ -364,9 +363,9 @@ export default function ColorPicker({ value, onChange, onClose, showAlpha = fals
           style={{
             position: "relative",
             width: "100%",
-            height: 10,
+            height: 14,
             borderRadius: 999,
-            marginTop: 14,
+            marginTop: 16,
             cursor: "pointer",
             touchAction: "none",
             overflow: "hidden",
@@ -374,6 +373,7 @@ export default function ColorPicker({ value, onChange, onClose, showAlpha = fals
               "linear-gradient(45deg, #4b4b4b 25%, transparent 25%), linear-gradient(-45deg, #4b4b4b 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #4b4b4b 75%), linear-gradient(-45deg, transparent 75%, #4b4b4b 75%)",
             backgroundSize: "10px 10px",
             backgroundPosition: "0 0, 0 5px, 5px -5px, -5px 0px",
+            boxShadow: "inset 0 1px 4px rgba(0,0,0,0.2)",
           }}
         >
           <div
@@ -400,88 +400,6 @@ export default function ColorPicker({ value, onChange, onClose, showAlpha = fals
           />
         </div>
       )}
-
-      {/* Hex + opacity row */}
-      <div style={{ display: "flex", alignItems: "center", gap: 16, marginTop: 22 }}>
-        <button
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 4,
-            background: "none",
-            border: "none",
-            cursor: "pointer",
-            color: "rgba(255,255,255,0.55)",
-            fontSize: 14,
-            padding: 0,
-            flexShrink: 0,
-          }}
-        >
-          Hex <ChevronDown size={14} />
-        </button>
-
-        <div style={{ display: "flex", alignItems: "center", gap: 8, flex: 1, minWidth: 0 }}>
-          <span
-            style={{
-              width: 16,
-              height: 16,
-              borderRadius: "50%",
-              background: hex,
-              flexShrink: 0,
-              border: "1px solid rgba(255,255,255,0.15)",
-            }}
-          />
-          <input
-            value={hexDraft}
-            onChange={(e) => setHexDraft(e.target.value.toUpperCase())}
-            onBlur={(e) => commitHex(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") {
-                commitHex((e.target as HTMLInputElement).value);
-                (e.target as HTMLInputElement).blur();
-              }
-            }}
-            spellCheck={false}
-            style={{
-              background: "none",
-              border: "none",
-              outline: "none",
-              color: "#fff",
-              fontSize: 14,
-              fontFamily: "inherit",
-              width: "100%",
-              minWidth: 0,
-            }}
-          />
-        </div>
-
-        {showAlpha && (
-          <div style={{ display: "flex", alignItems: "center", flexShrink: 0 }}>
-            <input
-              value={alphaDraft}
-              onChange={(e) => setAlphaDraft(e.target.value.replace(/[^0-9]/g, ""))}
-              onBlur={(e) => commitAlpha(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  commitAlpha((e.target as HTMLInputElement).value);
-                  (e.target as HTMLInputElement).blur();
-                }
-              }}
-              style={{
-                background: "none",
-                border: "none",
-                outline: "none",
-                color: "#fff",
-                fontSize: 14,
-                fontFamily: "inherit",
-                width: 30,
-                textAlign: "right",
-              }}
-            />
-            <span style={{ color: "rgba(255,255,255,0.5)", fontSize: 14 }}>%</span>
-          </div>
-        )}
-      </div>
     </div>
   );
 }

@@ -122,14 +122,14 @@ export function Sidebar() {
               className={cn(
                 "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200",
                 isActive
-                  ? "bg-primary/10 text-primary border border-primary/20 shadow-sm shadow-primary/5"
+                  ? "bg-sidebar-primary/10 text-sidebar-primary border border-sidebar-primary/20 shadow-sm shadow-sidebar-primary/5"
                   : "text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent"
               )}
             >
               <item.icon
                 className={cn(
                   "w-[18px] h-[18px] shrink-0",
-                  isActive ? "text-primary" : ""
+                  isActive ? "text-sidebar-primary" : ""
                 )}
               />
               {/* Always show label on mobile, respect collapsed on desktop */}

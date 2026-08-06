@@ -24,6 +24,8 @@ import {
   Copy,
   Check,
   Sparkles,
+  MousePointerClick,
+  X
 } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { useTheme, THEME_TOKENS, THEME_PRESETS } from "@/components/theme-provider";
@@ -33,6 +35,33 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+
+function extractTokens(el: Element): string[] {
+  let current: Element | null = el;
+  while (current && current !== document.body) {
+    const classes = current.className;
+    if (typeof classes === 'string') {
+      const tokens = new Set<string>();
+      classes.split(/\s+/).forEach(c => {
+        if (c === "border") tokens.add("--border");
+        if (c === "text-foreground") tokens.add("--foreground");
+        const match = c.match(/^(?:bg|text|border|ring)-([a-z0-9-]+)$/);
+        if (match) {
+          const name = match[1];
+          if (c.startsWith("text-")) {
+            const fgToken = `--${name}-foreground`;
+            if (THEME_TOKENS.some(t => t.token === fgToken)) tokens.add(fgToken);
+          }
+          const token = `--${name}`;
+          if (THEME_TOKENS.some(t => t.token === token)) tokens.add(token);
+        }
+      });
+      if (tokens.size > 0) return Array.from(tokens);
+    }
+    current = current.parentElement;
+  }
+  return [];
+}
 
 // ── oklch / hex conversion helpers ──────────────────────────────────
 // We need these because CSS vars use oklch but <input type="color"> needs hex.
@@ -288,6 +317,9 @@ export function ThemeEditor() {
   } = useTheme();
   const pathname = usePathname();
   const [copied, setCopied] = useState(false);
+  const [inspectorMode, setInspectorMode] = useState(false);
+  const [inspectResult, setInspectResult] = useState<{ x: number; y: number; tokens: string[] } | null>(null);
+  const [inspectActiveToken, setInspectActiveToken] = useState<string | null>(null);
 
   const groups = useMemo(() => groupTokens(), []);
   const defaultKey = theme === "dark" ? "defaultDark" : "defaultLight";
@@ -295,6 +327,74 @@ export function ThemeEditor() {
 
   // Resolve current computed colors for all tokens
   const [resolvedColors, setResolvedColors] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    if (!inspectorMode) return;
+
+    const highlightBox = document.createElement("div");
+    highlightBox.id = "theme-inspector-highlight";
+    highlightBox.style.position = "fixed";
+    highlightBox.style.pointerEvents = "none";
+    highlightBox.style.zIndex = "99999";
+    highlightBox.style.border = "2px dashed #3b82f6";
+    highlightBox.style.backgroundColor = "rgba(59, 130, 246, 0.1)";
+    highlightBox.style.transition = "all 0.1s ease-out";
+    highlightBox.style.display = "none";
+    document.body.appendChild(highlightBox);
+
+    const onPointerMove = (e: PointerEvent) => {
+      const el = document.elementFromPoint(e.clientX, e.clientY) as HTMLElement;
+      if (!el || el.closest('[role="dialog"]') || el.closest('#theme-inspector-highlight') || el.closest('.inspector-popup')) {
+        highlightBox.style.display = "none";
+        return;
+      }
+      
+      const tokens = extractTokens(el);
+      if (tokens.length > 0) {
+        const rect = el.getBoundingClientRect();
+        highlightBox.style.display = "block";
+        highlightBox.style.left = `${rect.left - 4}px`;
+        highlightBox.style.top = `${rect.top - 4}px`;
+        highlightBox.style.width = `${rect.width + 8}px`;
+        highlightBox.style.height = `${rect.height + 8}px`;
+      } else {
+        highlightBox.style.display = "none";
+      }
+    };
+
+    const onClick = (e: MouseEvent) => {
+      const el = document.elementFromPoint(e.clientX, e.clientY) as HTMLElement;
+      if (!el || el.closest('[role="dialog"]') || el.closest('.inspector-popup')) return;
+
+      const tokens = extractTokens(el);
+      if (tokens.length > 0) {
+        e.preventDefault();
+        e.stopPropagation();
+        setInspectorMode(false);
+        setInspectResult({ 
+          x: Math.min(e.clientX + 10, window.innerWidth - 250), 
+          y: Math.min(e.clientY + 10, window.innerHeight - 300), 
+          tokens 
+        });
+        setInspectActiveToken(null);
+      }
+    };
+
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setInspectorMode(false);
+    };
+
+    document.addEventListener("pointermove", onPointerMove, true);
+    document.addEventListener("click", onClick, true);
+    document.addEventListener("keydown", onKeyDown, true);
+
+    return () => {
+      document.removeEventListener("pointermove", onPointerMove, true);
+      document.removeEventListener("click", onClick, true);
+      document.removeEventListener("keydown", onKeyDown, true);
+      highlightBox.remove();
+    };
+  }, [inspectorMode]);
 
   // Refresh resolved colors when sheet opens or theme changes
   const refreshColors = useCallback(() => {
@@ -379,6 +479,7 @@ export function ThemeEditor() {
   const overrideCount = Object.keys(customTheme).length;
 
   return (
+    <>
     <Sheet open={themeEditorOpen} onOpenChange={setThemeEditorOpen}>
       <SheetContent
         side="right"
@@ -397,6 +498,19 @@ export function ThemeEditor() {
 
         {/* Scrollable content */}
         <div className="flex-1 overflow-y-auto px-3 py-3 space-y-3">
+          
+          <Button
+            variant={inspectorMode ? "secondary" : "outline"}
+            className={`w-full gap-2 border-dashed ${inspectorMode ? 'bg-blue-500/20 text-blue-400 border-blue-500/50 hover:bg-blue-500/30' : 'hover:bg-accent'}`}
+            onClick={() => {
+              setInspectorMode(!inspectorMode);
+              if (!inspectorMode) setThemeEditorOpen(false);
+            }}
+          >
+            <MousePointerClick className="w-4 h-4" />
+            {inspectorMode ? "Inspector Active (Click outside)" : "Pick Element from Screen"}
+          </Button>
+
           {/* ── Quick Presets ─────────────────────────────────────── */}
           <div>
             <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-2 flex items-center gap-1">
@@ -566,5 +680,78 @@ export function ThemeEditor() {
         </div>
       </SheetContent>
     </Sheet>
+
+    {/* Inspector Result Menu */}
+    {inspectResult && !inspectActiveToken && (
+      <div 
+        className="inspector-popup"
+        style={{ 
+          position: 'fixed', 
+          left: inspectResult.x, 
+          top: inspectResult.y, 
+          zIndex: 99999, 
+          backgroundColor: '#18181b', 
+          padding: '12px', 
+          borderRadius: '12px', 
+          boxShadow: '0 10px 40px rgba(0,0,0,0.5)',
+          border: '1px solid rgba(255,255,255,0.1)',
+          minWidth: '200px'
+        }}
+      >
+        <div className="flex items-center justify-between mb-3 border-b border-white/10 pb-2">
+          <span className="text-xs font-semibold text-white/90">Inspect Colors</span>
+          <button 
+            onClick={() => setInspectResult(null)}
+            className="text-white/50 hover:text-white"
+          >
+            <X size={14} />
+          </button>
+        </div>
+        <div className="space-y-1">
+          {inspectResult.tokens.map(token => {
+            const tokenInfo = THEME_TOKENS.find(t => t.token === token);
+            if (!tokenInfo) return null;
+            const color = customTheme[token] || resolvedColors[token] || "#888888";
+            
+            return (
+              <button
+                key={token}
+                onClick={() => setInspectActiveToken(token)}
+                className="w-full flex items-center gap-3 px-2 py-2 hover:bg-white/10 rounded-md transition-colors text-left"
+              >
+                <div 
+                  className="w-4 h-4 rounded-full shrink-0 border border-white/20 shadow-sm" 
+                  style={{ backgroundColor: color }} 
+                />
+                <div className="flex-1 min-w-0">
+                  <div className="text-xs font-medium text-white truncate">{tokenInfo.label}</div>
+                  <div className="text-[10px] text-white/50 font-mono truncate">{token}</div>
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    )}
+
+    {/* Inline Color Picker */}
+    {inspectActiveToken && inspectResult && (
+      <div 
+        className="inspector-popup"
+        style={{ 
+          position: 'fixed', 
+          left: inspectResult.x, 
+          top: inspectResult.y, 
+          zIndex: 99999 
+        }}
+      >
+        <ColorPicker 
+          value={customTheme[inspectActiveToken] || resolvedColors[inspectActiveToken] || "#888888"}
+          onChange={(hex) => handleChangeColor(inspectActiveToken, hex)}
+          onClose={() => { setInspectActiveToken(null); setInspectResult(null); }}
+        />
+      </div>
+    )}
+    </>
   );
 }

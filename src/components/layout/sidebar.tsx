@@ -18,6 +18,7 @@ import {
   UserCircle2,
   LineChart,
   X,
+  Paintbrush,
 } from "lucide-react";
 import { useState, createContext, useContext, useCallback } from "react";
 import { Button } from "@/components/ui/button";
@@ -26,6 +27,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { useTheme } from "@/components/theme-provider";
 
 const navItems = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
@@ -71,6 +73,8 @@ export function Sidebar() {
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
   const { mobileOpen, setMobileOpen } = useSidebar();
+  const { setThemeEditorOpen, customTheme } = useTheme();
+  const themeOverrideCount = Object.keys(customTheme).length;
 
   const navContent = (
     <>
@@ -149,6 +153,47 @@ export function Sidebar() {
 
           return linkContent;
         })}
+
+        {/* Theme Editor button */}
+        {(() => {
+          const themeButton = (
+            <button
+              onClick={() => {
+                setThemeEditorOpen(true);
+                setMobileOpen(false);
+              }}
+              className={cn(
+                "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 w-full text-left cursor-pointer",
+                "text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent"
+              )}
+            >
+              <Paintbrush
+                className="w-[18px] h-[18px] shrink-0"
+              />
+              <span className={cn("truncate", !mobileOpen && collapsed ? "hidden" : "")}>
+                Theme
+              </span>
+              {themeOverrideCount > 0 && (!collapsed || mobileOpen) && (
+                <span className="ml-auto text-[10px] font-medium text-primary bg-primary/10 px-1.5 py-0.5 rounded-full">
+                  {themeOverrideCount}
+                </span>
+              )}
+            </button>
+          );
+
+          if (collapsed && !mobileOpen) {
+            return (
+              <Tooltip key="theme-editor">
+                <TooltipTrigger render={themeButton} />
+                <TooltipContent side="right" sideOffset={8}>
+                  Theme Editor
+                </TooltipContent>
+              </Tooltip>
+            );
+          }
+
+          return themeButton;
+        })()}
       </nav>
 
       {/* Collapse toggle — desktop only */}

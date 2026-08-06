@@ -250,8 +250,6 @@ export function SettingsClient({ garage, upi, taxes }: { garage: GarageSettings;
   const { 
     theme: appTheme, 
     toggleTheme: toggleAppTheme, 
-    accentColor, 
-    setAccentColor, 
     fontFamily, 
     setFontFamily, 
     fontSize, 
@@ -260,10 +258,8 @@ export function SettingsClient({ garage, upi, taxes }: { garage: GarageSettings;
     setSoundEnabled,
     playSound
   } = useTheme();
-  const [showAccentPicker, setShowAccentPicker] = useState(false);
   const [showInvoiceThemePicker, setShowInvoiceThemePicker] = useState(false);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
-  const activeScheme = COLOR_SCHEMES.find(s => s.primary === accentColor);
   const activeInvoiceScheme = COLOR_SCHEMES.find(s => s.hex === selectedTheme);
 
   const handleGarage = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -628,55 +624,7 @@ export function SettingsClient({ garage, upi, taxes }: { garage: GarageSettings;
               </Button>
             </div>
 
-          {/* Accent Color Scheme — collapsible dropdown */}
-          <div>
-            <Label className="text-sm font-semibold">Accent Color Scheme</Label>
-            <p className="text-xs text-muted-foreground mt-0.5 mb-2">Choose a primary accent color for buttons, links, and highlights</p>
 
-            {/* Dropdown trigger — shows current color */}
-            <button
-              type="button"
-              onClick={() => setShowAccentPicker(!showAccentPicker)}
-              className="flex items-center gap-2.5 w-full p-2.5 rounded-lg border border-border/50 hover:border-border bg-muted/20 hover:bg-muted/30 transition-all cursor-pointer"
-            >
-              <div
-                className="w-6 h-6 rounded-full border-2 border-foreground/20 shrink-0"
-                style={{ backgroundColor: activeScheme?.hex || "#10b981" }}
-              />
-              <span className="text-sm font-medium flex-1 text-left">{activeScheme?.name || "Emerald"}</span>
-              <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform duration-200 ${showAccentPicker ? "rotate-180" : ""}`} />
-            </button>
-
-            {/* Collapsible grid */}
-            {showAccentPicker && (
-              <div className="mt-2 p-3 rounded-lg border border-border/40 bg-muted/10 animate-in-page">
-              <div className="flex flex-wrap gap-1.5">
-                  {COLOR_SCHEMES.map((scheme) => {
-                    const isActive = accentColor === scheme.primary;
-                    return (
-                      <button
-                        key={scheme.name}
-                        type="button"
-                        onClick={() => { setAccentColor(scheme.primary); }}
-                        title={scheme.name}
-                        className={`group relative w-6 h-6 rounded-full border-2 transition-all duration-150 cursor-pointer hover:scale-125 hover:z-10 ${
-                          isActive
-                            ? "border-foreground scale-125 z-10 ring-2 ring-primary/30"
-                            : "border-transparent hover:border-foreground/40"
-                        }`}
-                        style={{ backgroundColor: scheme.hex }}
-                      >
-                        {isActive && (
-                          <Check className="w-3 h-3 text-white absolute inset-0 m-auto drop-shadow-[0_1px_2px_rgba(0,0,0,0.6)]" />
-                        )}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-          </div>
-          
           {/* Font Settings */}
           {/* Font Settings */}
           <div className="space-y-3 pt-4 border-t border-border/30">

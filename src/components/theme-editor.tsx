@@ -8,6 +8,12 @@ import {
   SheetTitle,
   SheetDescription,
 } from "@/components/ui/sheet";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import ColorPicker from "@/components/ui/color-picker";
 import { Button } from "@/components/ui/button";
 import {
   Paintbrush,
@@ -98,19 +104,25 @@ function ColorTokenRow({
 }) {
   return (
     <div className="flex items-center gap-2 py-1.5 px-1 group">
-      {/* Color swatch + native picker */}
-      <label className="relative w-7 h-7 rounded-md border border-border/50 cursor-pointer overflow-hidden shrink-0 transition-all hover:scale-110 hover:shadow-md">
-        <div
-          className="absolute inset-0 rounded-md"
-          style={{ backgroundColor: currentValue }}
+      {/* Color swatch trigger for custom picker */}
+      <Popover>
+        <PopoverTrigger
+          render={
+            <button className="relative w-7 h-7 rounded-md border border-border/50 cursor-pointer overflow-hidden shrink-0 transition-all hover:scale-110 hover:shadow-md">
+              <div
+                className="absolute inset-0 rounded-md"
+                style={{ backgroundColor: currentValue }}
+              />
+            </button>
+          }
         />
-        <input
-          type="color"
-          value={currentValue}
-          onChange={(e) => onChangeColor(token, e.target.value)}
-          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-        />
-      </label>
+        <PopoverContent className="w-auto p-0 border-none bg-transparent shadow-none" align="start" sideOffset={10}>
+          <ColorPicker
+            value={currentValue}
+            onChange={(hex) => onChangeColor(token, hex)}
+          />
+        </PopoverContent>
+      </Popover>
 
       {/* Label + hex */}
       <div className="flex-1 min-w-0">

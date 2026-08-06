@@ -378,6 +378,7 @@ export function ThemeEditor() {
 
       <SheetContent
         side="right"
+        overlayClassName="bg-transparent backdrop-blur-none"
         className="w-[340px] sm:max-w-[380px] flex flex-col p-0 overflow-hidden"
       >
         <SheetHeader className="px-4 pt-4 pb-2 border-b border-border/30 shrink-0">

@@ -73,8 +73,7 @@ export function Sidebar() {
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
   const { mobileOpen, setMobileOpen } = useSidebar();
-  const { setThemeEditorOpen, customTheme } = useTheme();
-  const themeOverrideCount = Object.keys(customTheme).length;
+  const { setThemeEditorOpen } = useTheme();
 
   const navContent = (
     <>
@@ -173,11 +172,6 @@ export function Sidebar() {
               <span className={cn("truncate", !mobileOpen && collapsed ? "hidden" : "")}>
                 Theme
               </span>
-              {themeOverrideCount > 0 && (!collapsed || mobileOpen) && (
-                <span className="ml-auto text-[10px] font-medium text-primary bg-primary/10 px-1.5 py-0.5 rounded-full">
-                  {themeOverrideCount}
-                </span>
-              )}
             </button>
           );
 

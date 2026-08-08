@@ -341,13 +341,11 @@
   }
 
   .inline-tab:hover {
-    color: oklch(0.8 0.005 260);
-    background: oklch(0.22 0.012 260 / 60%);
+    @apply text-foreground bg-muted;
   }
 
   .inline-tab-active {
-    color: oklch(0.95 0.005 260);
-    background: oklch(0.25 0.015 260);
+    @apply text-primary bg-primary/10;
   }
 }
 
@@ -357,10 +355,8 @@
     position: sticky;
     bottom: 0;
     z-index: 20;
-    background: oklch(0.12 0.008 260 / 95%);
-    backdrop-filter: blur(12px);
+    @apply bg-background/95 backdrop-blur-md border-t border-border/50;
     padding: 1rem 1.5rem;
-    border-top: 1px solid oklch(0.25 0.01 260 / 40%);
   }
 }
 
@@ -368,69 +364,6 @@
 @media print {
   .no-print {
     display: none !important;
-  }
-}
-
-/* ─── Light theme utility overrides ────────────────────────────────── */
-@layer utilities {
-  .light .glass {
-    background: oklch(1 0 0 / 70%);
-    border: 1px solid oklch(0.88 0.008 260 / 60%);
-  }
-
-  .light .block-section {
-    background: oklch(0.98 0.003 260 / 60%);
-    border: 1px solid oklch(0.88 0.008 260 / 60%);
-  }
-
-  .light .block-section-elevated {
-    background: oklch(1 0 0 / 80%);
-    border: 1px solid oklch(0.88 0.008 260 / 40%);
-    box-shadow: 0 0 0 1px oklch(0.88 0.008 260 / 40%),
-      0 4px 24px oklch(0 0 0 / 6%);
-  }
-
-  .light .block-label {
-    color: oklch(0.46 0.015 260);
-  }
-
-  .light .block-divider {
-    background: oklch(0.88 0.008 260 / 50%);
-  }
-
-  .light .summary-row-label {
-    color: oklch(0.46 0.015 260);
-  }
-
-  .light .summary-total {
-    color: var(--primary);
-  }
-
-  .light .hero-total {
-    text-shadow: 0 0 40px color-mix(in oklch, var(--primary) 15%, transparent);
-  }
-
-  .light .item-row:hover {
-    background: oklch(0.95 0.006 260 / 60%);
-  }
-
-  .light .inline-tab {
-    color: oklch(0.46 0.015 260);
-  }
-
-  .light .inline-tab:hover {
-    color: oklch(0.2 0.01 260);
-    background: oklch(0.93 0.006 260 / 70%);
-  }
-
-  .light .inline-tab-active {
-    color: oklch(0.15 0.01 260);
-    background: oklch(0.93 0.008 260);
-  }
-
-  .light .sticky-action-bar {
-    background: oklch(0.97 0.003 260 / 95%);
-    border-top: 1px solid oklch(0.88 0.008 260 / 50%);
   }
 }
 

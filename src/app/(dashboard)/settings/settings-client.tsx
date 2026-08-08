@@ -519,7 +519,7 @@ export function SettingsClient({ garage, upi, taxes }: { garage: GarageSettings;
               
               <Dialog open={isPreviewOpen} onOpenChange={setIsPreviewOpen}>
                 <DialogTrigger render={<Button type="button" variant="outline" className="cursor-pointer gap-1.5"><Eye className="w-3.5 h-3.5" />Preview Full PDF</Button>} />
-                <DialogContent className="max-w-none sm:max-w-none w-[90vw] md:w-[53vw] h-[98vh] flex flex-col p-0 overflow-hidden border-border/30 rounded-xl gap-0" style={{ background: "oklch(0.17 0.01 260)" }}>
+                <DialogContent className="bg-card max-w-none sm:max-w-none w-[90vw] md:w-[53vw] h-[98vh] flex flex-col p-0 overflow-hidden border-border/30 rounded-xl gap-0">
                   <DialogHeader className="px-4 py-2.5 border-b border-border/30 m-0 bg-transparent flex flex-row items-center justify-between">
                     <DialogTitle className="text-sm font-medium text-muted-foreground">Invoice Design Preview</DialogTitle>
                   </DialogHeader>

@@ -48,7 +48,7 @@ export function ProfileClient({
       <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary/10 via-primary/5 to-background border border-border shadow-sm">
         {/* Abstract Background Element */}
         <div className="absolute -top-24 -right-24 w-48 h-48 bg-primary/10 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute -bottom-24 -left-24 w-48 h-48 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute -bottom-24 -left-24 w-48 h-48 bg-primary/10 rounded-full blur-3xl pointer-events-none" />
 
         <div className="p-8 relative z-10 flex flex-col md:flex-row gap-8 items-start md:items-center">
           {/* Avatar / QR Code Section */}
@@ -96,7 +96,7 @@ export function ProfileClient({
             </div>
 
             {upi.vpa && (
-              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-500/10 text-emerald-600 border border-emerald-500/20 text-sm font-medium">
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 text-primary border border-primary/20 text-sm font-medium">
                 UPI: {upi.vpa}
               </div>
             )}
@@ -155,7 +155,7 @@ export function ProfileClient({
               <div>
                 <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Status</p>
                 <div className="flex items-center gap-2">
-                  <div className={`w-2 h-2 rounded-full ${upi.isEnabled ? "bg-emerald-500" : "bg-destructive"}`} />
+                  <div className={`w-2 h-2 rounded-full ${upi.isEnabled ? "bg-primary" : "bg-destructive"}`} />
                   <span className="text-sm">{upi.isEnabled ? "Active & Accepting Payments" : "Disabled"}</span>
                 </div>
               </div>

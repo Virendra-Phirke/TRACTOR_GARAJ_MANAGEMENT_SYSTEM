@@ -134,36 +134,36 @@ export function DashboardClient({
       value: formatCurrency(stats.todayRevenue),
       subtitle: `${stats.todayBills} bill${stats.todayBills !== 1 ? "s" : ""} today`,
       icon: IndianRupee,
-      color: "text-emerald-400",
-      bgColor: "bg-emerald-400/10",
-      borderColor: "border-emerald-400/20",
+      color: "text-primary",
+      bgColor: "bg-primary/10",
+      borderColor: "border-primary/20",
     },
     {
       title: "Pending Payments",
       value: formatCurrency(stats.pendingAmount),
       subtitle: `${stats.pendingCount} unpaid`,
       icon: Clock,
-      color: "text-amber-400",
-      bgColor: "bg-amber-400/10",
-      borderColor: "border-amber-400/20",
+      color: "text-muted-foreground",
+      bgColor: "bg-muted-foreground/10",
+      borderColor: "border-muted-foreground/20",
     },
     {
       title: "Total Revenue",
       value: formatCurrency(stats.totalRevenue),
       subtitle: "All time",
       icon: FileText,
-      color: "text-blue-400",
-      bgColor: "bg-blue-400/10",
-      borderColor: "border-blue-400/20",
+      color: "text-primary",
+      bgColor: "bg-primary/10",
+      borderColor: "border-primary/20",
     },
     {
       title: "Customers",
       value: customerCount.toString(),
       subtitle: "Registered",
       icon: Users,
-      color: "text-purple-400",
-      bgColor: "bg-purple-400/10",
-      borderColor: "border-purple-400/20",
+      color: "text-primary",
+      bgColor: "bg-primary/10",
+      borderColor: "border-primary/20",
     },
   ], [stats.todayRevenue, stats.todayBills, stats.pendingAmount, stats.pendingCount, stats.totalRevenue, customerCount]);
 
@@ -202,14 +202,14 @@ export function DashboardClient({
         {/* Action Buttons */}
         <div className="flex flex-wrap gap-2">
           <a href="/api/export/csv" download className="flex-1 min-w-[120px] sm:flex-none">
-            <Button variant="outline" className="w-full sm:w-auto gap-2 cursor-pointer border-blue-500/30 text-blue-400 hover:bg-blue-500/10">
+            <Button variant="outline" className="w-full sm:w-auto gap-2 cursor-pointer border-primary/30 text-primary hover:bg-primary/10">
               <Download className="w-4 h-4" />
               <span className="hidden sm:inline">Export Report</span>
               <span className="sm:hidden">Export</span>
             </Button>
           </a>
           <a href="/api/backup" download className="flex-1 min-w-[120px] sm:flex-none">
-            <Button variant="outline" className="w-full sm:w-auto gap-2 cursor-pointer border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10">
+            <Button variant="outline" className="w-full sm:w-auto gap-2 cursor-pointer border-primary/30 text-primary hover:bg-primary/10">
               <DatabaseBackup className="w-4 h-4" />
               <span className="hidden sm:inline">Backup Data</span>
               <span className="sm:hidden">Backup</span>
@@ -225,18 +225,18 @@ export function DashboardClient({
       </div>
 
       {needsBackup && (
-        <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-4 flex items-center justify-between">
+        <div className="bg-destructive/10 border border-destructive/30 rounded-lg p-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <Info className="w-5 h-5 text-amber-500" />
+            <Info className="w-5 h-5 text-destructive" />
             <div>
-              <p className="font-medium text-amber-500 text-sm">Backup Reminder</p>
-              <p className="text-xs text-amber-500/80">
+              <p className="font-medium text-destructive text-sm">Backup Reminder</p>
+              <p className="text-xs text-destructive/80">
                 You haven&apos;t backed up your data in the last 7 days. Please create a backup to prevent data loss.
               </p>
             </div>
           </div>
           <a href="/api/backup" download onClick={() => setTimeout(() => window.location.reload(), 2000)}>
-            <Button size="sm" className="bg-amber-500 hover:bg-amber-600 text-black cursor-pointer">
+            <Button size="sm" className="bg-destructive hover:bg-destructive/90 text-destructive-foreground cursor-pointer">
               Backup Now
             </Button>
           </a>
@@ -276,89 +276,155 @@ export function DashboardClient({
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Revenue Chart */}
-        <Card className="lg:col-span-2 bg-card/50">
+        <Card className="lg:col-span-2 bg-card/50 overflow-hidden">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
-              Revenue — Last 7 Days
+              Revenue — {monthNames[new Date().getMonth()]} {new Date().getFullYear()}
             </CardTitle>
           </CardHeader>
           <CardContent>
             {stats.weeklyData.length > 0 ? (
-              <ResponsiveContainer width="100%" height={260}>
-                <AreaChart data={stats.weeklyData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
-                  <defs>
-                    <linearGradient id="blueGradient" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#3b82f6" stopOpacity={0.3} />
-                      <stop offset="100%" stopColor="#3b82f6" stopOpacity={0} />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#2d333b" vertical={false} />
-                  <XAxis
-                    dataKey="date"
-                    tickFormatter={(d) => {
-                      try {
-                        return format(new Date(d), "dd MMM");
-                      } catch {
-                        return d;
-                      }
-                    }}
-                    stroke="#a1a1aa"
-                    fontSize={12}
-                    tickMargin={10}
-                    axisLine={false}
-                    tickLine={false}
-                  />
-                  <YAxis
-                    stroke="#a1a1aa"
-                    fontSize={12}
-                    tickFormatter={(v) => formatCurrency(v)}
-                    tickMargin={10}
-                    axisLine={false}
-                    tickLine={false}
-                  />
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: "rgba(40, 45, 55, 0.85)",
-                      backdropFilter: "blur(8px)",
-                      border: "1px solid rgba(255, 255, 255, 0.1)",
-                      borderRadius: "8px",
-                      fontSize: "12px",
-                      color: "#fff"
-                    }}
-                    itemStyle={{ color: "#fff" }}
-                    formatter={(value: any, name: any) => [
-                      name === "revenue" ? `₹${Number(value).toLocaleString("en-IN")}` : value,
-                      name === "revenue" ? "Revenue" : "Bills"
-                    ]}
-                    labelFormatter={(d) => {
-                      try {
-                        return format(new Date(d), "dd MMM yyyy");
-                      } catch {
-                        return d;
-                      }
-                    }}
-                  />
-                  <Area
-                    type="monotone"
-                    dataKey="revenue"
-                    stroke="#3b82f6"
-                    strokeWidth={3}
-                    fillOpacity={1}
-                    fill="url(#blueGradient)"
-                    activeDot={{ r: 6, strokeWidth: 2, stroke: "#1a1d23", fill: "#3b82f6" }}
-                  />
-                  <Area
-                    type="monotone"
-                    dataKey="bills"
-                    stroke="#8b949e"
-                    strokeWidth={2.5}
-                    fill="none"
-                    activeDot={{ r: 6, strokeWidth: 2, stroke: "#1a1d23", fill: "#8b949e" }}
-                  />
-                </AreaChart>
-              </ResponsiveContainer>
+              <div className="relative">
+                {/* Subtle animated glow behind the chart */}
+                <div
+                  className="absolute inset-0 pointer-events-none"
+                  style={{
+                    background: "radial-gradient(ellipse at 50% 80%, rgba(59,130,246,0.06) 0%, transparent 70%)",
+                  }}
+                />
+                <ResponsiveContainer width="100%" height={280}>
+                  <AreaChart
+                    data={stats.weeklyData}
+                    margin={{ top: 10, right: 10, left: 0, bottom: 0 }}
+                  >
+                    <defs>
+                      <linearGradient id="blueGradient" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#3b82f6" stopOpacity={0.35} />
+                        <stop offset="50%" stopColor="#3b82f6" stopOpacity={0.12} />
+                        <stop offset="100%" stopColor="#3b82f6" stopOpacity={0} />
+                      </linearGradient>
+                      <linearGradient id="lineGradient" x1="0" y1="0" x2="1" y2="0">
+                        <stop offset="0%" stopColor="#60a5fa" />
+                        <stop offset="50%" stopColor="#3b82f6" />
+                        <stop offset="100%" stopColor="#818cf8" />
+                      </linearGradient>
+                      {/* Glow filter for the active dot */}
+                      <filter id="glow">
+                        <feGaussianBlur stdDeviation="3" result="coloredBlur" />
+                        <feMerge>
+                          <feMergeNode in="coloredBlur" />
+                          <feMergeNode in="SourceGraphic" />
+                        </feMerge>
+                      </filter>
+                    </defs>
+                    <CartesianGrid
+                      strokeDasharray="3 3"
+                      stroke="#2d333b"
+                      vertical={false}
+                      strokeOpacity={0.5}
+                    />
+                    <XAxis
+                      dataKey="date"
+                      tickFormatter={(d) => {
+                        try {
+                          return format(new Date(d), "dd MMM");
+                        } catch {
+                          return d;
+                        }
+                      }}
+                      stroke="#a1a1aa"
+                      fontSize={12}
+                      tickMargin={10}
+                      axisLine={false}
+                      tickLine={false}
+                    />
+                    <YAxis
+                      stroke="#a1a1aa"
+                      fontSize={12}
+                      tickFormatter={(v) => formatCurrency(v)}
+                      tickMargin={10}
+                      axisLine={false}
+                      tickLine={false}
+                    />
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: "rgba(15, 18, 25, 0.9)",
+                        backdropFilter: "blur(12px)",
+                        WebkitBackdropFilter: "blur(12px)",
+                        border: "1px solid rgba(59, 130, 246, 0.2)",
+                        borderRadius: "12px",
+                        fontSize: "12px",
+                        color: "#fff",
+                        boxShadow: "0 8px 32px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(59, 130, 246, 0.1)",
+                        padding: "12px 16px",
+                      }}
+                      itemStyle={{ color: "#fff" }}
+                      formatter={(value: any, name: any) => [
+                        name === "revenue" ? `₹${Number(value).toLocaleString("en-IN")}` : value,
+                        name === "revenue" ? "Revenue" : "Bills"
+                      ]}
+                      labelFormatter={(d) => {
+                        try {
+                          return format(new Date(d), "dd MMM yyyy");
+                        } catch {
+                          return d;
+                        }
+                      }}
+                      cursor={{
+                        stroke: "rgba(59, 130, 246, 0.3)",
+                        strokeWidth: 1,
+                        strokeDasharray: "4 4",
+                      }}
+                    />
+                    <Area
+                      type="natural"
+                      dataKey="revenue"
+                      stroke="url(#lineGradient)"
+                      strokeWidth={2.5}
+                      fillOpacity={1}
+                      fill="url(#blueGradient)"
+                      isAnimationActive={true}
+                      animationBegin={0}
+                      animationDuration={1500}
+                      animationEasing="ease-in-out"
+                      activeDot={{
+                        r: 7,
+                        strokeWidth: 3,
+                        stroke: "rgba(59, 130, 246, 0.4)",
+                        fill: "#3b82f6",
+                        filter: "url(#glow)",
+                      }}
+                      dot={{
+                        r: 3,
+                        fill: "#3b82f6",
+                        strokeWidth: 0,
+                        fillOpacity: 0.8,
+                      }}
+                    />
+                    <Area
+                      type="natural"
+                      dataKey="bills"
+                      stroke="#8b949e"
+                      strokeWidth={2}
+                      strokeDasharray="6 3"
+                      fill="none"
+                      isAnimationActive={true}
+                      animationBegin={300}
+                      animationDuration={1500}
+                      animationEasing="ease-in-out"
+                      activeDot={{
+                        r: 5,
+                        strokeWidth: 2,
+                        stroke: "rgba(139, 148, 158, 0.4)",
+                        fill: "#8b949e",
+                      }}
+                      dot={false}
+                    />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
             ) : (
-              <div className="h-[260px] flex items-center justify-center text-muted-foreground text-sm">
+              <div className="h-[280px] flex items-center justify-center text-muted-foreground text-sm">
                 No data yet. Create your first invoice!
               </div>
             )}
@@ -449,7 +515,7 @@ export function DashboardClient({
                       variant="outline"
                       className={
                         inv.paymentStatus === "paid"
-                          ? "border-emerald-400/30 text-emerald-400"
+                          ? "border-primary/30 text-primary"
                           : "border-amber-400/30 text-amber-400"
                       }
                     >

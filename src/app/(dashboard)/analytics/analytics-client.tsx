@@ -312,15 +312,15 @@ export function AnalyticsClient({ data }: AnalyticsClientProps) {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         {/* Revenue */}
         <Card className="bg-card border-border/40 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden group">
-          <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/5 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent" />
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative">
             <CardTitle className="text-sm font-medium text-muted-foreground">Total Revenue</CardTitle>
-            <div className="h-8 w-8 rounded-lg bg-emerald-500/15 flex items-center justify-center">
-              <Banknote className="h-4 w-4 text-emerald-400" />
+            <div className="h-8 w-8 rounded-lg bg-primary/15 flex items-center justify-center">
+              <Banknote className="h-4 w-4 text-primary" />
             </div>
           </CardHeader>
           <CardContent className="relative">
-            <div className="text-2xl font-bold text-emerald-400 tracking-tight">₹{totalRevenue.toLocaleString("en-IN")}</div>
+            <div className="text-2xl font-bold text-primary tracking-tight">₹{totalRevenue.toLocaleString("en-IN")}</div>
             <p className="text-xs text-muted-foreground mt-1.5 flex items-center gap-1">
               <FileText className="w-3 h-3" />
               {paidInvoiceCount} paid invoice{paidInvoiceCount !== 1 ? "s" : ""}
@@ -330,15 +330,15 @@ export function AnalyticsClient({ data }: AnalyticsClientProps) {
 
         {/* Total Billed */}
         <Card className="bg-card border-border/40 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent" />
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative">
             <CardTitle className="text-sm font-medium text-muted-foreground">Total Billed</CardTitle>
-            <div className="h-8 w-8 rounded-lg bg-blue-500/15 flex items-center justify-center">
-              <ScrollText className="h-4 w-4 text-blue-400" />
+            <div className="h-8 w-8 rounded-lg bg-primary/15 flex items-center justify-center">
+              <ScrollText className="h-4 w-4 text-primary" />
             </div>
           </CardHeader>
           <CardContent className="relative">
-            <div className="text-2xl font-bold text-blue-400 tracking-tight">₹{totalBilled.toLocaleString("en-IN")}</div>
+            <div className="text-2xl font-bold text-primary tracking-tight">₹{totalBilled.toLocaleString("en-IN")}</div>
             <p className="text-xs text-muted-foreground mt-1.5 flex items-center gap-1">
               <FileText className="w-3 h-3" />
               {filteredInvoices.length} total invoice{filteredInvoices.length !== 1 ? "s" : ""}
@@ -348,19 +348,19 @@ export function AnalyticsClient({ data }: AnalyticsClientProps) {
 
         {/* Net Profit */}
         <Card className="bg-card border-border/40 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden">
-          <div className={`absolute inset-0 bg-gradient-to-br ${netProfit >= 0 ? "from-violet-500/5" : "from-red-500/5"} to-transparent`} />
+          <div className={`absolute inset-0 bg-gradient-to-br ${netProfit >= 0 ? "from-primary/5" : "from-destructive/5"} to-transparent`} />
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative">
             <CardTitle className="text-sm font-medium text-muted-foreground">Net Profit</CardTitle>
-            <div className={`h-8 w-8 rounded-lg ${netProfit >= 0 ? "bg-violet-500/15" : "bg-red-500/15"} flex items-center justify-center`}>
-              {netProfit >= 0 ? <TrendingUp className="h-4 w-4 text-violet-400" /> : <TrendingDown className="h-4 w-4 text-red-400" />}
+            <div className={`h-8 w-8 rounded-lg ${netProfit >= 0 ? "bg-primary/15" : "bg-destructive/15"} flex items-center justify-center`}>
+              {netProfit >= 0 ? <TrendingUp className="h-4 w-4 text-primary" /> : <TrendingDown className="h-4 w-4 text-destructive" />}
             </div>
           </CardHeader>
           <CardContent className="relative">
-            <div className={`text-2xl font-bold tracking-tight ${netProfit >= 0 ? "text-violet-400" : "text-red-400"}`}>
+            <div className={`text-2xl font-bold tracking-tight ${netProfit >= 0 ? "text-primary" : "text-destructive"}`}>
               {netProfit < 0 && "-"}₹{Math.abs(netProfit).toLocaleString("en-IN")}
             </div>
             <p className="text-xs text-muted-foreground mt-1.5 flex items-center gap-1">
-              {netProfit >= 0 ? <ArrowUpRight className="w-3 h-3 text-emerald-400" /> : <ArrowDownRight className="w-3 h-3 text-red-400" />}
+              {netProfit >= 0 ? <ArrowUpRight className="w-3 h-3 text-primary" /> : <ArrowDownRight className="w-3 h-3 text-destructive" />}
               Revenue − ₹{totalExpenses.toLocaleString("en-IN")} expenses
             </p>
           </CardContent>
@@ -368,15 +368,15 @@ export function AnalyticsClient({ data }: AnalyticsClientProps) {
 
         {/* Outstanding */}
         <Card className="bg-card border-border/40 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-br from-amber-500/5 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-br from-muted-foreground/5 to-transparent" />
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative">
             <CardTitle className="text-sm font-medium text-muted-foreground">Outstanding</CardTitle>
-            <div className="h-8 w-8 rounded-lg bg-amber-500/15 flex items-center justify-center">
-              <Wallet className="h-4 w-4 text-amber-400" />
+            <div className="h-8 w-8 rounded-lg bg-muted-foreground/15 flex items-center justify-center">
+              <Wallet className="h-4 w-4 text-muted-foreground" />
             </div>
           </CardHeader>
           <CardContent className="relative">
-            <div className="text-2xl font-bold text-amber-400 tracking-tight">₹{outstanding.toLocaleString("en-IN")}</div>
+            <div className="text-2xl font-bold text-muted-foreground tracking-tight">₹{outstanding.toLocaleString("en-IN")}</div>
             <p className="text-xs text-muted-foreground mt-1.5 flex items-center gap-1">
               <FileText className="w-3 h-3" />
               {unpaidInvoiceCount} unpaid invoice{unpaidInvoiceCount !== 1 ? "s" : ""}

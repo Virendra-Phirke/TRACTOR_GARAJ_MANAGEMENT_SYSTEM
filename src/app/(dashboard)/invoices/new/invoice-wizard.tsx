@@ -222,10 +222,10 @@ export function InvoiceWizard({ customers, spareParts, taxRates }: { customers: 
               <s.icon className="w-3.5 h-3.5" />
               <span className="hidden sm:inline">{s.label}</span>
               {/* Completion indicators */}
-              {s.id === "customer" && selectedCustomer && <Check className="w-3 h-3 text-emerald-400 ml-1" />}
-              {s.id === "vehicle" && selectedVehicle && <Check className="w-3 h-3 text-emerald-400 ml-1" />}
-              {s.id === "labor" && laborItems.length > 0 && <span className="text-[10px] text-emerald-400 ml-1">{laborItems.length}</span>}
-              {s.id === "parts" && partItems.length > 0 && <span className="text-[10px] text-emerald-400 ml-1">{partItems.length}</span>}
+              {s.id === "customer" && selectedCustomer && <Check className="w-3 h-3 text-primary ml-1" />}
+              {s.id === "vehicle" && selectedVehicle && <Check className="w-3 h-3 text-primary ml-1" />}
+              {s.id === "labor" && laborItems.length > 0 && <span className="text-[10px] text-primary ml-1">{laborItems.length}</span>}
+              {s.id === "parts" && partItems.length > 0 && <span className="text-[10px] text-primary ml-1">{partItems.length}</span>}
             </button>
           ))}
           {/* Inline mini total */}
@@ -257,9 +257,9 @@ export function InvoiceWizard({ customers, spareParts, taxRates }: { customers: 
                 emptyText="No customer found."
               />
               {selectedCustomer && (
-                <div className="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-emerald-500/5">
-                  <div className="w-8 h-8 rounded-full bg-emerald-500/10 flex items-center justify-center">
-                    <Check className="w-4 h-4 text-emerald-400" />
+                <div className="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-primary/5">
+                  <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+                    <Check className="w-4 h-4 text-primary" />
                   </div>
                   <div>
                     <p className="text-sm font-semibold">{selectedCustomer.name}</p>
@@ -378,7 +378,7 @@ export function InvoiceWizard({ customers, spareParts, taxRates }: { customers: 
             <div className="block-label !mb-0">Labor</div>
             <div className="flex items-center gap-2">
               <Wrench className="w-4 h-4 text-muted-foreground" />
-              {laborItems.length > 0 && <span className="text-emerald-400 text-xs font-medium">{laborItems.length} items</span>}
+              {laborItems.length > 0 && <span className="text-primary text-xs font-medium">{laborItems.length} items</span>}
             </div>
           </div>
 
@@ -458,7 +458,7 @@ export function InvoiceWizard({ customers, spareParts, taxRates }: { customers: 
             <div className="block-label !mb-0">Parts</div>
             <div className="flex items-center gap-2">
               <Package className="w-4 h-4 text-muted-foreground" />
-              {partItems.length > 0 && <span className="text-emerald-400 text-xs font-medium">{partItems.length} items</span>}
+              {partItems.length > 0 && <span className="text-primary text-xs font-medium">{partItems.length} items</span>}
             </div>
           </div>
 
@@ -620,8 +620,8 @@ export function InvoiceWizard({ customers, spareParts, taxRates }: { customers: 
             )}
             {discountAmount > 0 && (
               <div className="summary-row">
-                <span className="text-emerald-400">Discount</span>
-                <span className="text-emerald-400">-₹{discountAmount.toLocaleString("en-IN", { maximumFractionDigits: 2 })}</span>
+                <span className="text-primary">Discount</span>
+                <span className="text-primary">-₹{discountAmount.toLocaleString("en-IN", { maximumFractionDigits: 2 })}</span>
               </div>
             )}
           </div>

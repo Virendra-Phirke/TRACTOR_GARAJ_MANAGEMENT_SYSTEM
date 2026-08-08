@@ -24,7 +24,7 @@ export default function LoginPage() {
         <div
           className="absolute inset-0"
           style={{
-            backgroundImage: `linear-gradient(oklch(0.648 0.17 160) 1px, transparent 1px), linear-gradient(90deg, oklch(0.648 0.17 160) 1px, transparent 1px)`,
+            backgroundImage: `linear-gradient(var(--primary) 1px, transparent 1px), linear-gradient(90deg, var(--primary) 1px, transparent 1px)`,
             backgroundSize: "40px 40px",
           }}
         />

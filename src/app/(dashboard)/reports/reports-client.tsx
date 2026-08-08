@@ -167,7 +167,7 @@ export function ReportsClient({
       {/* ── Top Row: 4 Key Metric Cards ────────────────────────────── */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Total Revenue */}
-        <Card className="bg-card/50 border-emerald-400/20">
+        <Card className="bg-card/50 border-primary/20">
           <CardContent className="p-5">
             <div className="flex items-start justify-between">
               <div>
@@ -177,8 +177,8 @@ export function ReportsClient({
                   {stats.invoiceCount} invoices
                 </p>
               </div>
-              <div className="w-10 h-10 rounded-xl bg-emerald-400/10 flex items-center justify-center">
-                <IndianRupee className="w-5 h-5 text-emerald-400" />
+              <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+                <IndianRupee className="w-5 h-5 text-primary" />
               </div>
             </div>
           </CardContent>
@@ -195,8 +195,8 @@ export function ReportsClient({
                   {paidCount} paid invoices
                 </p>
               </div>
-              <div className="w-10 h-10 rounded-xl bg-blue-400/10 flex items-center justify-center">
-                <TrendingUp className="w-5 h-5 text-blue-400" />
+              <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+                <TrendingUp className="w-5 h-5 text-primary" />
               </div>
             </div>
           </CardContent>
@@ -210,8 +210,8 @@ export function ReportsClient({
                 <p className="text-xs text-muted-foreground uppercase tracking-wider">Expenses</p>
                 <p className="text-2xl font-bold mt-2">{fmt(expenses)}</p>
               </div>
-              <div className="w-10 h-10 rounded-xl bg-red-400/10 flex items-center justify-center">
-                <TrendingDown className="w-5 h-5 text-red-400" />
+              <div className="w-10 h-10 rounded-xl bg-destructive/10 flex items-center justify-center">
+                <TrendingDown className="w-5 h-5 text-destructive" />
               </div>
             </div>
           </CardContent>
@@ -223,11 +223,11 @@ export function ReportsClient({
             <div className="flex items-start justify-between">
               <div>
                 <p className="text-xs text-muted-foreground uppercase tracking-wider">Est. Profit</p>
-                <p className={`text-2xl font-bold mt-2 ${profit >= 0 ? "text-emerald-400" : "text-red-400"}`}>
+                <p className={`text-2xl font-bold mt-2 ${profit >= 0 ? "text-primary" : "text-destructive"}`}>
                   {fmt(profit)}
                 </p>
                 <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
-                  {profit >= 0 ? <ArrowUpRight className="w-3 h-3 text-emerald-400" /> : <ArrowDownRight className="w-3 h-3 text-red-400" />}
+                  {profit >= 0 ? <ArrowUpRight className="w-3 h-3 text-primary" /> : <ArrowDownRight className="w-3 h-3 text-destructive" />}
                   Revenue − Expenses
                 </p>
               </div>
@@ -248,31 +248,31 @@ export function ReportsClient({
               <AreaChart data={stats.dailyData}>
                 <defs>
                   <linearGradient id="reportGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="oklch(0.72 0.19 155)" stopOpacity={0.3} />
-                    <stop offset="95%" stopColor="oklch(0.72 0.19 155)" stopOpacity={0} />
+                    <stop offset="5%" stopColor="var(--primary)" stopOpacity={0.3} />
+                    <stop offset="95%" stopColor="var(--primary)" stopOpacity={0} />
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="oklch(0.3 0.01 260)" />
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
                 <XAxis
                   dataKey="date"
                   tickFormatter={(v) => { try { return format(new Date(v), "dd MMM"); } catch { return v; } }}
-                  tick={{ fill: "oklch(0.55 0.02 260)", fontSize: 11 }}
+                  tick={{ fill: "var(--muted-foreground)", fontSize: 11 }}
                   axisLine={false}
                   tickLine={false}
                 />
                 <YAxis
                   tickFormatter={(v) => `₹${(v / 1000).toFixed(0)}K`}
-                  tick={{ fill: "oklch(0.55 0.02 260)", fontSize: 11 }}
+                  tick={{ fill: "var(--muted-foreground)", fontSize: 11 }}
                   axisLine={false}
                   tickLine={false}
                   width={50}
                 />
                 <Tooltip
-                  contentStyle={{ background: "oklch(0.18 0.01 260)", border: "1px solid oklch(0.25 0.01 260)", borderRadius: "10px", fontSize: "12px", color: "white" }}
+                  contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: "10px", fontSize: "12px", color: "var(--foreground)" }}
                   formatter={(value: any) => [fmt(Number(value)), "Revenue"]}
                   labelFormatter={(label) => { try { return format(new Date(label), "dd MMM yyyy"); } catch { return label; } }}
                 />
-                <Area type="monotone" dataKey="revenue" stroke="oklch(0.72 0.19 155)" fill="url(#reportGrad)" strokeWidth={2} />
+                <Area type="monotone" dataKey="revenue" stroke="var(--primary)" fill="url(#reportGrad)" strokeWidth={2} />
               </AreaChart>
             </ResponsiveContainer>
           </div>
@@ -304,7 +304,7 @@ export function ReportsClient({
             {/* Paid */}
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <div className="w-2.5 h-2.5 rounded-full bg-emerald-400" />
+                <div className="w-2.5 h-2.5 rounded-full bg-primary" />
                 <span className="text-sm">Paid</span>
                 <span className="text-xs text-muted-foreground">({paidCount})</span>
               </div>
@@ -313,7 +313,7 @@ export function ReportsClient({
             {/* Partial */}
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <div className="w-2.5 h-2.5 rounded-full bg-blue-400" />
+                <div className="w-2.5 h-2.5 rounded-full bg-primary/60" />
                 <span className="text-sm">Partial</span>
                 <span className="text-xs text-muted-foreground">({partialCount})</span>
               </div>
@@ -322,7 +322,7 @@ export function ReportsClient({
             {/* Unpaid */}
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <div className="w-2.5 h-2.5 rounded-full bg-amber-400" />
+                <div className="w-2.5 h-2.5 rounded-full bg-muted-foreground" />
                 <span className="text-sm">Unpaid</span>
                 <span className="text-xs text-muted-foreground">({unpaidCount})</span>
               </div>
@@ -332,9 +332,9 @@ export function ReportsClient({
           {/* Visual bar */}
           {stats.invoiceCount > 0 && (
             <div className="mt-4 h-2 rounded-full overflow-hidden flex bg-accent/20">
-              {paidCount > 0 && <div className="bg-emerald-400" style={{ width: `${(paidCount / stats.invoiceCount) * 100}%` }} />}
-              {partialCount > 0 && <div className="bg-blue-400" style={{ width: `${(partialCount / stats.invoiceCount) * 100}%` }} />}
-              {unpaidCount > 0 && <div className="bg-amber-400" style={{ width: `${(unpaidCount / stats.invoiceCount) * 100}%` }} />}
+              {paidCount > 0 && <div className="bg-primary" style={{ width: `${(paidCount / stats.invoiceCount) * 100}%` }} />}
+              {partialCount > 0 && <div className="bg-primary/60" style={{ width: `${(partialCount / stats.invoiceCount) * 100}%` }} />}
+              {unpaidCount > 0 && <div className="bg-muted-foreground" style={{ width: `${(unpaidCount / stats.invoiceCount) * 100}%` }} />}
             </div>
           )}
         </div>
@@ -345,14 +345,14 @@ export function ReportsClient({
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <Banknote className="w-4 h-4 text-emerald-400" />
+                <Banknote className="w-4 h-4 text-primary" />
                 <span className="text-sm">Cash</span>
               </div>
               <span className="text-sm font-medium">{fmt(stats.totalCash)}</span>
             </div>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <Smartphone className="w-4 h-4 text-blue-400" />
+                <Smartphone className="w-4 h-4 text-primary/70" />
                 <span className="text-sm">UPI</span>
               </div>
               <span className="text-sm font-medium">{fmt(stats.totalUpi)}</span>
@@ -366,8 +366,8 @@ export function ReportsClient({
         <div className="block-label">Revenue Breakdown</div>
         <div className="grid grid-cols-2 gap-4">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-blue-400/10 flex items-center justify-center">
-              <Wrench className="w-5 h-5 text-blue-400" />
+            <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+              <Wrench className="w-5 h-5 text-primary" />
             </div>
             <div>
               <p className="text-sm text-muted-foreground">Labor</p>
@@ -376,8 +376,8 @@ export function ReportsClient({
             </div>
           </div>
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-amber-400/10 flex items-center justify-center">
-              <Package className="w-5 h-5 text-amber-400" />
+            <div className="w-10 h-10 rounded-xl bg-primary/30 flex items-center justify-center">
+              <Package className="w-5 h-5 text-primary" />
             </div>
             <div>
               <p className="text-sm text-muted-foreground">Parts</p>
@@ -389,8 +389,8 @@ export function ReportsClient({
         {/* Visual bar */}
         {revenueTotal > 0 && (
           <div className="mt-4 h-2 rounded-full overflow-hidden flex bg-accent/20">
-            <div className="bg-blue-400" style={{ width: `${laborPercent}%` }} />
-            <div className="bg-amber-400" style={{ width: `${partsPercent}%` }} />
+            <div className="bg-primary" style={{ width: `${laborPercent}%` }} />
+            <div className="bg-primary/40" style={{ width: `${partsPercent}%` }} />
           </div>
         )}
       </div>
@@ -403,7 +403,7 @@ export function ReportsClient({
         </div>
         <div className="block-section">
           <div className="block-label">Total Discounts Given</div>
-          <p className="text-xl font-bold text-emerald-400">{fmtDecimal(stats.totalDiscount)}</p>
+          <p className="text-xl font-bold text-primary">{fmtDecimal(stats.totalDiscount)}</p>
         </div>
       </div>
 
@@ -414,12 +414,12 @@ export function ReportsClient({
             <div className="block-label">Outstanding Payments</div>
             <p className="text-xs text-muted-foreground">All unpaid + partial invoices (not date-filtered)</p>
           </div>
-          <div className="w-10 h-10 rounded-xl bg-amber-400/10 flex items-center justify-center">
-            <Clock className="w-5 h-5 text-amber-400" />
+          <div className="w-10 h-10 rounded-xl bg-muted-foreground/10 flex items-center justify-center">
+            <Clock className="w-5 h-5 text-muted-foreground" />
           </div>
         </div>
         <div className="mt-4 flex items-baseline gap-3">
-          <p className="text-3xl font-bold text-amber-400">{fmt(stats.pendingAmount)}</p>
+          <p className="text-3xl font-bold text-muted-foreground">{fmt(stats.pendingAmount)}</p>
           <p className="text-sm text-muted-foreground">{stats.pendingCount} invoices</p>
         </div>
       </div>

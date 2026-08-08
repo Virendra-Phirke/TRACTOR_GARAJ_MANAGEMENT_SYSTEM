@@ -136,7 +136,7 @@ export default async function CustomerDetailPage({
                         variant="outline"
                         className={
                           inv.paymentStatus === "paid"
-                            ? "border-emerald-400/30 text-emerald-400"
+                            ? "border-primary/30 text-primary"
                             : "border-amber-400/30 text-amber-400"
                         }
                       >

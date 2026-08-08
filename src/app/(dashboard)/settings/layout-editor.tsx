@@ -351,7 +351,7 @@ export function LayoutEditor({
       text: { bg: "bg-amber-500/20", text: "text-amber-400", label: "Text" },
       dynamic: { bg: "bg-sky-500/20", text: "text-sky-400", label: "Dynamic" },
       table: { bg: "bg-violet-500/20", text: "text-violet-400", label: "Table" },
-      totals: { bg: "bg-emerald-500/20", text: "text-emerald-400", label: "Totals" },
+      totals: { bg: "bg-primary/20", text: "text-primary", label: "Totals" },
       qr: { bg: "bg-pink-500/20", text: "text-pink-400", label: "QR" },
       box: { bg: "bg-gray-500/20", text: "text-gray-400", label: "Line/Box" },
     };
@@ -499,7 +499,7 @@ export function LayoutEditor({
                   >
                     {/* Grab handle */}
                     <div className={`absolute -top-4 left-0 right-0 flex items-center justify-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity ${isSelected ? "opacity-100" : ""}`}>
-                      <div className="bg-blue-500 text-white text-[8px] px-1.5 py-0.5 rounded-sm flex items-center gap-0.5 shadow-md">
+                      <div className="bg-primary text-primary-foreground text-[8px] px-1.5 py-0.5 rounded-sm flex items-center gap-0.5 shadow-md">
                         <Move className="w-2.5 h-2.5" />
                         {elementName(el).substring(0, 18)}
                       </div>
@@ -509,9 +509,9 @@ export function LayoutEditor({
                     <div className={`w-full h-full overflow-hidden flex items-center px-1.5 ${
                       el.type === "table" || el.type === "totals" || el.type === "qr" ? "p-2 items-start" : ""
                     } ${
-                      isSelected ? "bg-blue-50/50" : "bg-white/80"
+                      isSelected ? "bg-primary/10" : "bg-white/80"
                     } border ${
-                      isSelected ? "border-blue-400" : "border-dashed border-gray-200"
+                      isSelected ? "border-primary" : "border-dashed border-gray-200"
                     } rounded-[2px]`}>
                       <CanvasElementContent el={el} />
                     </div>
@@ -520,7 +520,7 @@ export function LayoutEditor({
                     {isSelected && (
                       <div
                         onMouseDown={(e) => handleResizeStart(e, el.id)}
-                        className="absolute -bottom-1 -right-1 w-3 h-3 bg-blue-500 border-2 border-white rounded-full cursor-se-resize shadow-md z-30"
+                        className="absolute -bottom-1 -right-1 w-3 h-3 bg-primary border-2 border-white rounded-full cursor-se-resize shadow-md z-30"
                       />
                     )}
                   </div>

@@ -509,10 +509,11 @@ export async function getDashboardStats(startDate?: string, endDate?: string) {
     graphCondition = revenueCondition;
     expenseGraphCondition = and(gte(expenses.date, start), lte(expenses.date, end));
   } else {
-    const sevenDaysAgo = new Date();
-    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-    graphCondition = gte(invoices.createdAt, sevenDaysAgo);
-    expenseGraphCondition = gte(expenses.date, sevenDaysAgo);
+    // Default to current month (1st of month to now)
+    const now = new Date();
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    graphCondition = gte(invoices.createdAt, monthStart);
+    expenseGraphCondition = gte(expenses.date, monthStart);
   }
 
   // ─── Run all queries in PARALLEL ──────────────────────────────

@@ -31,6 +31,7 @@ import {
   ChevronsLeft,
   ChevronsRight,
   Search,
+  ChevronDown,
 } from "lucide-react";
 
 import {
@@ -40,6 +41,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
@@ -151,11 +158,13 @@ export function DataTable<TData, TValue>({
           </Select>
         )}
         <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline" className="ml-auto shrink-0 bg-background/50 border-border/60">
-              Columns <ChevronDown className="ml-2 h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
+          <DropdownMenuTrigger
+            render={
+              <Button variant="outline" className="ml-auto shrink-0 bg-background/50 border-border/50 text-xs h-8 cursor-pointer hover:bg-accent/50 transition-colors">
+                Columns <ChevronDown className="ml-2 h-4 w-4" />
+              </Button>
+            }
+          />
           <DropdownMenuContent align="end">
             {table
               .getAllColumns()

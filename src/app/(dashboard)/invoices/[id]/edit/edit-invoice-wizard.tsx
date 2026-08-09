@@ -576,8 +576,6 @@ export function EditInvoiceWizard({
               )}
             </div>
         </div>
-
-        </div>
         </div>
 
         {/* Right Column (Narrower) */}

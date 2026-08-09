@@ -109,23 +109,28 @@ export async function updateVehicle(
     registrationNumber?: string;
     brand?: string;
     model?: string;
-    year?: number;
+    year?: number | null;
     engineNumber?: string;
     chassisNumber?: string;
     notes?: string;
   }
 ) {
-  const updateData = { ...data, updatedAt: new Date() };
-  if (updateData.registrationNumber) {
-    updateData.registrationNumber = updateData.registrationNumber.toUpperCase();
+  try {
+    const updateData = { ...data, updatedAt: new Date() };
+    if (updateData.registrationNumber) {
+      updateData.registrationNumber = updateData.registrationNumber.toUpperCase();
+    }
+    const result = await db
+      .update(vehicles)
+      .set(updateData)
+      .where(eq(vehicles.id, id))
+      .returning();
+    revalidatePath("/vehicles");
+    return result[0];
+  } catch (error) {
+    console.error("updateVehicle ERROR:", error);
+    throw error;
   }
-  const result = await db
-    .update(vehicles)
-    .set(updateData)
-    .where(eq(vehicles.id, id))
-    .returning();
-  revalidatePath("/vehicles");
-  return result[0];
 }
 
 export async function deleteVehicle(id: number) {

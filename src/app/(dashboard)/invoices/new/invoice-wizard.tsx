@@ -182,9 +182,9 @@ export function InvoiceWizard({ customers, spareParts, taxRates }: { customers: 
     try {
       const invoice = await createInvoice({
         customerId: selectedCustomer.id,
-        vehicleId: selectedVehicle?.id,
+        vehicleId: selectedVehicle?.id || null,
         laborItems: laborItems.map(item => ({ description: item.description, hours: item.hours, rate: item.rate })),
-        partItems: partItems.map(item => ({ sparePartId: item.sparePartId, partName: item.partName, quantity: item.quantity, unitPrice: item.unitPrice })),
+        partItems: partItems.map(item => ({ sparePartId: item.sparePartId || null, partName: item.partName, quantity: item.quantity, unitPrice: item.unitPrice })),
         taxRate: Number(selectedTaxRate),
         discountType,
         discountValue: Number(discountValue),

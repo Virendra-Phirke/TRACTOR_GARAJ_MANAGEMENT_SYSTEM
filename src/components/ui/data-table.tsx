@@ -109,8 +109,8 @@ export function DataTable<TData, TValue>({
   const endRow = Math.min((pageIndex + 1) * pageSize, totalRows);
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center gap-2">
+    <div className="flex flex-col h-full space-y-4">
+      <div className="flex items-center gap-2 shrink-0">
         {searchKey && (
           <div className="relative max-w-sm w-full">
             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -150,15 +150,39 @@ export function DataTable<TData, TValue>({
             </SelectContent>
           </Select>
         )}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" className="ml-auto shrink-0 bg-background/50 border-border/60">
+              Columns <ChevronDown className="ml-2 h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            {table
+              .getAllColumns()
+              .filter((column) => column.getCanHide())
+              .map((column) => {
+                return (
+                  <DropdownMenuCheckboxItem
+                    key={column.id}
+                    className="capitalize"
+                    checked={column.getIsVisible()}
+                    onCheckedChange={(value) => column.toggleVisibility(!!value)}
+                  >
+                    {column.id}
+                  </DropdownMenuCheckboxItem>
+                );
+              })}
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
-      <div className="rounded-lg border border-border/60 bg-card overflow-x-auto">
-        <Table className="min-w-[600px]">
-          <TableHeader className="bg-muted/30">
+      <div className="rounded-xl border border-border/40 overflow-auto bg-card text-card-foreground flex-1 min-h-[400px]">
+        <Table>
+          <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id}>
                 {headerGroup.headers.map((header) => {
                   return (
-                    <TableHead key={header.id} className="font-semibold">
+                    <TableHead key={header.id}>
                       {header.isPlaceholder
                         ? null
                         : flexRender(
@@ -177,7 +201,7 @@ export function DataTable<TData, TValue>({
                 <TableRow
                   key={row.id}
                   data-state={row.getIsSelected() && "selected"}
-                  className="hover:bg-muted/30 transition-colors"
+                  className="group"
                 >
                   {row.getVisibleCells().map((cell) => (
                     <TableCell key={cell.id}>
@@ -204,7 +228,7 @@ export function DataTable<TData, TValue>({
       </div>
 
       {/* ── Professional Pagination Bar ─────────────────────────────── */}
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-1">
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-1 mt-auto shrink-0 pt-2">
         {/* Left: Row info + page size */}
         <div className="flex items-center gap-3 text-sm text-muted-foreground">
           <span>

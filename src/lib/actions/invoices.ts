@@ -37,7 +37,7 @@ export type LaborItem = {
 };
 
 export type PartItem = {
-  sparePartId?: number;
+  sparePartId?: number | null;
   partName: string;
   quantity: number;
   unitPrice: number;
@@ -45,7 +45,7 @@ export type PartItem = {
 
 export type CreateInvoiceData = {
   customerId: number;
-  vehicleId?: number;
+  vehicleId?: number | null;
   laborItems: LaborItem[];
   partItems: PartItem[];
   taxRate: number;

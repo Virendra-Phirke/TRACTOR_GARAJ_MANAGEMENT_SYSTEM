@@ -47,7 +47,7 @@ export function EditVehicleDialog({
         registrationNumber: form.get("registrationNumber") as string,
         brand,
         model,
-        year: form.get("year") ? Number(form.get("year")) : undefined,
+        year: form.get("year") ? Number(form.get("year")) : null,
         engineNumber: (form.get("engineNumber") as string) || "",
         chassisNumber: (form.get("chassisNumber") as string) || "",
       });

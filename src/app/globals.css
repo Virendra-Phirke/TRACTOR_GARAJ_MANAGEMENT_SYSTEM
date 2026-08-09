@@ -152,27 +152,17 @@
 
   html {
     @apply font-sans;
-    scrollbar-gutter: stable;
   }
 }
 
-/* Custom scrollbar */
+/* Hide all scrollbars site-wide (content still scrolls) */
 @layer base {
-  ::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
+  * {
+    scrollbar-width: none;       /* Firefox */
+    -ms-overflow-style: none;    /* IE / Edge */
   }
-
-  ::-webkit-scrollbar-track {
-    @apply bg-muted/30;
-  }
-
-  ::-webkit-scrollbar-thumb {
-    @apply bg-primary/20 rounded-full;
-  }
-
-  ::-webkit-scrollbar-thumb:hover {
-    @apply bg-primary/40;
+  *::-webkit-scrollbar {
+    display: none;               /* Chrome / Safari / Edge (Blink) */
   }
 }
 
@@ -367,17 +357,14 @@
   }
 }
 
-/* Light theme scrollbar */
-.light ::-webkit-scrollbar-track {
-  background: oklch(0.95 0.003 260);
+/* ─── Theme Editor layout shift ────────────────────────────────────── */
+/* The Sheet renders position:fixed via a Portal, so we shrink the    */
+/* layout container by the exact same width so nothing is hidden.     */
+.dashboard-layout {
+  width: 100vw;
+  transition: width 300ms ease-in-out;
 }
 
-.light ::-webkit-scrollbar-thumb {
-  background: oklch(0.82 0.008 260);
+html.theme-editor-open .dashboard-layout {
+  width: calc(100vw - 380px);
 }
-
-.light ::-webkit-scrollbar-thumb:hover {
-  background: oklch(0.7 0.01 260);
-}
-
-/* Theme editor spacing is now handled by the ThemeEditorSpacer React component in layout.tsx */

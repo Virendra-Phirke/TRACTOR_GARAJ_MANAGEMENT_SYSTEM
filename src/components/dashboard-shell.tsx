@@ -1,21 +1,28 @@
 "use client";
 
+import { useEffect } from "react";
 import { useTheme } from "@/components/theme-provider";
 
 /**
- * Wraps the entire dashboard layout (sidebar + main).
- * When the theme editor Sheet opens (position: fixed, right: 0),
- * this shell shrinks by adding a matching margin-right so
- * nothing sits behind the Sheet.
+ * Wraps the dashboard layout. Toggles a CSS class on <html>
+ * so that pure CSS handles the theme-editor offset — no React
+ * inline-style race conditions, no Portal issues.
  */
 export function DashboardShell({ children }: { children: React.ReactNode }) {
   const { themeEditorOpen } = useTheme();
 
+  useEffect(() => {
+    const root = document.documentElement;
+    if (themeEditorOpen) {
+      root.classList.add("theme-editor-open");
+    } else {
+      root.classList.remove("theme-editor-open");
+    }
+    return () => root.classList.remove("theme-editor-open");
+  }, [themeEditorOpen]);
+
   return (
-    <div
-      className="flex h-screen overflow-hidden transition-[margin-right] duration-300 ease-in-out"
-      style={{ marginRight: themeEditorOpen ? 380 : 0 }}
-    >
+    <div className="dashboard-layout flex h-screen overflow-hidden">
       {children}
     </div>
   );

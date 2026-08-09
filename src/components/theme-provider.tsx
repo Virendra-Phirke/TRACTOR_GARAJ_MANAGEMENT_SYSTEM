@@ -618,8 +618,36 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   );
 }
 
+const noop = () => {};
+
+const SSR_DEFAULTS: ThemeContextType = {
+  theme: "dark",
+  toggleTheme: noop,
+  setTheme: noop,
+  accentColor: "",
+  setAccentColor: noop,
+  fontFamily: "inter",
+  setFontFamily: noop,
+  fontSize: "base",
+  setFontSize: noop,
+  soundEnabled: false,
+  setSoundEnabled: noop,
+  playSound: noop,
+  customTheme: {},
+  setTokenColor: noop,
+  resetCustomTheme: noop,
+  importTheme: noop,
+  exportTheme: () => ({}),
+  userPreset: null,
+  saveUserPreset: noop,
+  applyUserPreset: noop,
+  themeEditorOpen: false,
+  setThemeEditorOpen: noop,
+};
+
 export function useTheme() {
   const ctx = useContext(ThemeContext);
-  if (!ctx) throw new Error("useTheme must be used within ThemeProvider");
+  // During SSR the provider hasn't mounted yet — return safe defaults
+  if (!ctx) return SSR_DEFAULTS;
   return ctx;
 }

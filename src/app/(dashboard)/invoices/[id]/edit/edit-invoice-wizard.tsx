@@ -216,7 +216,7 @@ export function EditInvoiceWizard({
         discountValue: Number(discountValue),
         paymentMethod: invoice.paymentMethod || "cash",
         paymentStatus: invoice.paymentStatus || "unpaid",
-        amountPaid: invoice.amountPaid || 0,
+        amountPaid: Number(invoice.amountPaid) || 0,
         notes,
       });
       toast.success("Invoice updated!");

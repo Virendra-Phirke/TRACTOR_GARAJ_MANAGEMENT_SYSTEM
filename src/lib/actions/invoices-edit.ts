@@ -128,6 +128,16 @@ export async function updateInvoice(invoiceId: number, data: EditInvoiceData) {
     await tx.delete(invoiceLabors).where(eq(invoiceLabors.invoiceId, invoiceId));
     await tx.delete(invoiceParts).where(eq(invoiceParts.invoiceId, invoiceId));
 
+    // Calculate actual payment status based on amountPaid and new grandTotal
+    let newPaymentStatus = data.paymentStatus;
+    if (data.amountPaid >= grandTotal) {
+      newPaymentStatus = "paid";
+    } else if (data.amountPaid > 0) {
+      newPaymentStatus = "partially paid";
+    } else {
+      newPaymentStatus = "unpaid";
+    }
+
     // 4. Update Invoice
     await tx.update(invoices).set({
       customerId: data.customerId,
@@ -142,7 +152,7 @@ export async function updateInvoice(invoiceId: number, data: EditInvoiceData) {
       discountAmount,
       grandTotal,
       amountPaid: data.amountPaid,
-      paymentStatus: data.paymentStatus,
+      paymentStatus: newPaymentStatus,
       paymentMethod: data.paymentMethod,
       notes: data.notes || "",
       updatedAt: new Date()
@@ -195,7 +205,7 @@ export async function updateInvoice(invoiceId: number, data: EditInvoiceData) {
     }
 
     // 7. Apply new customer stats (make sure we apply to the NEW customerId if changed)
-    const newOutstanding = data.paymentStatus !== "paid" ? grandTotal - data.amountPaid : 0;
+    const newOutstanding = newPaymentStatus !== "paid" ? grandTotal - data.amountPaid : 0;
     await tx.update(customers).set({
       totalSpent: sql`${customers.totalSpent} + ${grandTotal}`,
       outstandingBalance: sql`${customers.outstandingBalance} + ${newOutstanding}`,

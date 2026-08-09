@@ -237,9 +237,11 @@ export function InvoiceWizard({ customers, spareParts, taxRates }: { customers: 
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 pb-24">
-        {/* LEFT COLUMN */}
-        <div className="lg:col-span-7 xl:col-span-8 space-y-6 block-stagger">
+      {/* ── Main Layout (Left + Right Columns) ────────────────────────── */}
+      <div className="flex flex-wrap gap-6 lg:gap-8 pb-24">
+        
+        {/* Left Column (Wider) */}
+        <div className="flex-[2_1_500px] min-w-[300px] space-y-6 block-stagger">
         {/* ═══════════════════════════════════════════════════════════
             SECTION 1: CUSTOMER
         ═══════════════════════════════════════════════════════════ */}
@@ -551,8 +553,8 @@ export function InvoiceWizard({ customers, spareParts, taxRates }: { customers: 
 
         </div>
         
-        {/* RIGHT COLUMN */}
-        <div className="lg:col-span-5 xl:col-span-4">
+        {/* Right Column (Narrower) */}
+        <div className="flex-[1_1_300px] min-w-[280px] space-y-6">
           <div className="lg:sticky lg:top-32 space-y-6 block-stagger">
             {/* ═══════════════════════════════════════════════════════════
                 SECTION 5: TAX & DISCOUNT

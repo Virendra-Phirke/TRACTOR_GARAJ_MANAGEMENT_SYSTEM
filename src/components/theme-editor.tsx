@@ -480,7 +480,7 @@ export function ThemeEditor() {
 
   return (
     <>
-    <Sheet open={themeEditorOpen} onOpenChange={setThemeEditorOpen}>
+    <Sheet open={themeEditorOpen} onOpenChange={setThemeEditorOpen} modal={false}>
       <SheetContent
         side="right"
         overlayClassName="bg-transparent backdrop-blur-none"

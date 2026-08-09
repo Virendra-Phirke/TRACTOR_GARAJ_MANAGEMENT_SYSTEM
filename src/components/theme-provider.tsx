@@ -578,6 +578,14 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     }
   }, [userPreset, importTheme]);
 
+  useEffect(() => {
+    if (themeEditorOpen) {
+      document.body.classList.add("theme-editor-open");
+    } else {
+      document.body.classList.remove("theme-editor-open");
+    }
+  }, [themeEditorOpen]);
+
   return (
     <ThemeContext.Provider
       value={{

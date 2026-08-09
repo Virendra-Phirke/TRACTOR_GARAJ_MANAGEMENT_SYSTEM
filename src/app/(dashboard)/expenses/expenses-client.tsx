@@ -539,9 +539,10 @@ export function ExpensesClient({
           </CardContent>
         </Card>
 
-        <Card className="bg-card/50 lg:col-span-2">
-          <CardContent className="p-0">
-            <Table>
+        <Card className="bg-card/50 lg:col-span-2 flex flex-col">
+          <CardContent className="p-0 flex flex-col h-full flex-1">
+            <div className="flex-1">
+              <Table>
             <TableHeader>
               <TableRow className="border-border/50">
                 <TableHead>Category</TableHead>
@@ -592,15 +593,18 @@ export function ExpensesClient({
                 </TableRow>
               ))}
             </TableBody>
-          </Table>
-          <PaginationFooter
-            pageIndex={pageIndex}
-            pageSize={pageSize}
-            totalRows={filteredExpenses.length}
-            setPageIndex={setPageIndex}
-            setPageSize={setPageSize}
-          />
-        </CardContent>
+              </Table>
+            </div>
+            <div className="mt-auto">
+              <PaginationFooter
+                pageIndex={pageIndex}
+                pageSize={pageSize}
+                totalRows={filteredExpenses.length}
+                setPageIndex={setPageIndex}
+                setPageSize={setPageSize}
+              />
+            </div>
+          </CardContent>
       </Card>
       </div>
     </div>

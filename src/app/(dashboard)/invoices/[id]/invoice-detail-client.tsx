@@ -515,7 +515,7 @@ export function InvoiceDetailClient({
           </Button>
 
           <AlertDialog>
-            <AlertDialogTrigger asChild><Button variant="ghost" size="sm" className="gap-1.5 cursor-pointer text-xs text-destructive hover:text-destructive hover:bg-destructive/10"><Trash2 className="w-3.5 h-3.5" /> Delete Invoice</Button></AlertDialogTrigger>
+            <AlertDialogTrigger render={<Button variant="ghost" size="sm" className="gap-1.5 cursor-pointer text-xs text-destructive hover:text-destructive hover:bg-destructive/10" />}><Trash2 className="w-3.5 h-3.5" /> Delete Invoice</AlertDialogTrigger>
             <AlertDialogContent>
               <AlertDialogHeader>
                 <AlertDialogTitle>Delete Invoice</AlertDialogTitle>

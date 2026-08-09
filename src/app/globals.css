@@ -380,18 +380,4 @@
   background: oklch(0.7 0.01 260);
 }
 
-/* Responsive adjustments for Theme Editor */
-body.theme-editor-open #main-content {
-  margin-right: 340px;
-  transition: margin-right 0.4s cubic-bezier(0.22, 1, 0.36, 1);
-}
-
-@media (min-width: 640px) {
-  body.theme-editor-open #main-content {
-    margin-right: 380px;
-  }
-}
-
-#main-content {
-  transition: margin-right 0.4s cubic-bezier(0.22, 1, 0.36, 1);
-}
+/* Theme editor spacing is now handled by the ThemeEditorSpacer React component in layout.tsx */

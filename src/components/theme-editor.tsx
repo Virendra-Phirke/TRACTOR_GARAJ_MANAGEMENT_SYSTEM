@@ -1,13 +1,7 @@
 "use client";
 
 import React, { useState, useMemo, useCallback, useEffect } from "react";
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetDescription,
-} from "@/components/ui/sheet";
+// Sheet removed — theme editor now renders inline inside the flex layout
 import {
   Popover,
   PopoverContent,
@@ -480,21 +474,31 @@ export function ThemeEditor() {
 
   return (
     <>
-    <Sheet open={themeEditorOpen} onOpenChange={setThemeEditorOpen} modal={false}>
-      <SheetContent
-        side="right"
-        overlayClassName="bg-transparent backdrop-blur-none"
-        className="w-[340px] sm:max-w-[380px] flex flex-col p-0 overflow-hidden"
-      >
-        <SheetHeader className="px-4 pt-4 pb-2 border-b border-border/30 shrink-0">
-          <SheetTitle className="flex items-center gap-2 text-sm">
-            <Paintbrush className="w-4 h-4 text-primary" />
-            Theme Editor
-          </SheetTitle>
-          <SheetDescription className="text-[11px]">
+    {/* Inline panel — lives inside the flex layout so it naturally pushes <main> to shrink */}
+    <div
+      className={`shrink-0 h-full border-l border-border bg-popover text-popover-foreground flex flex-col overflow-hidden transition-[width] duration-300 ease-in-out ${
+        themeEditorOpen ? "w-[380px]" : "w-0 border-l-0"
+      }`}
+    >
+      <div className="w-[380px] h-full flex flex-col">
+        {/* Header */}
+        <div className="px-4 pt-4 pb-2 border-b border-border/30 shrink-0">
+          <div className="flex items-center justify-between">
+            <h3 className="flex items-center gap-2 text-sm font-semibold">
+              <Paintbrush className="w-4 h-4 text-primary" />
+              Theme Editor
+            </h3>
+            <button
+              onClick={() => setThemeEditorOpen(false)}
+              className="p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-colors cursor-pointer"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+          <p className="text-[11px] text-muted-foreground mt-1">
             Customize every color in the app. Changes apply instantly and persist.
-          </SheetDescription>
-        </SheetHeader>
+          </p>
+        </div>
 
         {/* Scrollable content */}
         <div className="flex-1 overflow-y-auto px-3 py-3 space-y-3">
@@ -678,8 +682,8 @@ export function ThemeEditor() {
             Reset All ({overrideCount} overrides)
           </Button>
         </div>
-      </SheetContent>
-    </Sheet>
+      </div>
+    </div>
 
     {/* Inspector Result Menu */}
     {inspectResult && !inspectActiveToken && (

@@ -1,7 +1,6 @@
 import { Sidebar, SidebarProvider } from "@/components/layout/sidebar";
 import { GlobalShortcuts } from "@/components/global-shortcuts";
 import { ThemeEditor } from "@/components/theme-editor";
-import { DashboardShell } from "@/components/dashboard-shell";
 
 export default function DashboardLayout({
   children,
@@ -13,14 +12,14 @@ export default function DashboardLayout({
       <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:p-4 focus:bg-background focus:text-primary">
         Skip to main content
       </a>
-      <DashboardShell>
+      <div className="flex h-screen w-full overflow-hidden">
         <Sidebar />
         <main id="main-content" className="flex-1 min-w-0 overflow-auto relative">
           {children}
         </main>
-      </DashboardShell>
+        <ThemeEditor />
+      </div>
       <GlobalShortcuts />
-      <ThemeEditor />
     </SidebarProvider>
   );
 }

@@ -357,14 +357,4 @@
   }
 }
 
-/* ─── Theme Editor layout shift ────────────────────────────────────── */
-/* The Sheet renders position:fixed via a Portal, so we shrink the    */
-/* layout container by the exact same width so nothing is hidden.     */
-.dashboard-layout {
-  width: 100vw;
-  transition: width 300ms ease-in-out;
-}
-
-html.theme-editor-open .dashboard-layout {
-  width: calc(100vw - 380px);
-}
+/* Theme editor is now rendered inline inside the flex layout — no CSS hacks needed */

@@ -244,11 +244,11 @@ export function DashboardClient({
       )}
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="flex flex-wrap gap-4">
         {statCards.map((card) => (
           <Card
             key={card.title}
-            className={`border ${card.borderColor} bg-card/50 hover:bg-card/80 transition-colors`}
+            className={`flex-1 min-w-[200px] border ${card.borderColor} hover:border-primary/20 bg-card/50 hover:bg-card/80 shadow-none hover:shadow-md transition-all`}
           >
             <CardContent className="p-5">
               <div className="flex items-start justify-between">
@@ -274,9 +274,10 @@ export function DashboardClient({
         ))}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+       {/* Charts & Lists */}
+      <div className="flex flex-wrap gap-6">
         {/* Revenue Chart */}
-        <Card className="lg:col-span-2 bg-card/50 overflow-hidden">
+        <Card className="flex-[4] min-w-[300px] sm:min-w-[400px] flex flex-col border-border/30 shadow-none bg-card/40">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
               Revenue — {monthNames[new Date().getMonth()]} {new Date().getFullYear()}
@@ -432,7 +433,7 @@ export function DashboardClient({
         </Card>
 
         {/* Low Stock Alerts */}
-        <Card className="bg-card/50">
+        <Card className="flex-[3] min-w-[300px] flex flex-col border-border/30 shadow-none bg-card/40">
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
               <CardTitle className="text-sm font-medium text-muted-foreground">

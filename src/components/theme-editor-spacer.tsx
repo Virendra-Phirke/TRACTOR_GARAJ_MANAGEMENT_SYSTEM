@@ -7,9 +7,10 @@ export function ThemeEditorSpacer() {
 
   return (
     <div 
-      className={`shrink-0 transition-[width] duration-200 ease-in-out ${
-        themeEditorOpen ? "w-[340px] sm:w-[380px]" : "w-0"
-      }`} 
+      className="shrink-0 transition-[width] duration-300 ease-in-out"
+      style={{
+        width: themeEditorOpen ? "var(--theme-editor-width, 380px)" : "0px"
+      }}
     />
   );
 }

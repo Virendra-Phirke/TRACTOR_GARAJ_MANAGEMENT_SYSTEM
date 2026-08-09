@@ -328,9 +328,9 @@ export function SettingsClient({ garage, upi, taxes }: { garage: GarageSettings;
   return (
     <div className="space-y-6">
       {/* ═══ TOP ROW: Garage Info + UPI/Tax side by side ═══ */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="flex flex-wrap gap-6">
         {/* Garage Info (left) */}
-        <Card className="bg-card/50">
+        <Card className="flex-1 min-w-[300px] bg-card/50">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-base"><Building className="w-4 h-4" />Garage Information</CardTitle>
             <CardDescription>This info appears on your invoices.</CardDescription>
@@ -353,7 +353,7 @@ export function SettingsClient({ garage, upi, taxes }: { garage: GarageSettings;
         </Card>
 
         {/* Right column: UPI + Tax stacked */}
-        <div className="space-y-6">
+        <div className="flex-1 min-w-[300px] space-y-6">
           <Card className="bg-card/50">
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-base"><QrCode className="w-4 h-4" />UPI Payment Settings</CardTitle>
@@ -418,7 +418,7 @@ export function SettingsClient({ garage, upi, taxes }: { garage: GarageSettings;
                 <Label className="text-sm font-semibold">Invoice Layout Format</Label>
                 <p className="text-xs text-muted-foreground mt-0.5">Select the structural layout for your invoices</p>
               </div>
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+              <div className="flex flex-wrap gap-4">
                 {[
                   { id: "original_standard", label: "Original Standard", desc: "Classic layout with light gray data boxes." },
                   { id: "classic_boxed", label: "Classic Boxed", desc: "Rounded outline boxes, alternating rows." },
@@ -427,7 +427,7 @@ export function SettingsClient({ garage, upi, taxes }: { garage: GarageSettings;
                   { id: "modern_accent", label: "Modern Accent", desc: "Accent columns and PAID watermark." },
                   { id: "custom_layout", label: "Custom Builder", desc: "Build your own drag-and-drop layout." },
                 ].map((fmt) => (
-                  <label key={fmt.id} className="cursor-pointer group">
+                  <label key={fmt.id} className="cursor-pointer group flex-1 min-w-[140px] max-w-[250px]">
                     <input
                       type="radio"
                       name="invoiceFormat"
@@ -479,7 +479,7 @@ export function SettingsClient({ garage, upi, taxes }: { garage: GarageSettings;
               {/* Collapsible grid */}
               {showInvoiceThemePicker && (
                 <div className="mt-2 p-3 rounded-lg border border-border/40 bg-muted/10 animate-in-page">
-                  <div className="flex flex-wrap gap-1.5">
+                  <div className="flex flex-wrap gap-4">
                     {COLOR_SCHEMES.map((scheme) => {
                       const isActive = selectedTheme === scheme.hex;
                       return (

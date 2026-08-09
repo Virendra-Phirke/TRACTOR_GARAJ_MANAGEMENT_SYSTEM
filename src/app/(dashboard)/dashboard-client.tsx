@@ -170,7 +170,7 @@ export function DashboardClient({
   return (
     <div className="space-y-6">
       {/* Quick Action */}
-      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+      <div className="flex flex-col gap-4 md:flex-row md:flex-wrap md:items-center md:justify-between">
         {/* Filters Row */}
         <div className="flex flex-wrap gap-2 items-center">
           <Select value={filterMonth.toString()} onValueChange={(v) => handleMonthYearChange(Number(v), filterYear)}>

@@ -50,7 +50,7 @@ export function ProfileClient({
         <div className="absolute -top-24 -right-24 w-48 h-48 bg-primary/10 rounded-full blur-3xl pointer-events-none" />
         <div className="absolute -bottom-24 -left-24 w-48 h-48 bg-primary/10 rounded-full blur-3xl pointer-events-none" />
 
-        <div className="p-8 relative z-10 flex flex-col md:flex-row gap-8 items-start md:items-center">
+        <div className="p-8 relative z-10 flex flex-col md:flex-row md:flex-wrap gap-8 items-start md:items-center">
           {/* Avatar / QR Code Section */}
           <div className="shrink-0">
             {qrDataUrl ? (

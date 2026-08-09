@@ -383,7 +383,7 @@
 /* Responsive adjustments for Theme Editor */
 body.theme-editor-open #main-content {
   margin-right: 340px;
-  transition: margin-right 0.3s ease;
+  transition: margin-right 0.4s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 @media (min-width: 640px) {
@@ -393,5 +393,5 @@ body.theme-editor-open #main-content {
 }
 
 #main-content {
-  transition: margin-right 0.3s ease;
+  transition: margin-right 0.4s cubic-bezier(0.22, 1, 0.36, 1);
 }

@@ -292,7 +292,7 @@ export function InvoicesClient({ invoices }: { invoices: Invoice[] }) {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+      <div className="flex flex-col md:flex-row md:flex-wrap md:items-end justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Invoices</h1>
           <p className="text-muted-foreground text-sm mt-1">

@@ -1,6 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, useEffect, useState, useRef, useCallback } from "react";
+import { flushSync } from "react-dom";
 
 type Theme = "dark" | "light";
 
@@ -540,19 +541,80 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const setFontFamily = (f: string) => setFontFamilyState(f);
   const setFontSize = (s: string) => setFontSizeState(s);
 
+  const runWithTransition = useCallback((updateFn: () => void) => {
+    if (
+      typeof document.startViewTransition !== "function" ||
+      document.documentElement.dataset.magicuiThemeVt === "active"
+    ) {
+      updateFn();
+      return;
+    }
+
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
+    const x = viewportWidth / 2;
+    const y = viewportHeight / 2;
+    const maxRadius = Math.hypot(
+      Math.max(x, viewportWidth - x),
+      Math.max(y, viewportHeight - y)
+    );
+
+    const clipPath = [
+      `circle(0px at ${x}px ${y}px)`,
+      `circle(${maxRadius}px at ${x}px ${y}px)`
+    ];
+
+    const root = document.documentElement;
+    root.dataset.magicuiThemeVt = "active";
+    root.style.setProperty("--magicui-theme-toggle-vt-duration", `400ms`);
+    root.style.setProperty("--magicui-theme-vt-clip-from", clipPath[0]);
+
+    const cleanup = () => {
+      delete root.dataset.magicuiThemeVt;
+      root.style.removeProperty("--magicui-theme-toggle-vt-duration");
+      root.style.removeProperty("--magicui-theme-vt-clip-from");
+    };
+
+    const transition = document.startViewTransition(() => {
+      flushSync(() => {
+        updateFn();
+      });
+    });
+
+    transition.finished.finally(cleanup).catch(() => {});
+
+    if (transition.ready) {
+      transition.ready
+        .then(() => {
+          document.documentElement.animate(
+            { clipPath },
+            {
+              duration: 400,
+              easing: "ease-in-out",
+              fill: "forwards",
+              pseudoElement: "::view-transition-new(root)",
+            }
+          );
+        })
+        .catch(() => {});
+    }
+  }, []);
+
   // ── Custom Theme Editor Methods ──────────────────────────────────
   const setTokenColor = useCallback((token: string, value: string) => {
-    setThemeState((prev) => {
-      if (prev === "light") return "dark";
-      return prev;
+    runWithTransition(() => {
+      setThemeState((prev) => {
+        if (prev === "light") return "dark";
+        return prev;
+      });
+      setCustomThemeState((prev) => {
+        const next = { ...prev, [token]: value };
+        localStorage.setItem("gbms-custom-theme", JSON.stringify(next));
+        document.documentElement.style.setProperty(token, value);
+        return next;
+      });
     });
-    setCustomThemeState((prev) => {
-      const next = { ...prev, [token]: value };
-      localStorage.setItem("gbms-custom-theme", JSON.stringify(next));
-      document.documentElement.style.setProperty(token, value);
-      return next;
-    });
-  }, []);
+  }, [runWithTransition]);
 
   const resetCustomTheme = useCallback(() => {
     Object.keys(customTheme).forEach((token) => {
@@ -567,19 +629,21 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   }, [customTheme, accentColor]);
 
   const importTheme = useCallback((themeOverrides: Record<string, string>) => {
-    setThemeState((prev) => {
-      if (prev === "light") return "dark";
-      return prev;
+    runWithTransition(() => {
+      setThemeState((prev) => {
+        if (prev === "light") return "dark";
+        return prev;
+      });
+      Object.keys(customTheme).forEach((token) => {
+        document.documentElement.style.removeProperty(token);
+      });
+      Object.entries(themeOverrides).forEach(([token, value]) => {
+        document.documentElement.style.setProperty(token, value);
+      });
+      setCustomThemeState(themeOverrides);
+      localStorage.setItem("gbms-custom-theme", JSON.stringify(themeOverrides));
     });
-    Object.keys(customTheme).forEach((token) => {
-      document.documentElement.style.removeProperty(token);
-    });
-    Object.entries(themeOverrides).forEach(([token, value]) => {
-      document.documentElement.style.setProperty(token, value);
-    });
-    setCustomThemeState(themeOverrides);
-    localStorage.setItem("gbms-custom-theme", JSON.stringify(themeOverrides));
-  }, [customTheme]);
+  }, [customTheme, runWithTransition]);
 
   const exportTheme = useCallback(() => {
     return { ...customTheme };

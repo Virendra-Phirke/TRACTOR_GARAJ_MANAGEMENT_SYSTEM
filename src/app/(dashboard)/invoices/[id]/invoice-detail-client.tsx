@@ -324,10 +324,6 @@ export function InvoiceDetailClient({
           const tokenData = await tokenRes.json();
           if (tokenData.token) {
             let baseUrl = window.location.origin;
-            // Mask the Vercel URL with the provided da.gd masked URL
-            if (baseUrl.includes("garaje-bill-management.vercel.app")) {
-              baseUrl = "https://shrikrupatractors.com-akola@da.gd/RTEuF";
-            }
             shareLink = baseUrl + "/api/share/" + invoice.id + "/pdf?token=" + tokenData.token;
           }
         } else {

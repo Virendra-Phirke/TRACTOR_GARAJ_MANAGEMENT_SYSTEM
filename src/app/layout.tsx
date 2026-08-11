@@ -38,7 +38,7 @@ export default function RootLayout({
                 else document.documentElement.classList.add("light");
                 
                 var customTheme = localStorage.getItem("gbms-custom-theme");
-                if (customTheme && theme === "dark") {
+                if (customTheme) {
                   var parsed = JSON.parse(customTheme);
                   for (var key in parsed) {
                     document.documentElement.style.setProperty(key, parsed[key]);

@@ -1,6 +1,6 @@
 "use client"
 
-import { useCallback, useEffect, useRef, useState } from "react"
+import React, { useCallback, useEffect, useRef, useState } from "react"
 import { Moon, Sun } from "lucide-react"
 import { flushSync } from "react-dom"
 
@@ -150,7 +150,7 @@ function getThemeTransitionClipPaths(
   }
 }
 
-export const AnimatedThemeToggler = ({
+export const AnimatedThemeToggler = React.forwardRef<HTMLButtonElement, AnimatedThemeTogglerProps>(({
   className,
   duration = 400,
   variant,
@@ -158,7 +158,7 @@ export const AnimatedThemeToggler = ({
   theme,
   onThemeChange,
   ...props
-}: AnimatedThemeTogglerProps) => {
+}, forwardedRef) => {
   const shape = variant ?? "circle"
   const isControlled = theme !== undefined
   const [internalIsDark, setInternalIsDark] = useState(false)
@@ -319,9 +319,16 @@ export const AnimatedThemeToggler = ({
   return (
     <button
       type="button"
-      ref={buttonRef}
       className={cn(className)}
       {...props}
+      ref={(node) => {
+        buttonRef.current = node
+        if (typeof forwardedRef === "function") {
+          forwardedRef(node)
+        } else if (forwardedRef) {
+          forwardedRef.current = node
+        }
+      }}
       onClick={(e) => {
         toggleTheme()
         props.onClick?.(e)
@@ -331,4 +338,5 @@ export const AnimatedThemeToggler = ({
       <span className="sr-only">Toggle theme</span>
     </button>
   )
-}
+})
+AnimatedThemeToggler.displayName = "AnimatedThemeToggler"

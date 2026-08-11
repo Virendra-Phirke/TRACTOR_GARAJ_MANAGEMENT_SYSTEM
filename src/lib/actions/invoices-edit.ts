@@ -215,12 +215,7 @@ export async function updateInvoice(invoiceId: number, data: EditInvoiceData) {
 
     });
 
-    revalidatePath("/invoices");
-    revalidatePath("/");
-    revalidatePath("/inventory");
-    revalidatePath("/customers");
-    revalidatePath("/reports");
-    revalidatePath(`/invoices/${invoiceId}`);
+    revalidatePath("/", "layout");
   } catch (error) {
     console.error("updateInvoice ERROR:", error);
     throw error;

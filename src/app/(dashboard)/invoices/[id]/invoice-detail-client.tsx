@@ -92,6 +92,7 @@ export function InvoiceDetailClient({
   const [draftPayMethod, setDraftPayMethod] = useState(invoice.paymentMethod || "cash");
   const [draftCash, setDraftCash] = useState("");
   const [draftUpi, setDraftUpi] = useState("");
+  const [isSavingPayment, setIsSavingPayment] = useState(false);
 
   // PDF viewer state
   const [pdfViewerUrl, setPdfViewerUrl] = useState<string | null>(null);
@@ -200,20 +201,28 @@ export function InvoiceDetailClient({
       actualStatus = "paid";
     }
 
-    await updateInvoicePayment(invoice.id, {
-      paymentStatus: actualStatus,
-      paymentMethod: pMethod,
-      amountPaid: finalAmount,
-      cashAmount: cAmt,
-      upiAmount: uAmt,
-    });
+    try {
+      setIsSavingPayment(true);
+      await updateInvoicePayment(invoice.id, {
+        paymentStatus: actualStatus,
+        paymentMethod: pMethod,
+        amountPaid: finalAmount,
+        cashAmount: cAmt,
+        upiAmount: uAmt,
+      });
 
-    setStatus(actualStatus);
-    setPayMethod(draftPayMethod);
-    setIsPayDialogOpen(false);
-    toast.success(`Payment recorded as ${actualStatus}`);
-    playSound("success");
-    router.refresh();
+      setStatus(actualStatus);
+      setPayMethod(draftPayMethod);
+      setIsPayDialogOpen(false);
+      toast.success(`Payment recorded as ${actualStatus}`);
+      playSound("success");
+      router.refresh();
+    } catch {
+      toast.error("Failed to save payment.");
+      playSound("error");
+    } finally {
+      setIsSavingPayment(false);
+    }
   };
 
   const handleDeleteInvoice = () => {
@@ -495,8 +504,10 @@ export function InvoiceDetailClient({
                 )}
               </div>
               <DialogFooter>
-                <DialogClose render={<Button variant="outline" />}>Cancel</DialogClose>
-                <Button onClick={handleSavePayment}>Save</Button>
+                <DialogClose render={<Button variant="outline" disabled={isSavingPayment} />}>Cancel</DialogClose>
+                <Button onClick={handleSavePayment} disabled={isSavingPayment}>
+                  {isSavingPayment ? "Saving..." : "Save"}
+                </Button>
               </DialogFooter>
             </DialogContent>
           </Dialog>

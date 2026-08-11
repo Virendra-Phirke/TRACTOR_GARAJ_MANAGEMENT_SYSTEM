@@ -223,11 +223,7 @@ export async function createInvoice(data: CreateInvoiceData) {
     return inv;
   })();
 
-  revalidatePath("/invoices");
-  revalidatePath("/");
-  revalidatePath("/inventory");
-  revalidatePath("/customers");
-  revalidatePath("/reports");
+  revalidatePath("/", "layout");
   return invoice;
 }
 
@@ -379,8 +375,7 @@ export async function markInvoicesAsPartnerPaid(invoiceIds: number[]) {
     .update(invoices)
     .set({ partnerPaidAt: new Date(), updatedAt: new Date() })
     .where(inArray(invoices.id, invoiceIds));
-  revalidatePath("/expenses");
-  revalidatePath("/invoices");
+  revalidatePath("/", "layout");
 }
 
 // ─── Record Partner Payout (atomic: create expense + mark invoices) ──
@@ -414,9 +409,7 @@ export async function recordPartnerPayout(data: {
     .set({ partnerPaidAt: new Date(), updatedAt: new Date() })
     .where(inArray(invoices.id, data.invoiceIds));
 
-  revalidatePath("/expenses");
-  revalidatePath("/invoices");
-  revalidatePath("/reports");
+  revalidatePath("/", "layout");
 }
 
 // ─── Update Payment Status (with customer balance adjustment) ────────
@@ -487,10 +480,7 @@ export async function updatePaymentStatus(
     }
   })();
 
-  revalidatePath(`/invoices/${id}`);
-  revalidatePath("/invoices");
-  revalidatePath("/");
-  revalidatePath("/customers");
+  revalidatePath("/", "layout");
 }
 
 // ─── Dashboard Stats (PARALLELIZED) ─────────────────────────────────
@@ -687,9 +677,7 @@ export async function updateInvoicePayment(id: number, data: { paymentStatus: st
     }
   })();
 
-  revalidatePath(`/invoices/${id}`);
-  revalidatePath("/invoices");
-  revalidatePath("/customers");
+  revalidatePath("/", "layout");
 }
 
 export async function deleteInvoice(id: number) {
@@ -769,21 +757,13 @@ export async function deleteInvoice(id: number) {
     await tx.delete(invoices).where(eq(invoices.id, id));
   })();
 
-  revalidatePath("/invoices");
-  revalidatePath("/");
-  revalidatePath("/inventory");
-  revalidatePath("/customers");
-  revalidatePath("/reports");
+  revalidatePath("/", "layout");
 }
 
 export async function bulkDeleteInvoices(ids: number[]) {
   if (!ids || ids.length === 0) return;
   await db.delete(invoices).where(inArray(invoices.id, ids));
-  revalidatePath("/invoices");
-  revalidatePath("/");
-  revalidatePath("/inventory");
-  revalidatePath("/customers");
-  revalidatePath("/reports");
+  revalidatePath("/", "layout");
 }
 
 // ─── Report Stats (date-filtered, comprehensive) ─────────────────────

@@ -15,7 +15,7 @@ export async function createCategory(name: string, description?: string) {
     .insert(categories)
     .values({ name, description: description || "" })
     .returning();
-  revalidatePath("/inventory");
+  revalidatePath("/", "layout");
   return result[0];
 }
 
@@ -110,7 +110,7 @@ export async function createSparePart(data: {
     })
     .returning();
 
-  revalidatePath("/inventory");
+  revalidatePath("/", "layout");
   return result[0];
 }
 
@@ -134,13 +134,13 @@ export async function updateSparePart(
     .set({ ...data, updatedAt: new Date() })
     .where(eq(spareParts.id, id))
     .returning();
-  revalidatePath("/inventory");
+  revalidatePath("/", "layout");
   return result[0];
 }
 
 export async function deleteSparePart(id: number) {
   await db.delete(spareParts).where(eq(spareParts.id, id));
-  revalidatePath("/inventory");
+  revalidatePath("/", "layout");
 }
 
 export async function getLowStockParts() {

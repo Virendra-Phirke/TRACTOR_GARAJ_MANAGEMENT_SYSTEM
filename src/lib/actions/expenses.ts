@@ -27,15 +27,13 @@ export async function createExpense(data: {
       paymentMethod: data.paymentMethod || "cash",
     })
     .returning();
-  revalidatePath("/expenses");
-  revalidatePath("/reports");
+  revalidatePath("/", "layout");
   return result[0];
 }
 
 export async function deleteExpense(id: number) {
   await db.delete(expenses).where(eq(expenses.id, id));
-  revalidatePath("/expenses");
-  revalidatePath("/reports");
+  revalidatePath("/", "layout");
 }
 
 export async function getExpenseStats(from: Date, to: Date) {

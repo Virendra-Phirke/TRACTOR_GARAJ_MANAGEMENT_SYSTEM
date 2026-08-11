@@ -18,6 +18,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { useSidebar } from "@/components/layout/sidebar";
+import { AnimatedThemeToggler } from "@/components/ui/animated-theme-toggler";
 
 export function Header({ title, ownerName: initialOwnerName }: { title?: string; ownerName?: string }) {
   const [ownerName, setOwnerName] = useState(initialOwnerName || "Garage Owner");
@@ -51,18 +52,12 @@ export function Header({ title, ownerName: initialOwnerName }: { title?: string;
         {/* Theme toggle */}
         <Tooltip>
           <TooltipTrigger render={
-            <Button
-              variant="ghost"
-              size="icon"
-              className="w-8 h-8 cursor-pointer text-muted-foreground hover:text-foreground"
-              onClick={toggleTheme}
-            >
-              {theme === "dark" ? (
-                <Sun className="w-4 h-4" />
-              ) : (
-                <Moon className="w-4 h-4" />
-              )}
-            </Button>
+              <AnimatedThemeToggler
+                variant="circle"
+                className="w-8 h-8 cursor-pointer text-muted-foreground hover:text-foreground flex items-center justify-center bg-transparent border-none"
+                theme={theme as "light" | "dark"}
+                onThemeChange={() => toggleTheme()}
+              />
           } />
           <TooltipContent side="bottom">
             {theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}

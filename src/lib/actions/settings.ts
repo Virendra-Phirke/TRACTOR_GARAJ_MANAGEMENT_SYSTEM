@@ -35,7 +35,7 @@ export async function updateGarageSettings(data: {
     .set({ ...data, updatedAt: new Date() })
     .where(eq(garageSettings.id, existing.id))
     .returning();
-  revalidatePath("/settings");
+  revalidatePath("/", "layout");
   return result[0];
 }
 
@@ -64,7 +64,7 @@ export async function updateUpiSettings(data: {
     .set({ ...data, updatedAt: new Date() })
     .where(eq(upiSettings.id, existing.id))
     .returning();
-  revalidatePath("/settings");
+  revalidatePath("/", "layout");
   return result[0];
 }
 
@@ -102,7 +102,7 @@ export async function setDefaultTax(id: number) {
     .update(taxSettings)
     .set({ isDefault: true })
     .where(eq(taxSettings.id, id));
-  revalidatePath("/settings");
+  revalidatePath("/", "layout");
 }
 
 export async function updateCustomLayout(data: any) {
@@ -112,6 +112,6 @@ export async function updateCustomLayout(data: any) {
     .set({ customLayoutConfig: data, updatedAt: new Date() })
     .where(eq(garageSettings.id, existing.id))
     .returning();
-  revalidatePath("/settings");
+  revalidatePath("/", "layout");
   return { success: true, data: result[0].customLayoutConfig };
 }

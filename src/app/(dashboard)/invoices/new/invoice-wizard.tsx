@@ -47,6 +47,7 @@ export function InvoiceWizard({ customers, spareParts, taxRates }: { customers: 
   const [newCustName, setNewCustName] = useState("");
   const [newCustPhone, setNewCustPhone] = useState("");
   const [showNewCust, setShowNewCust] = useState(false);
+  const [isCreatingCustomer, setIsCreatingCustomer] = useState(false);
 
   // ── Vehicle state ───────────────────────────────────────────────────
   const [customerVehicles, setCustomerVehicles] = useState<Vehicle[]>([]);
@@ -55,6 +56,7 @@ export function InvoiceWizard({ customers, spareParts, taxRates }: { customers: 
   const [newVehReg, setNewVehReg] = useState("");
   const [newVehBrand, setNewVehBrand] = useState("");
   const [newVehModel, setNewVehModel] = useState("");
+  const [isCreatingVehicle, setIsCreatingVehicle] = useState(false);
 
   // ── Labor state ─────────────────────────────────────────────────────
   const [laborItems, setLaborItems] = useState<(LaborItem & { id: string })[]>([]);
@@ -120,6 +122,7 @@ export function InvoiceWizard({ customers, spareParts, taxRates }: { customers: 
 
   const handleCreateCustomer = async () => {
     if (!newCustName || !newCustPhone) return;
+    setIsCreatingCustomer(true);
     try {
       const cust = await createCustomer({ name: newCustName, phone: newCustPhone });
       setLocalCustomers(prev => [...prev, cust]);
@@ -130,11 +133,14 @@ export function InvoiceWizard({ customers, spareParts, taxRates }: { customers: 
       toast.success("Customer created");
     } catch {
       toast.error("Failed — phone may already exist");
+    } finally {
+      setIsCreatingCustomer(false);
     }
   };
 
   const handleCreateVehicle = async () => {
     if (!selectedCustomer || !newVehReg || !newVehBrand) return;
+    setIsCreatingVehicle(true);
     try {
       const veh = await createVehicle({ customerId: selectedCustomer.id, registrationNumber: newVehReg, brand: newVehBrand, model: newVehModel });
       setSelectedVehicle(veh as Vehicle);
@@ -144,6 +150,8 @@ export function InvoiceWizard({ customers, spareParts, taxRates }: { customers: 
       toast.success("Vehicle added");
     } catch {
       toast.error("Failed — reg may exist");
+    } finally {
+      setIsCreatingVehicle(false);
     }
   };
 
@@ -293,8 +301,10 @@ export function InvoiceWizard({ customers, spareParts, taxRates }: { customers: 
                 </div>
               </div>
               <div className="flex gap-2">
-                <Button size="sm" className="cursor-pointer" onClick={handleCreateCustomer} disabled={!newCustName || !newCustPhone}>Create</Button>
-                <Button size="sm" variant="ghost" className="cursor-pointer" onClick={() => setShowNewCust(false)}>Cancel</Button>
+                <Button size="sm" className="cursor-pointer" onClick={handleCreateCustomer} disabled={!newCustName || !newCustPhone || isCreatingCustomer}>
+                  {isCreatingCustomer ? "Creating..." : "Create"}
+                </Button>
+                <Button size="sm" variant="ghost" className="cursor-pointer" onClick={() => setShowNewCust(false)} disabled={isCreatingCustomer}>Cancel</Button>
               </div>
             </div>
           )}
@@ -369,8 +379,10 @@ export function InvoiceWizard({ customers, spareParts, taxRates }: { customers: 
                 </div>
               </div>
               <div className="flex gap-2">
-                <Button size="sm" className="cursor-pointer" onClick={handleCreateVehicle} disabled={!newVehReg || !newVehBrand}>Add Vehicle</Button>
-                <Button size="sm" variant="ghost" className="cursor-pointer" onClick={() => setShowNewVehicle(false)}>Cancel</Button>
+                <Button size="sm" className="cursor-pointer" onClick={handleCreateVehicle} disabled={!newVehReg || !newVehBrand || isCreatingVehicle}>
+                  {isCreatingVehicle ? "Adding..." : "Add Vehicle"}
+                </Button>
+                <Button size="sm" variant="ghost" className="cursor-pointer" onClick={() => setShowNewVehicle(false)} disabled={isCreatingVehicle}>Cancel</Button>
               </div>
             </div>
           )}

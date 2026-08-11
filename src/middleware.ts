@@ -10,12 +10,12 @@ function getJwtSecret(): Uint8Array {
   return new TextEncoder().encode(secret);
 }
 
-const publicPaths = ["/login"];
+const publicPaths = ["/login", "/api/share"];
 
 // Only bypass auth for genuine static asset extensions
 const STATIC_EXTENSIONS = /\.(ico|svg|png|jpg|jpeg|gif|webp|woff|woff2|ttf|css|js|map)$/i;
 
-export default async function proxy(request: NextRequest) {
+export default async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Allow public paths

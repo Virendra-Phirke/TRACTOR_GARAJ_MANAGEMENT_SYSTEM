@@ -542,6 +542,10 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
   // ── Custom Theme Editor Methods ──────────────────────────────────
   const setTokenColor = useCallback((token: string, value: string) => {
+    setThemeState((prev) => {
+      if (prev === "light") return "dark";
+      return prev;
+    });
     setCustomThemeState((prev) => {
       const next = { ...prev, [token]: value };
       localStorage.setItem("gbms-custom-theme", JSON.stringify(next));
@@ -563,6 +567,10 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   }, [customTheme, accentColor]);
 
   const importTheme = useCallback((themeOverrides: Record<string, string>) => {
+    setThemeState((prev) => {
+      if (prev === "light") return "dark";
+      return prev;
+    });
     Object.keys(customTheme).forEach((token) => {
       document.documentElement.style.removeProperty(token);
     });

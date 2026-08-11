@@ -614,19 +614,17 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
   // ── Custom Theme Editor Methods ──────────────────────────────────
   const setTokenColor = useCallback((token: string, value: string) => {
-    runWithTransition(() => {
-      setThemeState((prev) => {
-        if (prev === "light") return "dark";
-        return prev;
-      });
-      setCustomThemeState((prev) => {
-        const next = { ...prev, [token]: value };
-        localStorage.setItem("gbms-custom-theme", JSON.stringify(next));
-        document.documentElement.style.setProperty(token, value);
-        return next;
-      });
+    setThemeState((prev) => {
+      if (prev === "light") return "dark";
+      return prev;
     });
-  }, [runWithTransition]);
+    setCustomThemeState((prev) => {
+      const next = { ...prev, [token]: value };
+      localStorage.setItem("gbms-custom-theme", JSON.stringify(next));
+      document.documentElement.style.setProperty(token, value);
+      return next;
+    });
+  }, []);
 
   const resetCustomTheme = useCallback(() => {
     Object.keys(customTheme).forEach((token) => {

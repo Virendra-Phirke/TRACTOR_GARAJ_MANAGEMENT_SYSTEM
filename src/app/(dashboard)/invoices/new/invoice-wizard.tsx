@@ -42,6 +42,7 @@ export function InvoiceWizard({ customers, spareParts, taxRates }: { customers: 
   const sectionRefs = useRef<Record<string, HTMLElement | null>>({});
 
   // ── Customer state ──────────────────────────────────────────────────
+  const [localCustomers, setLocalCustomers] = useState<Customer[]>(customers);
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const [newCustName, setNewCustName] = useState("");
   const [newCustPhone, setNewCustPhone] = useState("");
@@ -121,9 +122,11 @@ export function InvoiceWizard({ customers, spareParts, taxRates }: { customers: 
     if (!newCustName || !newCustPhone) return;
     try {
       const cust = await createCustomer({ name: newCustName, phone: newCustPhone });
+      setLocalCustomers(prev => [...prev, cust]);
       setSelectedCustomer(cust);
       setCustomerVehicles([]);
       setShowNewCust(false);
+      router.refresh();
       toast.success("Customer created");
     } catch {
       toast.error("Failed — phone may already exist");
@@ -137,6 +140,7 @@ export function InvoiceWizard({ customers, spareParts, taxRates }: { customers: 
       setSelectedVehicle(veh as Vehicle);
       setCustomerVehicles((prev) => [...prev, veh as Vehicle]);
       setShowNewVehicle(false);
+      router.refresh();
       toast.success("Vehicle added");
     } catch {
       toast.error("Failed — reg may exist");
@@ -251,7 +255,7 @@ export function InvoiceWizard({ customers, spareParts, taxRates }: { customers: 
           {!showNewCust ? (
             <div className="space-y-3">
               <Combobox
-                options={customers.map((c) => ({ value: c.id.toString(), label: `${c.name} — ${c.phone}` }))}
+                options={localCustomers.map((c) => ({ value: c.id.toString(), label: `${c.name} — ${c.phone}` }))}
                 value={selectedCustomer?.id?.toString() || ""}
                 onChange={handleSelectCustomer}
                 placeholder="Search or select customer..."

@@ -58,7 +58,7 @@ export async function createCustomer(data: {
     });
   }
 
-  revalidatePath("/customers");
+  revalidatePath("/", "layout");
   return customer;
 }
 
@@ -76,14 +76,13 @@ export async function updateCustomer(
     .set({ ...data, updatedAt: new Date() })
     .where(eq(customers.id, id))
     .returning();
-  revalidatePath("/customers");
-  revalidatePath(`/customers/${id}`);
+  revalidatePath("/", "layout");
   return result[0];
 }
 
 export async function deleteCustomer(id: number) {
   await db.delete(customers).where(eq(customers.id, id));
-  revalidatePath("/customers");
+  revalidatePath("/", "layout");
 }
 
 export async function getCustomerCount() {
@@ -96,5 +95,5 @@ export async function getCustomerCount() {
 export async function bulkDeleteCustomers(ids: number[]) {
   if (!ids || ids.length === 0) return;
   await db.delete(customers).where(inArray(customers.id, ids));
-  revalidatePath("/customers");
+  revalidatePath("/", "layout");
 }

@@ -98,8 +98,7 @@ export async function createVehicle(data: {
       notes: data.notes || "",
     })
     .returning();
-  revalidatePath("/vehicles");
-  revalidatePath(`/customers/${data.customerId}`);
+  revalidatePath("/", "layout");
   return result[0];
 }
 
@@ -125,7 +124,7 @@ export async function updateVehicle(
       .set(updateData)
       .where(eq(vehicles.id, id))
       .returning();
-    revalidatePath("/vehicles");
+    revalidatePath("/", "layout");
     return result[0];
   } catch (error) {
     console.error("updateVehicle ERROR:", error);
@@ -135,5 +134,5 @@ export async function updateVehicle(
 
 export async function deleteVehicle(id: number) {
   await db.delete(vehicles).where(eq(vehicles.id, id));
-  revalidatePath("/vehicles");
+  revalidatePath("/", "layout");
 }

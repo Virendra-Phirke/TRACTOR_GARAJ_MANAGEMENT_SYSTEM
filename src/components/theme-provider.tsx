@@ -3,6 +3,14 @@
 import React, { createContext, useContext, useEffect, useState, useRef, useCallback } from "react";
 import { flushSync } from "react-dom";
 
+let lastClickPos = { x: 0, y: 0 };
+if (typeof window !== "undefined") {
+  lastClickPos = { x: window.innerWidth / 2, y: window.innerHeight / 2 };
+  window.addEventListener("click", (e) => {
+    lastClickPos = { x: e.clientX, y: e.clientY };
+  }, true); // Capture phase to get coordinates before React handlers
+}
+
 type Theme = "dark" | "light";
 
 interface ThemeContextType {
@@ -552,8 +560,8 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
     const viewportWidth = window.innerWidth;
     const viewportHeight = window.innerHeight;
-    const x = viewportWidth / 2;
-    const y = viewportHeight / 2;
+    const x = lastClickPos.x;
+    const y = lastClickPos.y;
     const maxRadius = Math.hypot(
       Math.max(x, viewportWidth - x),
       Math.max(y, viewportHeight - y)

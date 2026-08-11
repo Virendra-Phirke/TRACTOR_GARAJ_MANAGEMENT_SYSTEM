@@ -469,12 +469,27 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   }, [theme]);
 
   useEffect(() => {
-    if (!customTheme["--primary"]) document.documentElement.style.setProperty("--primary", accentColor);
-    if (!customTheme["--ring"]) document.documentElement.style.setProperty("--ring", accentColor);
-    if (!customTheme["--sidebar-primary"]) document.documentElement.style.setProperty("--sidebar-primary", accentColor);
-    if (!customTheme["--chart-1"]) document.documentElement.style.setProperty("--chart-1", accentColor);
+    // If in light mode, we should NOT apply the custom theme overrides (since they are dark-mode specific)
+    if (theme === "light") {
+      Object.keys(customTheme).forEach((token) => {
+        document.documentElement.style.removeProperty(token);
+      });
+    }
 
-    if (!customTheme["--primary-foreground"]) {
+    if (theme === "dark" && customTheme) {
+      // Re-apply custom theme overrides to ensure they win over the default accent color
+      Object.entries(customTheme).forEach(([token, value]) => {
+        document.documentElement.style.setProperty(token, value as string);
+      });
+    }
+
+    // Always apply the accent color variables, unless we are in dark mode and customTheme overrides them
+    if (theme === "light" || !customTheme["--primary"]) document.documentElement.style.setProperty("--primary", accentColor);
+    if (theme === "light" || !customTheme["--ring"]) document.documentElement.style.setProperty("--ring", accentColor);
+    if (theme === "light" || !customTheme["--sidebar-primary"]) document.documentElement.style.setProperty("--sidebar-primary", accentColor);
+    if (theme === "light" || !customTheme["--chart-1"]) document.documentElement.style.setProperty("--chart-1", accentColor);
+
+    if (theme === "light" || !customTheme["--primary-foreground"]) {
       const match = accentColor.match(/oklch\(([\d.]+)/);
       if (match && match[1]) {
         const lightness = parseFloat(match[1]);
@@ -483,13 +498,8 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       }
     }
 
-    // Re-apply custom theme overrides to ensure they win over the default accent color during hydration
-    Object.entries(customTheme).forEach(([token, value]) => {
-      document.documentElement.style.setProperty(token, value as string);
-    });
-
     localStorage.setItem("gbms-accent", accentColor);
-  }, [accentColor, customTheme]);
+  }, [accentColor, customTheme, theme]);
 
   useEffect(() => {
     let cssFontFamily = "var(--font-sans)";

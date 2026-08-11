@@ -173,6 +173,11 @@
   }
 }
 
+/* Fallback for browsers without View Transitions API (e.g. Firefox) */
+html.theme-transitioning-fallback * {
+  transition: background-color 0.4s ease-in-out, border-color 0.4s ease-in-out, color 0.4s ease-in-out, fill 0.4s ease-in-out !important;
+}
+
 @keyframes fadeInUp {
   from {
     opacity: 0;

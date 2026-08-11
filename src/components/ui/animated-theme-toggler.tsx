@@ -246,8 +246,12 @@ export const AnimatedThemeToggler = React.forwardRef<HTMLButtonElement, Animated
     }
 
     if (typeof document.startViewTransition !== "function") {
-      applyTheme()
-      return
+      document.documentElement.classList.add("theme-transitioning-fallback");
+      applyTheme();
+      setTimeout(() => {
+        document.documentElement.classList.remove("theme-transitioning-fallback");
+      }, duration);
+      return;
     }
 
     const clipPath = getThemeTransitionClipPaths(

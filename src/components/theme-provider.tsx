@@ -554,7 +554,11 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       typeof document.startViewTransition !== "function" ||
       document.documentElement.dataset.magicuiThemeVt === "active"
     ) {
+      document.documentElement.classList.add("theme-transitioning-fallback");
       updateFn();
+      setTimeout(() => {
+        document.documentElement.classList.remove("theme-transitioning-fallback");
+      }, 400);
       return;
     }
 

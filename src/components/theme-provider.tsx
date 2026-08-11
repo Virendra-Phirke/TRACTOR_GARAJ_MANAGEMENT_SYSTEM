@@ -522,10 +522,20 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   }, [fontSize]);
 
   const toggleTheme = () => {
-    setThemeState((prev) => (prev === "dark" ? "light" : "dark"));
+    if (theme === "dark") {
+      resetCustomTheme();
+      setThemeState("light");
+    } else {
+      setThemeState("dark");
+    }
   };
 
-  const setTheme = (t: Theme) => setThemeState(t);
+  const setTheme = (t: Theme) => {
+    if (t === "light") {
+      resetCustomTheme();
+    }
+    setThemeState(t);
+  };
   const setAccentColor = (c: string) => setAccentColorState(c);
   const setFontFamily = (f: string) => setFontFamilyState(f);
   const setFontSize = (s: string) => setFontSizeState(s);

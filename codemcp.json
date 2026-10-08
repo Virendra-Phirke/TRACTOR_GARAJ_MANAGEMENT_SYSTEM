@@ -1,0 +1,8 @@
+{
+  "id": "gbms",
+  "name": "gbms",
+  "description": "Project overview and guidelines for AI assistants.",
+  "permission": "both",
+  "approval": false,
+  "contextFile": "CONTEXT.md"
+}

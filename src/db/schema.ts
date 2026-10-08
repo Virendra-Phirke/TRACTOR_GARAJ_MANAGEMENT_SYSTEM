@@ -207,6 +207,7 @@ export const invoicesRelations = relations(invoices, ({ one, many }) => ({
   }),
   laborItems: many(invoiceLabors),
   partItems: many(invoiceParts),
+  payments: many(payments),
 }));
 
 // ─── Invoice Labor Items ─────────────────────────────────────────────
@@ -300,6 +301,68 @@ export const stockHistoryRelations = relations(stockHistory, ({ one }) => ({
     references: [spareParts.id],
   }),
 }));
+
+// ─── Payments (Payment Ledger) ────────────────────────────────────────
+export const payments = pgTable(
+  "payments",
+  {
+    id: serial("id").primaryKey(),
+    invoiceId: integer("invoice_id")
+      .notNull()
+      .references(() => invoices.id, { onDelete: "cascade" }),
+    amount: integer("amount").notNull(), // stored in paise (INR * 100)
+    paymentMethod: varchar("payment_method", { length: 20 }).notNull(), // 'cash' | 'online'
+    status: varchar("status", { length: 20 }).notNull().default("pending"), // 'pending' | 'success' | 'failed' | 'refunded'
+    // Razorpay-specific fields (null for cash payments)
+    razorpayOrderId: varchar("razorpay_order_id", { length: 100 }),
+    razorpayPaymentId: varchar("razorpay_payment_id", { length: 100 }),
+    razorpaySignature: varchar("razorpay_signature", { length: 255 }),
+    razorpayQrId: varchar("razorpay_qr_id", { length: 100 }),
+    gatewayMethod: varchar("gateway_method", { length: 30 }), // 'upi' | 'card' | 'netbanking' | 'wallet' | 'other'
+    // Audit & tracking
+    paidAt: timestamp("paid_at"),
+    failureReason: text("failure_reason"),
+    notes: text("notes"),
+    source: varchar("source", { length: 30 }).default("cash_manual"), // 'cash_manual' | 'razorpay_checkout' | 'razorpay_qr' | 'manual_upi' | 'migration' | 'adjustment'
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  },
+  (table) => [
+    index("payments_invoice_idx").on(table.invoiceId),
+    index("payments_status_idx").on(table.status),
+    index("payments_created_idx").on(table.createdAt),
+    uniqueIndex("payments_razorpay_order_idx").on(table.razorpayOrderId),
+    uniqueIndex("payments_razorpay_payment_idx").on(table.razorpayPaymentId),
+  ]
+);
+
+export const paymentsRelations = relations(payments, ({ one }) => ({
+  invoice: one(invoices, {
+    fields: [payments.invoiceId],
+    references: [invoices.id],
+  }),
+}));
+
+// ─── Payment Webhook Events (Idempotency + Audit) ─────────────────────
+export const paymentWebhookEvents = pgTable(
+  "payment_webhook_events",
+  {
+    id: serial("id").primaryKey(),
+    eventId: varchar("event_id", { length: 255 }).notNull(), // x-razorpay-event-id — unique idempotency key
+    eventType: varchar("event_type", { length: 100 }).notNull(),
+    payload: jsonb("payload").notNull(),
+    processed: boolean("processed").default(false).notNull(),
+    processedAt: timestamp("processed_at"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => [
+    uniqueIndex("webhook_event_id_idx").on(table.eventId),
+    index("webhook_processed_idx").on(table.processed),
+    index("webhook_type_idx").on(table.eventType),
+  ]
+);
+
+// ─── Update invoicesRelations to include payments ─────────────────────
 
 // ─── Backups ─────────────────────────────────────────────────────────
 export const backups = pgTable("backups", {

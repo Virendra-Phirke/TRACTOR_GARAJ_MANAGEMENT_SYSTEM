@@ -407,82 +407,100 @@ export function InvoiceDetailClient({
         }
       }
 
-      // Build the message text
-      // Build a clean, human-like WhatsApp message
+      // Build a clean, professional, universally compatible WhatsApp message
+      // No emoji or non-standard characters that convert to ? or  in mobile/web clients
+      const customerGreeting = invoice.customerName
+        ? `Dear ${invoice.customerName},`
+        : "Hello,";
+
       const lines = [
-        "Hello " + (invoice.customerName || "Customer") + ",",
+        customerGreeting,
         "",
-        "Thank you for choosing " + garage.name + "!",
-        "Here is a summary of your recent service:",
+        `Thank you for choosing ${garage.name}.`,
+        "Here is the service invoice summary for your vehicle:",
         "",
-        "Invoice No: " + invoice.invoiceNumber,
-        "Date: " + format(new Date(invoice.createdAt), "dd MMM yyyy"),
-        "",
-        "Vehicle Details:",
-        (invoice.vehicleBrand || "") + " " + (invoice.vehicleModel || "") + (invoice.vehicleReg ? " (" + invoice.vehicleReg + ")" : ""),
-        "",
+        `Invoice No: ${invoice.invoiceNumber}`,
+        `Date: ${format(new Date(invoice.createdAt), "dd MMM yyyy")}`,
       ];
+
+      const vehicleParts = [
+        invoice.vehicleBrand,
+        invoice.vehicleModel,
+        invoice.vehicleReg ? `(${invoice.vehicleReg})` : "",
+      ]
+        .filter(Boolean)
+        .join(" ");
+
+      if (vehicleParts) {
+        lines.push(`Vehicle Details: ${vehicleParts}`);
+      }
 
       // Add labor and parts breakdown if available
       if (invoice.laborItems.length > 0 || invoice.partItems.length > 0) {
-        lines.push("Service Details:");
-        
-        invoice.laborItems.forEach(item => {
-           lines.push("- " + item.description);
-        });
-        
-        invoice.partItems.forEach(item => {
-           lines.push("- " + item.partName + " (Qty: " + item.quantity + ")");
-        });
-        
         lines.push("");
+        lines.push("Service Details:");
+
+        invoice.laborItems.forEach((item) => {
+          lines.push(`- ${item.description}`);
+        });
+
+        invoice.partItems.forEach((item) => {
+          lines.push(`- ${item.partName} (Qty: ${item.quantity})`);
+        });
       }
 
+      lines.push("");
       lines.push("------------------------");
-      lines.push("Grand Total: Rs " + (invoice.grandTotal || 0).toLocaleString("en-IN"));
+      lines.push(`Grand Total: Rs. ${(invoice.grandTotal || 0).toLocaleString("en-IN")}`);
 
       if ((invoice.amountPaid || 0) > 0) {
-         lines.push("Amount Paid: Rs " + invoice.amountPaid?.toLocaleString("en-IN"));
+        lines.push(`Amount Paid: Rs. ${invoice.amountPaid?.toLocaleString("en-IN")}`);
       }
 
       if (balanceDue > 0 && status !== "paid") {
-         lines.push("Balance Due: Rs " + balanceDue.toLocaleString("en-IN"));
+        lines.push(`Balance Due: Rs. ${balanceDue.toLocaleString("en-IN")}`);
       }
       lines.push("------------------------");
       lines.push("");
-      
+
       if (status === "paid" || balanceDue <= 0) {
-        lines.push("Payment Status: PAID IN FULL ✅");
-        lines.push("Thank you for your payment!");
+        lines.push("Payment Status: PAID IN FULL");
+        lines.push("Thank you for your payment.");
       } else {
-        const cleanPaidLabel = status === "partial" ? "PARTIAL" : "UNPAID";
-        lines.push("Payment Status: " + cleanPaidLabel);
+        const cleanPaidLabel = status === "partial" ? "PARTIALLY PAID" : "UNPAID";
+        lines.push(`Payment Status: ${cleanPaidLabel}`);
 
         if (paymentLink) {
           lines.push("");
-          lines.push("💳 Pay Online Securely (UPI / GPay / PhonePe / Card):");
+          lines.push("Pay Online (UPI / Card / NetBanking):");
           lines.push(paymentLink);
         } else if (upi?.isEnabled && upi.vpa) {
           lines.push("");
-          lines.push("💳 Payment Details (Direct UPI / Bank Transfer):");
-          lines.push("UPI ID: " + upi.vpa);
+          lines.push("Payment Details (Direct UPI / Bank Transfer):");
+          lines.push(`UPI ID: ${upi.vpa}`);
           if (upi.payeeName) {
-            lines.push("Payee: " + upi.payeeName);
+            lines.push(`Payee Name: ${upi.payeeName}`);
           }
           if (isAmountExceeded) {
-            lines.push("(Note: For amounts exceeding gateway limits, please pay via direct UPI or NEFT/RTGS bank transfer)");
+            lines.push("(Note: For amounts exceeding gateway limits, payment can be made via direct UPI or NEFT/RTGS bank transfer)");
           }
         }
       }
 
       if (shareLink) {
         lines.push("");
-        lines.push("📄 View & Download Full Invoice PDF:");
+        lines.push("View & Download Full Invoice PDF:");
         lines.push(shareLink);
       }
 
       lines.push("");
       lines.push("For any queries, please feel free to reach out to us.");
+      lines.push("");
+      lines.push("Regards,");
+      lines.push(garage.name);
+      if (garage.phone) {
+        lines.push(`Contact: ${garage.phone}`);
+      }
 
       const messageText = lines.join("\n");
       const encodedText = encodeURIComponent(messageText);

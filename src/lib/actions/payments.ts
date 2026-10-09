@@ -190,11 +190,21 @@ export async function syncPaymentLinkStatus(paymentId: number) {
       .where(eq(payments.id, paymentId));
 
     await reconcileInvoiceStatus(payment.invoiceId);
-    await reconcileCustomerBalance(payment.invoiceId);
+
+    const [inv] = await db
+      .select({ customerId: invoices.customerId })
+      .from(invoices)
+      .where(eq(invoices.id, payment.invoiceId))
+      .limit(1);
+
+    if (inv?.customerId) {
+      await reconcileCustomerBalance(inv.customerId);
+    }
 
     revalidatePath("/payments");
     revalidatePath("/invoices");
     revalidatePath(`/invoices/${payment.invoiceId}`);
+    revalidatePath("/");
 
     return {
       updated: true,

@@ -86,21 +86,69 @@ export async function calculateInvoicePaymentSummary(
 }
 
 /**
- * Recalculate and persist the invoice payment status and amountPaid
- * from the payment ledger.  Call this after any payment state change.
+ * Recalculate and persist the invoice payment status, amounts, and method
+ * from the payment ledger. Call this after any payment state change.
  */
 export async function reconcileInvoiceStatus(invoiceId: number): Promise<PaymentSummary> {
   const summary = await calculateInvoicePaymentSummary(invoiceId);
 
+  // Fetch all successful payment ledger records for this invoice
+  const successfulPayments = await db
+    .select({
+      paymentMethod: payments.paymentMethod,
+      gatewayMethod: payments.gatewayMethod,
+      amount: payments.amount,
+    })
+    .from(payments)
+    .where(
+      and(
+        eq(payments.invoiceId, invoiceId),
+        eq(payments.status, "success")
+      )
+    );
+
+  let cashPaise = 0;
+  let onlinePaise = 0;
+  let hasOnline = false;
+  let hasCash = false;
+
+  for (const p of successfulPayments) {
+    if (p.paymentMethod === "online") {
+      onlinePaise += p.amount;
+      hasOnline = true;
+    } else {
+      cashPaise += p.amount;
+      hasCash = true;
+    }
+  }
+
+  let derivedMethod: string | undefined = undefined;
+  if (successfulPayments.length > 0) {
+    if (hasOnline && hasCash) {
+      derivedMethod = "split";
+    } else if (hasOnline) {
+      derivedMethod = "online";
+    } else {
+      derivedMethod = "cash";
+    }
+  }
+
+  const updateFields: Record<string, unknown> = {
+    amountPaid: summary.paidAmountInr,
+    paymentStatus: summary.paymentStatus,
+    paymentDoneAt: summary.paymentStatus === "paid" ? new Date() : null,
+    updatedAt: new Date(),
+  };
+
+  if (derivedMethod) {
+    updateFields.paymentMethod = derivedMethod;
+    updateFields.cashAmount = cashPaise / 100;
+    updateFields.upiAmount = onlinePaise / 100;
+  }
+
   await db
     .update(invoices)
-    .set({
-      amountPaid: summary.paidAmountInr,
-      paymentStatus: summary.paymentStatus,
-      paymentDoneAt:
-        summary.paymentStatus === "paid" ? new Date() : null,
-      updatedAt: new Date(),
-    })
+    .set(updateFields)
     .where(eq(invoices.id, invoiceId));
 
   return summary;

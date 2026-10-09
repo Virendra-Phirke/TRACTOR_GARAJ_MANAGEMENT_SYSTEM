@@ -14,6 +14,7 @@ import {
 import { eq, desc, asc, sql, and, gte, lte, inArray, isNull } from "drizzle-orm";
 import { getISTDayBounds } from "@/lib/utils";
 import { revalidatePath } from "next/cache";
+import { cancelPendingPaymentLinksForInvoice } from "@/lib/payments/payment-calculations";
 
 // ─── Invoice Number Generation ───────────────────────────────────────
 async function generateInvoiceNumber(): Promise<string> {
@@ -674,6 +675,10 @@ export async function updateInvoicePayment(id: number, data: { paymentStatus: st
           updatedAt: new Date(),
         })
         .where(eq(customers.id, currentInvoice.customerId));
+    }
+
+    if (isNowPaid) {
+      await cancelPendingPaymentLinksForInvoice(id);
     }
   })();
 

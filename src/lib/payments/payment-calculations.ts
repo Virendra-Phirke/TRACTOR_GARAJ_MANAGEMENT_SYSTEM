@@ -7,7 +7,8 @@
 
 import { db } from "@/db";
 import { payments, invoices, customers } from "@/db/schema";
-import { eq, sql, and } from "drizzle-orm";
+import { eq, sql, and, isNotNull } from "drizzle-orm";
+import { cancelRazorpayPaymentLink } from "./razorpay";
 
 // ─── Types ─────────────────────────────────────────────────────────────
 
@@ -86,6 +87,55 @@ export async function calculateInvoicePaymentSummary(
 }
 
 /**
+ * Cancel any remaining pending Razorpay payment links for an invoice
+ * once the invoice has been paid in full, preventing duplicate payments.
+ */
+export async function cancelPendingPaymentLinksForInvoice(
+  invoiceId: number
+): Promise<number> {
+  const pendingLinks = await db
+    .select({
+      id: payments.id,
+      razorpayPaymentLinkId: payments.razorpayPaymentLinkId,
+    })
+    .from(payments)
+    .where(
+      and(
+        eq(payments.invoiceId, invoiceId),
+        eq(payments.status, "pending"),
+        isNotNull(payments.razorpayPaymentLinkId)
+      )
+    );
+
+  let cancelledCount = 0;
+  for (const pl of pendingLinks) {
+    if (pl.razorpayPaymentLinkId) {
+      try {
+        await cancelRazorpayPaymentLink(pl.razorpayPaymentLinkId);
+      } catch (err) {
+        console.warn(
+          `[cancelPendingLinks] Failed to cancel ${pl.razorpayPaymentLinkId} on Razorpay:`,
+          err
+        );
+      }
+    }
+
+    await db
+      .update(payments)
+      .set({
+        status: "failed",
+        failureReason: "Invoice already paid in full",
+        updatedAt: new Date(),
+      })
+      .where(eq(payments.id, pl.id));
+
+    cancelledCount++;
+  }
+
+  return cancelledCount;
+}
+
+/**
  * Recalculate and persist the invoice payment status, amounts, and method
  * from the payment ledger. Call this after any payment state change.
  */
@@ -150,6 +200,11 @@ export async function reconcileInvoiceStatus(invoiceId: number): Promise<Payment
     .update(invoices)
     .set(updateFields)
     .where(eq(invoices.id, invoiceId));
+
+  // If the invoice is now paid, cancel any remaining pending Razorpay links
+  if (summary.paymentStatus === "paid") {
+    await cancelPendingPaymentLinksForInvoice(invoiceId);
+  }
 
   return summary;
 }

@@ -46,6 +46,12 @@ export async function POST(request: NextRequest) {
   try {
     // ─── 3. Confirm invoice exists ──────────────────────────────────
     const invoice = await validateInvoiceExists(invoiceId);
+    if (invoice.paymentStatus === "paid") {
+      return NextResponse.json(
+        { error: "This invoice is already paid in full. No payment required." },
+        { status: 400 }
+      );
+    }
 
     // ─── 4. Validate amount against current due ─────────────────────
     //        Server re-validates — never trust client amount as final.

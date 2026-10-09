@@ -122,6 +122,11 @@ export function InvoiceDetailClient({
 
   // Open the dialog and seed draft state from the real state
   const openPayDialog = () => {
+    if (status === "paid" || ((invoice.grandTotal || 0) - (invoice.amountPaid || 0)) <= 0) {
+      toast.info(`Invoice #${invoice.invoiceNumber} is already paid in full.`);
+      return;
+    }
+
     setDraftStatus(status);
     setDraftPayMethod(payMethod);
     
@@ -299,6 +304,11 @@ export function InvoiceDetailClient({
   const [isCopyLinkLoading, setIsCopyLinkLoading] = useState(false);
 
   const handleCopyPaymentLink = async () => {
+    if (status === "paid" || ((invoice.grandTotal || 0) - (invoice.amountPaid || 0)) <= 0) {
+      toast.info(`Invoice #${invoice.invoiceNumber} is already paid in full. No payment link needed.`);
+      return;
+    }
+
     setIsCopyLinkLoading(true);
     try {
       const plinkRes = await fetch("/api/payments/razorpay/payment-link", {
@@ -365,9 +375,9 @@ export function InvoiceDetailClient({
         console.warn("Share token fetch error:", err);
       }
 
-      // Generate or retrieve Razorpay Payment Link if balance is due
+      // Generate or retrieve Razorpay Payment Link ONLY if balance is due and invoice is not paid
       let paymentLink = "";
-      if (balanceDue > 0) {
+      if (balanceDue > 0 && status !== "paid") {
         try {
           const plinkRes = await fetch("/api/payments/razorpay/payment-link", {
             method: "POST",
@@ -425,19 +435,24 @@ export function InvoiceDetailClient({
          lines.push("Amount Paid: Rs " + invoice.amountPaid?.toLocaleString("en-IN"));
       }
 
-      if (balanceDue > 0) {
+      if (balanceDue > 0 && status !== "paid") {
          lines.push("Balance Due: Rs " + balanceDue.toLocaleString("en-IN"));
       }
       lines.push("------------------------");
       lines.push("");
       
-      const cleanPaidLabel = status === "paid" ? "PAID" : status === "partial" ? "PARTIAL" : "UNPAID";
-      lines.push("Payment Status: " + cleanPaidLabel);
+      if (status === "paid" || balanceDue <= 0) {
+        lines.push("Payment Status: PAID IN FULL ✅");
+        lines.push("Thank you for your payment!");
+      } else {
+        const cleanPaidLabel = status === "partial" ? "PARTIAL" : "UNPAID";
+        lines.push("Payment Status: " + cleanPaidLabel);
 
-      if (paymentLink) {
-        lines.push("");
-        lines.push("💳 Pay Online Securely (UPI / GPay / PhonePe / Card):");
-        lines.push(paymentLink);
+        if (paymentLink) {
+          lines.push("");
+          lines.push("💳 Pay Online Securely (UPI / GPay / PhonePe / Card):");
+          lines.push(paymentLink);
+        }
       }
 
       if (shareLink) {
@@ -777,6 +792,20 @@ export function InvoiceDetailClient({
                 <p className="text-[10px] text-muted-foreground font-medium">Balance Due</p>
               )}
               <p className="text-[10px] text-muted-foreground">{upi.vpa}</p>
+            </div>
+          </div>
+        )}
+
+        {status === "paid" && (
+          <div className="block-section bg-emerald-500/10 border border-emerald-500/20 text-emerald-800 dark:text-emerald-300 rounded-xl p-4 flex items-center gap-3">
+            <CheckCircle className="w-5 h-5 text-emerald-600 shrink-0" />
+            <div>
+              <p className="text-sm font-semibold text-emerald-700 dark:text-emerald-300">
+                Invoice Paid in Full
+              </p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Total ₹{(invoice.grandTotal || 0).toLocaleString("en-IN")} received. All balances are settled.
+              </p>
             </div>
           </div>
         )}

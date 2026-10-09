@@ -87,6 +87,8 @@ export async function validateInvoiceExists(invoiceId: number) {
       invoiceNumber: invoices.invoiceNumber,
       customerId: invoices.customerId,
       grandTotal: invoices.grandTotal,
+      amountPaid: invoices.amountPaid,
+      paymentStatus: invoices.paymentStatus,
     })
     .from(invoices)
     .where(eq(invoices.id, invoiceId))

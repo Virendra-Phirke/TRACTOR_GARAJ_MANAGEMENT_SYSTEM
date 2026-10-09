@@ -13,6 +13,7 @@ import { verifyApiRequest } from "@/lib/auth";
 import { validateInvoiceExists } from "@/lib/payments/payment-validation";
 import {
   calculateInvoicePaymentSummary,
+  cancelPendingPaymentLinksForInvoice,
   inrToPaise,
 } from "@/lib/payments/payment-calculations";
 import {
@@ -56,9 +57,13 @@ export async function POST(request: NextRequest) {
 
     // ─── 4. Re-calculate current due balance ──────────────────────────
     const summary = await calculateInvoicePaymentSummary(invoiceId);
-    if (summary.dueAmountInr <= 0) {
+    if (summary.dueAmountInr <= 0 || invoice.paymentStatus === "paid") {
+      await cancelPendingPaymentLinksForInvoice(invoiceId);
       return NextResponse.json(
-        { error: "This invoice is already fully paid." },
+        {
+          error: "This invoice is already paid in full. No payment required.",
+          isPaid: true,
+        },
         { status: 400 }
       );
     }

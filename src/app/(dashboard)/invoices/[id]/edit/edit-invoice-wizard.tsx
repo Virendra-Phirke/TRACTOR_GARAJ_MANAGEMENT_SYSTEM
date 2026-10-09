@@ -222,8 +222,9 @@ export function EditInvoiceWizard({
       toast.success("Invoice updated!");
       playSound("create");
       router.push(`/invoices/${invoice.id}`);
-    } catch {
-      toast.error("Failed to update invoice");
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Failed to update invoice";
+      toast.error(msg);
       playSound("error");
     } finally {
       setLoading(false);

@@ -230,29 +230,24 @@ export function InvoiceDetailClient({
     }
   };
 
-  const handleDeleteInvoice = () => {
-    const timeoutId = setTimeout(async () => {
-      try {
-        await deleteInvoice(invoice.id);
-      } catch {
-        toast.error("Failed to delete invoice");
-        playSound("error");
-      }
-    }, 5000);
+  const [isDeleting, setIsDeleting] = useState(false);
 
-    toast.success("Invoice deleted successfully", {
-      duration: 5000,
-      action: {
-        label: "Undo",
-        onClick: () => {
-          clearTimeout(timeoutId);
-          toast.success("Invoice restored");
-          router.push(`/invoices/${invoice.id}`);
-        }
-      }
-    });
-    playSound("delete");
-    router.push("/invoices");
+  const handleDeleteInvoice = async () => {
+    try {
+      setIsDeleting(true);
+      await deleteInvoice(invoice.id);
+      toast.success(`Invoice #${invoice.invoiceNumber} deleted successfully`);
+      playSound("delete");
+      router.push("/invoices");
+      router.refresh();
+    } catch (err) {
+      console.error("Failed to delete invoice:", err);
+      const msg = err instanceof Error ? err.message : "Failed to delete invoice";
+      toast.error(msg);
+      playSound("error");
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   const handleDownloadPdf = async () => {
@@ -648,9 +643,13 @@ export function InvoiceDetailClient({
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
-                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                <AlertDialogAction onClick={handleDeleteInvoice} className="bg-destructive hover:bg-destructive/90 text-destructive-foreground">
-                  Delete
+                <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={handleDeleteInvoice}
+                  disabled={isDeleting}
+                  className="bg-destructive hover:bg-destructive/90 text-destructive-foreground cursor-pointer"
+                >
+                  {isDeleting ? "Deleting..." : "Delete"}
                 </AlertDialogAction>
               </AlertDialogFooter>
             </AlertDialogContent>

@@ -96,33 +96,22 @@ export function InvoicesClient({ invoices }: { invoices: Invoice[] }) {
     playSound("delete");
   };
 
-  const handleDelete = (id: number) => {
+  const handleDelete = async (id: number) => {
     startTransition(() => {
       addOptimisticInvoice({ type: "delete", payload: [id] });
     });
 
-    const timeoutId = setTimeout(async () => {
-      try {
-        await deleteInvoice(id);
-        router.refresh();
-      } catch {
-        toast.error("Failed to delete invoice");
-        router.refresh();
-      }
-    }, 5000);
-
-    toast.success("Invoice deleted successfully", {
-      duration: 5000,
-      action: {
-        label: "Undo",
-        onClick: () => {
-          clearTimeout(timeoutId);
-          router.refresh();
-          toast.success("Invoice restored");
-        },
-      },
-    });
-    playSound("delete");
+    try {
+      await deleteInvoice(id);
+      toast.success("Invoice deleted successfully");
+      playSound("delete");
+      router.refresh();
+    } catch (err) {
+      console.error("Failed to delete invoice:", err);
+      const msg = err instanceof Error ? err.message : "Failed to delete invoice";
+      toast.error(msg);
+      router.refresh();
+    }
   };
 
   const applyFilters = (newDate: DateRange | undefined, newSort: string) => {

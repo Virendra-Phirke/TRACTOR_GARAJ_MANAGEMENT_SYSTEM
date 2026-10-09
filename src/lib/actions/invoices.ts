@@ -10,11 +10,20 @@ import {
   customers,
   vehicles,
   expenses,
+  payments,
 } from "@/db/schema";
 import { eq, desc, asc, sql, and, gte, lte, inArray, isNull } from "drizzle-orm";
 import { getISTDayBounds } from "@/lib/utils";
 import { revalidatePath } from "next/cache";
 import { cancelPendingPaymentLinksForInvoice } from "@/lib/payments/payment-calculations";
+
+function safeRevalidate(path: string, type?: "layout" | "page") {
+  try {
+    revalidatePath(path, type);
+  } catch {
+    // Ignore when called outside of Next.js server action request context
+  }
+}
 
 // ─── Invoice Number Generation ───────────────────────────────────────
 async function generateInvoiceNumber(): Promise<string> {
@@ -224,7 +233,7 @@ export async function createInvoice(data: CreateInvoiceData) {
     return inv;
   })();
 
-  revalidatePath("/", "layout");
+  safeRevalidate("/", "layout");
   return invoice;
 }
 
@@ -682,7 +691,7 @@ export async function updateInvoicePayment(id: number, data: { paymentStatus: st
     }
   })();
 
-  revalidatePath("/", "layout");
+  safeRevalidate("/", "layout");
 }
 
 export async function deleteInvoice(id: number) {
@@ -709,66 +718,80 @@ export async function deleteInvoice(id: number) {
     .from(invoiceParts)
     .where(eq(invoiceParts.invoiceId, id));
 
-  await (async () => {
-    const tx = db;
-    
-    // Restore stock
-    for (const part of parts) {
-      if (part.sparePartId) {
-        const [spare] = await tx
-          .select({ stock: spareParts.stock })
-          .from(spareParts)
-          .where(eq(spareParts.id, part.sparePartId))
-          .limit(1);
+  // Cancel any active payment links on Razorpay
+  try {
+    await cancelPendingPaymentLinksForInvoice(id);
+  } catch (e) {
+    console.warn("Could not cancel pending payment links for invoice:", e);
+  }
 
-        if (spare) {
-          const previousStock = spare.stock || 0;
-          const newStock = previousStock + part.quantity;
+  // Restore stock
+  for (const part of parts) {
+    if (part.sparePartId) {
+      const [spare] = await db
+        .select({ stock: spareParts.stock })
+        .from(spareParts)
+        .where(eq(spareParts.id, part.sparePartId))
+        .limit(1);
 
-          await tx
-            .update(spareParts)
-            .set({
-              stock: newStock,
-              updatedAt: new Date(),
-            })
-            .where(eq(spareParts.id, part.sparePartId));
+      if (spare) {
+        const previousStock = spare.stock || 0;
+        const newStock = previousStock + part.quantity;
 
-          await tx.insert(stockHistory).values({
-            sparePartId: part.sparePartId,
-            type: "adjustment",
-            quantity: part.quantity,
-            previousStock,
-            newStock,
-            reference: `Invoice Deleted: #${invoice.invoiceNumber}`,
-          });
-        }
+        await db
+          .update(spareParts)
+          .set({
+            stock: newStock,
+            updatedAt: new Date(),
+          })
+          .where(eq(spareParts.id, part.sparePartId));
+
+        await db.insert(stockHistory).values({
+          sparePartId: part.sparePartId,
+          type: "adjustment",
+          quantity: part.quantity,
+          previousStock,
+          newStock,
+          reference: `Invoice Deleted: #${invoice.invoiceNumber}`,
+        });
       }
     }
+  }
 
-    // Adjust customer stats
-    const outstandingDiff = invoice.paymentStatus !== "paid" ? (invoice.grandTotal || 0) - (invoice.amountPaid || 0) : 0;
-    
-    await tx
-      .update(customers)
-      .set({
-        totalSpent: sql`GREATEST(0, ${customers.totalSpent} - ${invoice.grandTotal || 0})`,
-        visitCount: sql`GREATEST(0, ${customers.visitCount} - 1)`,
-        outstandingBalance: sql`GREATEST(0, ${customers.outstandingBalance} - ${outstandingDiff})`,
-        updatedAt: new Date(),
-      })
-      .where(eq(customers.id, invoice.customerId));
+  // Adjust customer stats
+  const outstandingDiff = invoice.paymentStatus !== "paid" ? (invoice.grandTotal || 0) - (invoice.amountPaid || 0) : 0;
+  
+  await db
+    .update(customers)
+    .set({
+      totalSpent: sql`GREATEST(0, ${customers.totalSpent} - ${invoice.grandTotal || 0})`,
+      visitCount: sql`GREATEST(0, ${customers.visitCount} - 1)`,
+      outstandingBalance: sql`GREATEST(0, ${customers.outstandingBalance} - ${outstandingDiff})`,
+      updatedAt: new Date(),
+    })
+    .where(eq(customers.id, invoice.customerId));
 
-    // Delete the invoice (cascade handles invoice_labors and invoice_parts)
-    await tx.delete(invoices).where(eq(invoices.id, id));
-  })();
+  // Explicitly delete ledger records and line items
+  await db.delete(payments).where(eq(payments.invoiceId, id));
+  await db.delete(invoiceLabors).where(eq(invoiceLabors.invoiceId, id));
+  await db.delete(invoiceParts).where(eq(invoiceParts.invoiceId, id));
 
-  revalidatePath("/", "layout");
+  // Delete the invoice
+  await db.delete(invoices).where(eq(invoices.id, id));
+
+  safeRevalidate("/", "layout");
+  safeRevalidate("/invoices");
+  safeRevalidate("/customers");
+  safeRevalidate("/inventory");
 }
 
 export async function bulkDeleteInvoices(ids: number[]) {
   if (!ids || ids.length === 0) return;
-  await db.delete(invoices).where(inArray(invoices.id, ids));
-  revalidatePath("/", "layout");
+  for (const id of ids) {
+    await deleteInvoice(id);
+  }
+  safeRevalidate("/", "layout");
+  safeRevalidate("/invoices");
 }
 
 // ─── Report Stats (date-filtered, comprehensive) ─────────────────────

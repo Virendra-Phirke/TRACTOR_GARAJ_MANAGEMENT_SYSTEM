@@ -316,15 +316,15 @@ export function InvoiceDetailClient({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ invoiceId: invoice.id }),
       });
-      const data = await plinkRes.json();
-      if (!plinkRes.ok || !data.shortUrl) {
-        throw new Error(data.error || "Failed to generate payment link");
+      const data = await plinkRes.json().catch(() => null);
+      if (!plinkRes.ok || !data?.shortUrl) {
+        throw new Error(data?.error || "Failed to generate payment link");
       }
       await navigator.clipboard.writeText(data.shortUrl);
       toast.success("Payment link copied: " + data.shortUrl);
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Error creating payment link";
-      toast.error(msg);
+      toast.error(msg, { duration: 6000 });
     } finally {
       setIsCopyLinkLoading(false);
     }
@@ -377,6 +377,9 @@ export function InvoiceDetailClient({
 
       // Generate or retrieve Razorpay Payment Link ONLY if balance is due and invoice is not paid
       let paymentLink = "";
+      let isAmountExceeded = false;
+      let paymentLinkErrorMsg = "";
+
       if (balanceDue > 0 && status !== "paid") {
         try {
           const plinkRes = await fetch("/api/payments/razorpay/payment-link", {
@@ -384,13 +387,20 @@ export function InvoiceDetailClient({
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ invoiceId: invoice.id }),
           });
-          if (plinkRes.ok) {
-            const plinkData = await plinkRes.json();
-            if (plinkData.shortUrl) {
-              paymentLink = plinkData.shortUrl;
-            }
+          const plinkData = await plinkRes.json().catch(() => null);
+          if (plinkRes.ok && plinkData?.shortUrl) {
+            paymentLink = plinkData.shortUrl;
           } else {
-            console.warn("Payment link generation notice:", await plinkRes.text());
+            paymentLinkErrorMsg = plinkData?.error || "Could not generate online payment link";
+            isAmountExceeded = Boolean(plinkData?.isAmountExceeded);
+            if (isAmountExceeded) {
+              toast.warning(
+                `Invoice amount (₹${balanceDue.toLocaleString("en-IN")}) exceeds online payment gateway limit. Direct UPI details added to message.`,
+                { duration: 6000 }
+              );
+            } else {
+              toast.info(`Payment link notice: ${paymentLinkErrorMsg}`);
+            }
           }
         } catch (err) {
           console.warn("Payment link fetch error:", err);
@@ -452,6 +462,16 @@ export function InvoiceDetailClient({
           lines.push("");
           lines.push("💳 Pay Online Securely (UPI / GPay / PhonePe / Card):");
           lines.push(paymentLink);
+        } else if (upi?.isEnabled && upi.vpa) {
+          lines.push("");
+          lines.push("💳 Payment Details (Direct UPI / Bank Transfer):");
+          lines.push("UPI ID: " + upi.vpa);
+          if (upi.payeeName) {
+            lines.push("Payee: " + upi.payeeName);
+          }
+          if (isAmountExceeded) {
+            lines.push("(Note: For amounts exceeding gateway limits, please pay via direct UPI or NEFT/RTGS bank transfer)");
+          }
         }
       }
 

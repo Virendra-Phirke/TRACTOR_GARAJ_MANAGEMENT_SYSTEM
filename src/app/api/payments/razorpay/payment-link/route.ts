@@ -19,6 +19,7 @@ import {
 import {
   createRazorpayPaymentLink,
   cancelRazorpayPaymentLink,
+  extractRazorpayErrorMessage,
 } from "@/lib/payments/razorpay";
 
 export async function POST(request: NextRequest) {
@@ -128,16 +129,47 @@ export async function POST(request: NextRequest) {
       .returning();
 
     // ─── 7. Create Razorpay Payment Link ──────────────────────────────
-    const link = await createRazorpayPaymentLink({
-      amountPaise: duePaise,
-      localPaymentId: localPayment.id,
-      invoiceId,
-      invoiceNumber: invoice.invoiceNumber,
-      customerName: customer?.name ?? undefined,
-      customerPhone: customer?.phone ?? undefined,
-      customerEmail: customer?.email ?? undefined,
-      description: `Payment for Invoice #${invoice.invoiceNumber}`,
-    });
+    let link;
+    try {
+      link = await createRazorpayPaymentLink({
+        amountPaise: duePaise,
+        localPaymentId: localPayment.id,
+        invoiceId,
+        invoiceNumber: invoice.invoiceNumber,
+        customerName: customer?.name ?? undefined,
+        customerPhone: customer?.phone ?? undefined,
+        customerEmail: customer?.email ?? undefined,
+        description: `Payment for Invoice #${invoice.invoiceNumber}`,
+      });
+    } catch (razorErr) {
+      const errorDesc = extractRazorpayErrorMessage(razorErr);
+      const isLimit = /amount exceeds maximum|exceeds/i.test(errorDesc);
+
+      // Clean up the local record so it doesn't leave an orphaned pending payment
+      await db
+        .update(payments)
+        .set({
+          status: "failed",
+          failureReason: isLimit
+            ? `Amount exceeds Razorpay transaction limit: ${errorDesc}`
+            : `Payment link creation failed: ${errorDesc}`,
+          updatedAt: new Date(),
+        })
+        .where(eq(payments.id, localPayment.id));
+
+      const friendlyError = isLimit
+        ? `Invoice amount (₹${summary.dueAmountInr.toLocaleString("en-IN")}) exceeds Razorpay's single-transaction limit. Please collect payment via Bank Transfer (NEFT/RTGS) or Direct UPI.`
+        : `Payment link could not be generated: ${errorDesc}`;
+
+      return NextResponse.json(
+        {
+          error: friendlyError,
+          isAmountExceeded: isLimit,
+          details: errorDesc,
+        },
+        { status: 400 }
+      );
+    }
 
     // ─── 8. Update local record with gateway IDs ──────────────────────
     await db
@@ -159,8 +191,7 @@ export async function POST(request: NextRequest) {
     });
   } catch (err) {
     console.error("[payment-link] Create error:", err);
-    const message =
-      err instanceof Error ? err.message : "Failed to create payment link.";
+    const message = extractRazorpayErrorMessage(err);
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }
@@ -229,8 +260,7 @@ export async function DELETE(request: NextRequest) {
     return NextResponse.json({ success: true, message: "Payment link cancelled" });
   } catch (err) {
     console.error("[payment-link] Cancel error:", err);
-    const message =
-      err instanceof Error ? err.message : "Failed to cancel payment link.";
+    const message = extractRazorpayErrorMessage(err);
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }

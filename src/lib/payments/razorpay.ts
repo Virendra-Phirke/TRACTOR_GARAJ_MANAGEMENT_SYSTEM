@@ -305,3 +305,30 @@ export async function fetchRazorpayPaymentLink(paymentLinkId: string) {
   const client = getRazorpayClient();
   return client.paymentLink.fetch(paymentLinkId);
 }
+
+/**
+ * Razorpay SDK error extractor.
+ * The Razorpay Node SDK often rejects promises with plain objects
+ * ({ statusCode, error: { description, code } }) rather than Error instances.
+ */
+export function extractRazorpayErrorMessage(err: unknown): string {
+  if (!err) return "Unknown Razorpay error";
+  if (typeof err === "string") return err;
+  if (typeof err === "object") {
+    const rz = err as {
+      error?: { description?: string; code?: string; message?: string };
+      description?: string;
+      message?: string;
+    };
+    if (rz.error?.description) return rz.error.description;
+    if (rz.error?.message) return rz.error.message;
+    if (rz.description) return rz.description;
+    if (rz.message) return rz.message;
+    try {
+      return JSON.stringify(err);
+    } catch {
+      return "Razorpay API error";
+    }
+  }
+  return String(err);
+}

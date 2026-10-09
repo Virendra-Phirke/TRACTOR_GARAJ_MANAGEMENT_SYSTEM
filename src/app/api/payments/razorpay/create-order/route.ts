@@ -16,7 +16,10 @@ import {
   validatePaymentAmount,
   validateInvoiceExists,
 } from "@/lib/payments/payment-validation";
-import { createRazorpayOrder } from "@/lib/payments/razorpay";
+import {
+  createRazorpayOrder,
+  extractRazorpayErrorMessage,
+} from "@/lib/payments/razorpay";
 
 export async function POST(request: NextRequest) {
   // ─── 1. Authenticate ────────────────────────────────────────────────
@@ -70,11 +73,38 @@ export async function POST(request: NextRequest) {
       .returning();
 
     // ─── 6. Create Razorpay order server-side ───────────────────────
-    const order = await createRazorpayOrder({
-      amountPaise,
-      localPaymentId: localPayment.id,
-      invoiceNumber: invoice.invoiceNumber,
-    });
+    let order;
+    try {
+      order = await createRazorpayOrder({
+        amountPaise,
+        localPaymentId: localPayment.id,
+        invoiceNumber: invoice.invoiceNumber,
+      });
+    } catch (orderErr) {
+      const errorDesc = extractRazorpayErrorMessage(orderErr);
+      const isLimit = /amount exceeds maximum|exceeds/i.test(errorDesc);
+      await db
+        .update(payments)
+        .set({
+          status: "failed",
+          failureReason: isLimit
+            ? `Amount exceeds Razorpay transaction limit: ${errorDesc}`
+            : `Order creation failed: ${errorDesc}`,
+          updatedAt: new Date(),
+        })
+        .where(eq(payments.id, localPayment.id));
+
+      return NextResponse.json(
+        {
+          error: isLimit
+            ? `Invoice amount exceeds online payment gateway limit. Please collect payment via Bank Transfer or Direct UPI.`
+            : `Failed to initiate online payment: ${errorDesc}`,
+          isAmountExceeded: isLimit,
+          details: errorDesc,
+        },
+        { status: 400 }
+      );
+    }
 
     // ─── 7. Store Razorpay order ID against the local payment ────────
     await db
@@ -95,8 +125,7 @@ export async function POST(request: NextRequest) {
       publicKeyId: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
     });
   } catch (err) {
-    const message =
-      err instanceof Error ? err.message : "An unexpected error occurred.";
+    const message = extractRazorpayErrorMessage(err);
     return NextResponse.json({ error: message }, { status: 400 });
   }
 }

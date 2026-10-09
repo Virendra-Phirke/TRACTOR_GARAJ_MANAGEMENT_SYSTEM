@@ -3,8 +3,14 @@ import { generateInvoicePdf, InvoicePdfData } from "@/lib/pdf/invoice-pdf";
 import { format } from "date-fns";
 import { getGarageSettings, getUpiSettings } from "@/lib/actions/settings";
 import { generateUpiQrDataUrl } from "@/lib/qr/upi-qr";
+import { verifyApiRequest } from "@/lib/auth";
 
 export async function GET(request: NextRequest) {
+  const isAuthed = await verifyApiRequest(request);
+  if (!isAuthed) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   try {
     const searchParams = request.nextUrl.searchParams;
     const theme = searchParams.get("theme") || "default";

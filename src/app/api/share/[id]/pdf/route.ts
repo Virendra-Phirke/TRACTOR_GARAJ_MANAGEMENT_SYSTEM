@@ -4,7 +4,7 @@ import { getGarageSettings, getUpiSettings } from "@/lib/actions/settings";
 import { generateInvoicePdf } from "@/lib/pdf/invoice-pdf";
 import { generateUpiQrDataUrl } from "@/lib/qr/upi-qr";
 import { formatInTimeZone } from "date-fns-tz";
-import { createHmac } from "crypto";
+import { createHmac, timingSafeEqual } from "crypto";
 
 /** 
  * Public (unauthenticated) PDF download route for WhatsApp sharing.
@@ -34,11 +34,24 @@ export async function GET(
       return NextResponse.json({ error: "Invalid invoice ID" }, { status: 400 });
     }
 
-    // Validate the share token
+    // Validate the share token using timing-safe comparison
     const url = new URL(request.url);
-    const token = url.searchParams.get("token");
+    const token = url.searchParams.get("token") || "";
     const expectedToken = generateShareToken(id);
-    if (!token || token !== expectedToken) {
+
+    let isTokenValid = false;
+    if (token.length === expectedToken.length) {
+      try {
+        isTokenValid = timingSafeEqual(
+          Buffer.from(token, "utf-8"),
+          Buffer.from(expectedToken, "utf-8")
+        );
+      } catch {
+        isTokenValid = false;
+      }
+    }
+
+    if (!isTokenValid) {
       return NextResponse.json({ error: "Invalid or missing share token" }, { status: 403 });
     }
 

@@ -10,6 +10,7 @@
 import { useEffect, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
+import { toast } from "sonner";
 
 interface PaymentRecord {
   id: number;
@@ -20,6 +21,8 @@ interface PaymentRecord {
   gatewayMethod: string | null;
   razorpayOrderId: string | null;
   razorpayPaymentId: string | null;
+  razorpayPaymentLinkId?: string | null;
+  paymentLinkUrl?: string | null;
   paidAt: string | null;
   failureReason: string | null;
   notes: string | null;
@@ -151,8 +154,26 @@ export function PaymentHistory({ invoiceId }: { invoiceId: number }) {
                 </p>
                 {record.razorpayPaymentId && (
                   <p className="text-xs text-muted-foreground font-mono truncate">
-                    {record.razorpayPaymentId}
+                    ID: {record.razorpayPaymentId}
                   </p>
+                )}
+                {record.paymentLinkUrl && record.status === "pending" && (
+                  <div className="flex items-center gap-1.5 mt-1">
+                    <span className="text-xs text-violet-600 dark:text-violet-400 font-mono truncate max-w-[200px]">
+                      {record.paymentLinkUrl}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        navigator.clipboard.writeText(record.paymentLinkUrl!);
+                        toast.success("Payment link copied to clipboard!");
+                      }}
+                      className="text-xs text-muted-foreground hover:text-foreground cursor-pointer px-1.5 py-0.5 rounded border border-border/60 hover:bg-muted"
+                      title="Copy link"
+                    >
+                      Copy
+                    </button>
+                  </div>
                 )}
                 {record.failureReason && (
                   <p className="text-xs text-red-500">{record.failureReason}</p>

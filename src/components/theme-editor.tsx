@@ -596,7 +596,7 @@ export function ThemeEditor() {
               </button>
             ) : (
               <div className="p-3 rounded-lg border border-border/30 border-dashed text-center text-[10px] text-muted-foreground">
-                No preset saved yet. Modify colors and click "Save Current".
+                No preset saved yet. Modify colors and click &quot;Save Current&quot;.
               </div>
             )}
           </div>

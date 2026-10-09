@@ -87,6 +87,14 @@ export function ShortcutsModal({
                 </div>
               </div>
               <div className="flex items-center justify-between">
+                <span className="text-sm">Go to Payment History</span>
+                <div className="flex gap-1">
+                  <kbd className="px-2 py-1 bg-muted rounded text-xs font-mono border">g</kbd>
+                  <span className="text-muted-foreground text-xs my-auto">then</span>
+                  <kbd className="px-2 py-1 bg-muted rounded text-xs font-mono border">h</kbd>
+                </div>
+              </div>
+              <div className="flex items-center justify-between">
                 <span className="text-sm">Go to Customers</span>
                 <div className="flex gap-1">
                   <kbd className="px-2 py-1 bg-muted rounded text-xs font-mono border">g</kbd>

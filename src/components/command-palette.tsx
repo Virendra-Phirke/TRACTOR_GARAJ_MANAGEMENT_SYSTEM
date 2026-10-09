@@ -20,6 +20,7 @@ import {
   FileText,
   Package,
   Plus,
+  CreditCard,
 } from "lucide-react";
 
 export function CommandPalette({
@@ -65,6 +66,13 @@ export function CommandPalette({
           >
             <FileText className="mr-2 h-4 w-4" />
             <span>Invoices</span>
+          </CommandItem>
+          <CommandItem
+            onSelect={() => runCommand(() => router.push("/payments"))}
+            className="cursor-pointer"
+          >
+            <CreditCard className="mr-2 h-4 w-4" />
+            <span>Payment History</span>
           </CommandItem>
           <CommandItem
             onSelect={() => runCommand(() => router.push("/customers"))}

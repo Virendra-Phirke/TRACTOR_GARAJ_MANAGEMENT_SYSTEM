@@ -1,7 +1,7 @@
 import { db } from "@/db";
 import { 
   customers, vehicles, invoices, invoiceParts, invoiceLabors, 
-  spareParts, categories, stockHistory, expenses, backups 
+  spareParts, categories, stockHistory, expenses, backups, payments
 } from "@/db/schema";
 import { NextResponse } from "next/server";
 import { format } from "date-fns";
@@ -27,7 +27,8 @@ export async function GET(request: Request) {
       allSpareParts,
       allCategories,
       allStockHistory,
-      allExpenses
+      allExpenses,
+      allPayments
     ] = await Promise.all([
       db.select().from(customers),
       db.select().from(vehicles),
@@ -37,7 +38,8 @@ export async function GET(request: Request) {
       db.select().from(spareParts),
       db.select().from(categories),
       db.select().from(stockHistory),
-      db.select().from(expenses)
+      db.select().from(expenses),
+      db.select().from(payments)
     ]);
 
     // 2. Compile into a single JSON object
@@ -53,7 +55,8 @@ export async function GET(request: Request) {
         spareParts: allSpareParts,
         categories: allCategories,
         stockHistory: allStockHistory,
-        expenses: allExpenses
+        expenses: allExpenses,
+        payments: allPayments
       }
     };
 

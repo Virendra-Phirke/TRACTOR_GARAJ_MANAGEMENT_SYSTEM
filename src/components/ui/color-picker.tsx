@@ -134,19 +134,17 @@ export default function ColorPicker({ value, onChange, onClose, showAlpha = fals
     setAlphaDraft(String(Math.round(alpha)));
   }, [alpha]);
 
-  const [prevValue, setPrevValue] = useState(value);
-  if (value !== prevValue) {
-    setPrevValue(value);
+  useEffect(() => {
     if (dragging.current === null && value && value.toUpperCase() !== hex) {
-      const rgb = hexToRgb(value);
-      if (rgb) {
-        const hsv = rgbToHsv(rgb.r, rgb.g, rgb.b);
+      const parsedRgb = hexToRgb(value);
+      if (parsedRgb) {
+        const hsv = rgbToHsv(parsedRgb.r, parsedRgb.g, parsedRgb.b);
         setHue(hsv.h);
         setSaturation(hsv.s);
         setValueHsv(hsv.v);
       }
     }
-  }
+  }, [value, hex]);
 
   const clamp01 = (n: number) => Math.min(1, Math.max(0, n));
 

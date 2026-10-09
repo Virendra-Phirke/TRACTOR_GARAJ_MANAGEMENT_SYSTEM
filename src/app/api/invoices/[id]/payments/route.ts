@@ -38,6 +38,8 @@ export async function GET(
           gatewayMethod: payments.gatewayMethod,
           razorpayOrderId: payments.razorpayOrderId,
           razorpayPaymentId: payments.razorpayPaymentId,
+          razorpayPaymentLinkId: payments.razorpayPaymentLinkId,
+          paymentLinkUrl: payments.paymentLinkUrl,
           paidAt: payments.paidAt,
           failureReason: payments.failureReason,
           notes: payments.notes,

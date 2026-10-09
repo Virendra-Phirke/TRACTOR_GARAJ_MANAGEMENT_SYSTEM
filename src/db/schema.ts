@@ -318,12 +318,14 @@ export const payments = pgTable(
     razorpayPaymentId: varchar("razorpay_payment_id", { length: 100 }),
     razorpaySignature: varchar("razorpay_signature", { length: 255 }),
     razorpayQrId: varchar("razorpay_qr_id", { length: 100 }),
+    razorpayPaymentLinkId: varchar("razorpay_payment_link_id", { length: 100 }),
+    paymentLinkUrl: text("payment_link_url"),
     gatewayMethod: varchar("gateway_method", { length: 30 }), // 'upi' | 'card' | 'netbanking' | 'wallet' | 'other'
     // Audit & tracking
     paidAt: timestamp("paid_at"),
     failureReason: text("failure_reason"),
     notes: text("notes"),
-    source: varchar("source", { length: 30 }).default("cash_manual"), // 'cash_manual' | 'razorpay_checkout' | 'razorpay_qr' | 'manual_upi' | 'migration' | 'adjustment'
+    source: varchar("source", { length: 30 }).default("cash_manual"), // 'cash_manual' | 'razorpay_checkout' | 'razorpay_qr' | 'razorpay_payment_link' | 'manual_upi' | 'migration' | 'adjustment'
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().notNull(),
   },
@@ -331,6 +333,7 @@ export const payments = pgTable(
     index("payments_invoice_idx").on(table.invoiceId),
     index("payments_status_idx").on(table.status),
     index("payments_created_idx").on(table.createdAt),
+    index("payments_razorpay_plink_idx").on(table.razorpayPaymentLinkId),
     uniqueIndex("payments_razorpay_order_idx").on(table.razorpayOrderId),
     uniqueIndex("payments_razorpay_payment_idx").on(table.razorpayPaymentId),
   ]

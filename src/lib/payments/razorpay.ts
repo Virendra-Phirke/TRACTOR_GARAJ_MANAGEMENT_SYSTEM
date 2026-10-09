@@ -215,3 +215,93 @@ export function getRazorpayPublicKeyId(): string {
   }
   return key;
 }
+
+// ─── Payment Links (rzp.io) ─────────────────────────────────────────────
+
+export interface CreatePaymentLinkParams {
+  amountPaise: number;
+  localPaymentId: number;
+  invoiceId: number;
+  invoiceNumber: string;
+  customerName?: string;
+  customerPhone?: string;
+  customerEmail?: string;
+  description?: string;
+}
+
+export interface RazorpayPaymentLinkResponse {
+  id: string;
+  short_url: string;
+  order_id?: string;
+  status: string;
+  amount: number;
+  amount_paid: number;
+  currency: string;
+  created_at: number;
+}
+
+/**
+ * Create a Razorpay Payment Link (short URL: rzp.io/i/...) server-side.
+ * Suitable for sending to customers via WhatsApp or SMS.
+ */
+export async function createRazorpayPaymentLink(
+  params: CreatePaymentLinkParams
+): Promise<RazorpayPaymentLinkResponse> {
+  if (!Number.isInteger(params.amountPaise) || params.amountPaise <= 0) {
+    throw new Error(
+      `Invalid amount: ${params.amountPaise} paise. Must be a positive integer.`
+    );
+  }
+
+  // Clean customer phone: standard 10-digit Indian phone or with +91
+  let cleanPhone: string | undefined = undefined;
+  if (params.customerPhone) {
+    const digits = params.customerPhone.replace(/\D/g, "");
+    if (digits.length === 10) {
+      cleanPhone = digits;
+    } else if (digits.length === 12 && digits.startsWith("91")) {
+      cleanPhone = digits.slice(2);
+    }
+  }
+
+  const client = getRazorpayClient();
+  const paymentLink = await client.paymentLink.create({
+    amount: params.amountPaise,
+    currency: "INR",
+    accept_partial: false,
+    description: params.description ?? `Payment for Invoice #${params.invoiceNumber}`,
+    customer: {
+      name: params.customerName || "Customer",
+      contact: cleanPhone,
+      email: params.customerEmail,
+    },
+    notify: {
+      sms: false,
+      email: false,
+    },
+    reminder_enable: true,
+    notes: {
+      invoice_id: String(params.invoiceId),
+      invoice_number: params.invoiceNumber,
+      local_payment_id: String(params.localPaymentId),
+    },
+  });
+
+  return paymentLink as unknown as RazorpayPaymentLinkResponse;
+}
+
+/**
+ * Cancel an active Razorpay Payment Link.
+ */
+export async function cancelRazorpayPaymentLink(paymentLinkId: string) {
+  const client = getRazorpayClient();
+  return client.paymentLink.cancel(paymentLinkId);
+}
+
+/**
+ * Fetch Payment Link details from Razorpay API.
+ */
+export async function fetchRazorpayPaymentLink(paymentLinkId: string) {
+  const client = getRazorpayClient();
+  return client.paymentLink.fetch(paymentLinkId);
+}

@@ -12,13 +12,13 @@ import {
   Settings,
   Receipt,
   BarChart3,
-  Wrench,
   ChevronLeft,
   ChevronRight,
   UserCircle2,
   LineChart,
   X,
   Paintbrush,
+  CreditCard,
 } from "lucide-react";
 import { useState, createContext, useContext, useCallback } from "react";
 import { Button } from "@/components/ui/button";
@@ -35,6 +35,7 @@ const navItems = [
   { href: "/vehicles", label: "Vehicles", icon: Tractor },
   { href: "/inventory", label: "Inventory", icon: Package },
   { href: "/invoices", label: "Invoices", icon: FileText },
+  { href: "/payments", label: "Payment History", icon: CreditCard },
   { href: "/expenses", label: "Expenses", icon: Receipt },
   { href: "/reports", label: "Reports", icon: BarChart3 },
   { href: "/analytics", label: "Analytics", icon: LineChart },

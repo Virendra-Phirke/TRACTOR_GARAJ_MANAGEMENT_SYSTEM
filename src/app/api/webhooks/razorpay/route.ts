@@ -26,6 +26,9 @@ const SUPPORTED_EVENTS = new Set([
   "payment.captured",
   "payment.failed",
   "order.paid",
+  "payment_link.paid",
+  "payment_link.cancelled",
+  "payment_link.expired",
 ]);
 
 export async function POST(request: NextRequest) {
@@ -134,6 +137,26 @@ async function processPaymentEvent(
       | Record<string, unknown>
       | undefined;
 
+  if (eventType === "payment_link.paid") {
+    const paymentLinkEntity =
+      (payload?.["payment_link"] as Record<string, unknown> | undefined)?.["entity"] as
+        | Record<string, unknown>
+        | undefined;
+    if (!paymentLinkEntity) return;
+    await handlePaymentLinkPaid(paymentLinkEntity, paymentEntity);
+    return;
+  }
+
+  if (eventType === "payment_link.cancelled" || eventType === "payment_link.expired") {
+    const paymentLinkEntity =
+      (payload?.["payment_link"] as Record<string, unknown> | undefined)?.["entity"] as
+        | Record<string, unknown>
+        | undefined;
+    if (!paymentLinkEntity) return;
+    await handlePaymentLinkCancelled(paymentLinkEntity, eventType);
+    return;
+  }
+
   if (eventType === "order.paid") {
     // order.paid is an order-level event — find by order ID
     const razorpayOrderId =
@@ -172,11 +195,24 @@ async function handlePaymentCaptured(
   paymentEntity: Record<string, unknown>
 ): Promise<void> {
   // Find the local pending payment by order ID
-  const [localPayment] = await db
+  let [localPayment] = await db
     .select()
     .from(payments)
     .where(eq(payments.razorpayOrderId, razorpayOrderId))
     .limit(1);
+
+  if (!localPayment) {
+    const plinkId =
+      (paymentEntity["payment_link_id"] as string) ??
+      (paymentEntity["notes"] as Record<string, unknown> | undefined)?.["payment_link_id"];
+    if (plinkId) {
+      [localPayment] = await db
+        .select()
+        .from(payments)
+        .where(eq(payments.razorpayPaymentLinkId, String(plinkId)))
+        .limit(1);
+    }
+  }
 
   if (!localPayment) return; // Unknown order — skip
 
@@ -340,3 +376,97 @@ async function reconcileAfterPayment(invoiceId: number): Promise<void> {
     await reconcileCustomerBalance(inv.customerId);
   }
 }
+
+// ─── Payment Link event handlers ───────────────────────────────────────
+
+async function handlePaymentLinkPaid(
+  paymentLinkEntity: Record<string, unknown>,
+  paymentEntity: Record<string, unknown> | undefined
+): Promise<void> {
+  const plinkId = paymentLinkEntity["id"] as string;
+  if (!plinkId) return;
+
+  // Find local payment by razorpayPaymentLinkId
+  const [localPayment] = await db
+    .select()
+    .from(payments)
+    .where(eq(payments.razorpayPaymentLinkId, plinkId))
+    .limit(1);
+
+  if (!localPayment) return;
+
+  // Guard: already marked success
+  if (localPayment.status === "success") return;
+
+  const razorpayPaymentId =
+    (paymentEntity?.["id"] as string) ??
+    (paymentLinkEntity["payment_id"] as string) ??
+    null;
+
+  // Guard: payment ID already claimed by another record
+  if (razorpayPaymentId) {
+    const [existing] = await db
+      .select({ id: payments.id })
+      .from(payments)
+      .where(eq(payments.razorpayPaymentId, razorpayPaymentId))
+      .limit(1);
+    if (existing && existing.id !== localPayment.id) return;
+  }
+
+  const currency = (paymentEntity?.["currency"] ?? paymentLinkEntity["currency"]) as string;
+  if (currency && currency !== "INR") {
+    await db
+      .update(payments)
+      .set({
+        status: "failed",
+        failureReason: `Invalid currency: ${currency}`,
+        updatedAt: new Date(),
+      })
+      .where(eq(payments.id, localPayment.id));
+    return;
+  }
+
+  // Update payment status to success
+  await db
+    .update(payments)
+    .set({
+      status: "success",
+      razorpayPaymentId: razorpayPaymentId ?? localPayment.razorpayPaymentId,
+      gatewayMethod: String(paymentEntity?.["method"] ?? "online"),
+      paidAt: new Date(),
+      updatedAt: new Date(),
+    })
+    .where(eq(payments.id, localPayment.id));
+
+  // Reconcile invoice and customer ledger
+  await reconcileAfterPayment(localPayment.invoiceId);
+}
+
+async function handlePaymentLinkCancelled(
+  paymentLinkEntity: Record<string, unknown>,
+  eventType: string
+): Promise<void> {
+  const plinkId = paymentLinkEntity["id"] as string;
+  if (!plinkId) return;
+
+  const [localPayment] = await db
+    .select()
+    .from(payments)
+    .where(eq(payments.razorpayPaymentLinkId, plinkId))
+    .limit(1);
+
+  if (!localPayment || localPayment.status === "success") return;
+
+  await db
+    .update(payments)
+    .set({
+      status: "failed",
+      failureReason:
+        eventType === "payment_link.expired"
+          ? "Payment link expired"
+          : "Payment link cancelled",
+      updatedAt: new Date(),
+    })
+    .where(eq(payments.id, localPayment.id));
+}
+

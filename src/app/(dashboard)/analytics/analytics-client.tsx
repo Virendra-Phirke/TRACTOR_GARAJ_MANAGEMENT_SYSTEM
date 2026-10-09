@@ -66,6 +66,40 @@ function formatINR(amount: number): string {
   return `₹${amount.toLocaleString("en-IN")}`;
 }
 
+const CustomTooltip = ({ active, payload, label }: any) => {
+  if (active && payload && payload.length) {
+    return (
+      <div className="bg-card border border-border p-3 rounded-lg shadow-2xl text-sm">
+        <p className="font-semibold text-foreground mb-1.5">{label || payload[0]?.payload?.fullName || payload[0].name}</p>
+        {payload.map((p: any, i: number) => (
+          <p key={i} className="flex items-center gap-2 text-foreground/90">
+            <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: p.color || p.fill }} />
+            <span className="text-muted-foreground capitalize">{p.name}:</span>
+            <span className="font-semibold ml-auto">₹{Number(p.value).toLocaleString("en-IN")}</span>
+          </p>
+        ))}
+      </div>
+    );
+  }
+  return null;
+};
+
+const PieTooltip = ({ active, payload }: any) => {
+  if (active && payload && payload.length) {
+    return (
+      <div className="bg-card border border-border p-3 rounded-lg shadow-2xl text-sm">
+        <p className="font-semibold text-foreground">{payload[0].name}</p>
+        <p className="text-muted-foreground">
+          {payload[0].payload?.value !== undefined && typeof payload[0].value === "number" && payload[0].value > 100
+            ? `₹${Number(payload[0].value).toLocaleString("en-IN")}`
+            : `${payload[0].value} invoices`}
+        </p>
+      </div>
+    );
+  }
+  return null;
+};
+
 export function AnalyticsClient({ data }: AnalyticsClientProps) {
   const [timeRange, setTimeRange] = useState("all");
   const [selectedCustomer, setSelectedCustomer] = useState("");
@@ -247,40 +281,6 @@ export function AnalyticsClient({ data }: AnalyticsClientProps) {
     Partial: "#fbbf24",
     Unpaid: "#f87171",
     Unknown: "#94a3b8",
-  };
-
-  const CustomTooltip = ({ active, payload, label }: any) => {
-    if (active && payload && payload.length) {
-      return (
-        <div className="bg-card border border-border p-3 rounded-lg shadow-2xl text-sm">
-          <p className="font-semibold text-foreground mb-1.5">{label || payload[0]?.payload?.fullName || payload[0].name}</p>
-          {payload.map((p: any, i: number) => (
-            <p key={i} className="flex items-center gap-2 text-foreground/90">
-              <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: p.color || p.fill }} />
-              <span className="text-muted-foreground capitalize">{p.name}:</span>
-              <span className="font-semibold ml-auto">₹{Number(p.value).toLocaleString("en-IN")}</span>
-            </p>
-          ))}
-        </div>
-      );
-    }
-    return null;
-  };
-
-  const PieTooltip = ({ active, payload }: any) => {
-    if (active && payload && payload.length) {
-      return (
-        <div className="bg-card border border-border p-3 rounded-lg shadow-2xl text-sm">
-          <p className="font-semibold text-foreground">{payload[0].name}</p>
-          <p className="text-muted-foreground">
-            {payload[0].payload?.value !== undefined && typeof payload[0].value === "number" && payload[0].value > 100
-              ? `₹${Number(payload[0].value).toLocaleString("en-IN")}`
-              : `${payload[0].value} invoices`}
-          </p>
-        </div>
-      );
-    }
-    return null;
   };
 
   return (

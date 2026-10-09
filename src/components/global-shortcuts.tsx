@@ -84,6 +84,7 @@ export function GlobalShortcuts() {
         switch (e.key) {
           case "d": router.push("/"); break;
           case "i": router.push("/invoices"); break;
+          case "h": router.push("/payments"); break;
           case "c": router.push("/customers"); break;
           case "v": router.push("/vehicles"); break;
           case "p": router.push("/inventory"); break;

@@ -18,7 +18,7 @@ async function testCrud() {
   console.log('Customer:', cust.name, 'Part:', part.name, 'Initial Stock:', initialStock);
 
   console.log('\n--- 2. TESTING CREATE INVOICE ---');
-  const invoiceId = await createInvoice({
+  const createdInvoice = await createInvoice({
     customerId: cust.id,
     vehicleId: veh?.id || null,
     laborItems: [{ description: 'Oil Service Test', hours: 1, rate: 500 }],
@@ -31,6 +31,7 @@ async function testCrud() {
     amountPaid: 0,
     notes: 'Automated CRUD test invoice',
   });
+  const invoiceId = createdInvoice.id;
   console.log('Created Invoice ID:', invoiceId);
 
   // Check stock deducted

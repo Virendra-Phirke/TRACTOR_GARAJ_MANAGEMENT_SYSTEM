@@ -68,11 +68,9 @@ export function VehiclesClient({
   const [search, setSearch] = useState(initialSearch || "");
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [hiddenIds, setHiddenIds] = useState<Set<number>>(new Set());
+  const [deletingId, setDeletingId] = useState<number | null>(null);
   
   const { playSound } = useTheme();
-
-  const displayedVehicles = vehicles.filter((v) => !hiddenIds.has(v.id));
 
   const [selectedCustomer, setSelectedCustomer] = useState("");
   const [newBrand, setNewBrand] = useState("");
@@ -87,7 +85,7 @@ export function VehiclesClient({
     router.push(`/vehicles?search=${encodeURIComponent(search)}`);
   };
 
-  const paginatedVehicles = displayedVehicles.slice(
+  const paginatedVehicles = vehicles.slice(
     pageIndex * pageSize,
     (pageIndex + 1) * pageSize
   );
@@ -120,39 +118,19 @@ export function VehiclesClient({
     }
   };
 
-  const handleDelete = (id: number) => {
-    setHiddenIds((prev) => new Set([...prev, id]));
-
-    const timeoutId = setTimeout(async () => {
-      try {
-        await deleteVehicle(id);
-        router.refresh();
-      } catch {
-        toast.error("Failed to delete vehicle");
-        setHiddenIds((prev) => {
-          const next = new Set(prev);
-          next.delete(id);
-          return next;
-        });
-      }
-    }, 5000);
-
-    toast.success("Vehicle deleted", {
-      duration: 5000,
-      action: {
-        label: "Undo",
-        onClick: () => {
-          clearTimeout(timeoutId);
-          setHiddenIds((prev) => {
-            const next = new Set(prev);
-            next.delete(id);
-            return next;
-          });
-          toast.success("Action undone");
-        }
-      }
-    });
-    playSound("delete");
+  const handleDelete = async (id: number) => {
+    setDeletingId(id);
+    try {
+      await deleteVehicle(id);
+      toast.success("Vehicle deleted successfully");
+      playSound("delete");
+      router.refresh();
+    } catch {
+      toast.error("Failed to delete vehicle");
+      playSound("error");
+    } finally {
+      setDeletingId(null);
+    }
   };
 
   return (
@@ -247,7 +225,7 @@ export function VehiclesClient({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {displayedVehicles.length === 0 ? (
+              {vehicles.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={6} className="text-center py-10 text-muted-foreground">
                     No vehicles found.
@@ -270,6 +248,7 @@ export function VehiclesClient({
                           <Button 
                             variant="ghost" 
                             size="icon" 
+                            disabled={deletingId === v.id}
                             className="h-8 w-8 text-destructive hover:text-destructive cursor-pointer"
                           >
                             <Trash2 className="w-4 h-4" />
@@ -284,8 +263,12 @@ export function VehiclesClient({
                           </AlertDialogHeader>
                           <AlertDialogFooter>
                             <AlertDialogCancel>Cancel</AlertDialogCancel>
-                            <AlertDialogAction onClick={() => handleDelete(v.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90 cursor-pointer">
-                              Delete
+                            <AlertDialogAction 
+                              onClick={() => handleDelete(v.id)} 
+                              disabled={deletingId === v.id}
+                              className="bg-destructive text-destructive-foreground hover:bg-destructive/90 cursor-pointer"
+                            >
+                              {deletingId === v.id ? "Deleting..." : "Delete"}
                             </AlertDialogAction>
                           </AlertDialogFooter>
                         </AlertDialogContent>

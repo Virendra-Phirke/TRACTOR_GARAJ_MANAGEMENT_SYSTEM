@@ -138,14 +138,14 @@ export function InventoryClient({ parts, categories, searchQuery }: { parts: Par
 
     try {
       await deleteSparePart(id);
+      toast.success("Part deleted");
+      playSound("delete");
       router.refresh();
     } catch {
       toast.error("Failed to delete part");
+      playSound("error");
       router.refresh();
     }
-
-    toast.success("Part deleted");
-    playSound("delete");
   };
 
   const openEditDialog = (part: Part) => {

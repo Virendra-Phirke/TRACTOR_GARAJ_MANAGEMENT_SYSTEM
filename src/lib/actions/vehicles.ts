@@ -1,9 +1,9 @@
 "use server";
 
 import { db } from "@/db";
-import { vehicles, customers } from "@/db/schema";
+import { vehicles, customers, invoices } from "@/db/schema";
 import { eq, desc, ilike, or } from "drizzle-orm";
-import { revalidatePath } from "next/cache";
+import { safeRevalidate } from "@/lib/safe-revalidate";
 
 export async function getVehicles(search?: string) {
   if (search && search.trim()) {
@@ -89,16 +89,17 @@ export async function createVehicle(data: {
     .insert(vehicles)
     .values({
       customerId: data.customerId,
-      registrationNumber: data.registrationNumber.toUpperCase(),
-      brand: data.brand,
-      model: data.model || "",
+      registrationNumber: data.registrationNumber.trim().toUpperCase(),
+      brand: data.brand.trim(),
+      model: data.model?.trim() || "",
       year: data.year,
-      engineNumber: data.engineNumber || "",
-      chassisNumber: data.chassisNumber || "",
-      notes: data.notes || "",
+      engineNumber: data.engineNumber?.trim() || "",
+      chassisNumber: data.chassisNumber?.trim() || "",
+      notes: data.notes?.trim() || "",
     })
     .returning();
-  revalidatePath("/", "layout");
+  safeRevalidate("/", "layout");
+  safeRevalidate("/vehicles");
   return result[0];
 }
 
@@ -115,16 +116,24 @@ export async function updateVehicle(
   }
 ) {
   try {
-    const updateData = { ...data, updatedAt: new Date() };
-    if (updateData.registrationNumber) {
-      updateData.registrationNumber = updateData.registrationNumber.toUpperCase();
+    const updateData: Record<string, unknown> = { updatedAt: new Date() };
+    if (data.registrationNumber !== undefined) {
+      updateData.registrationNumber = data.registrationNumber.trim().toUpperCase();
     }
+    if (data.brand !== undefined) updateData.brand = data.brand.trim();
+    if (data.model !== undefined) updateData.model = data.model.trim();
+    if (data.year !== undefined) updateData.year = data.year;
+    if (data.engineNumber !== undefined) updateData.engineNumber = data.engineNumber.trim();
+    if (data.chassisNumber !== undefined) updateData.chassisNumber = data.chassisNumber.trim();
+    if (data.notes !== undefined) updateData.notes = data.notes.trim();
+
     const result = await db
       .update(vehicles)
       .set(updateData)
       .where(eq(vehicles.id, id))
       .returning();
-    revalidatePath("/", "layout");
+    safeRevalidate("/", "layout");
+    safeRevalidate("/vehicles");
     return result[0];
   } catch (error) {
     console.error("updateVehicle ERROR:", error);
@@ -133,6 +142,18 @@ export async function updateVehicle(
 }
 
 export async function deleteVehicle(id: number) {
+  // 1. Unlink invoices referencing this vehicle to prevent FK constraint violation
+  await db
+    .update(invoices)
+    .set({ vehicleId: null, updatedAt: new Date() })
+    .where(eq(invoices.vehicleId, id));
+
+  // 2. Delete the vehicle
   await db.delete(vehicles).where(eq(vehicles.id, id));
-  revalidatePath("/", "layout");
+
+  safeRevalidate("/", "layout");
+  safeRevalidate("/vehicles");
+  safeRevalidate("/invoices");
+  safeRevalidate("/customers");
 }
+

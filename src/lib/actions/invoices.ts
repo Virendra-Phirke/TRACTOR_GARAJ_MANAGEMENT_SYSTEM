@@ -14,16 +14,8 @@ import {
 } from "@/db/schema";
 import { eq, desc, asc, sql, and, gte, lte, inArray, isNull } from "drizzle-orm";
 import { getISTDayBounds } from "@/lib/utils";
-import { revalidatePath } from "next/cache";
 import { cancelPendingPaymentLinksForInvoice } from "@/lib/payments/payment-calculations";
-
-function safeRevalidate(path: string, type?: "layout" | "page") {
-  try {
-    revalidatePath(path, type);
-  } catch {
-    // Ignore when called outside of Next.js server action request context
-  }
-}
+import { safeRevalidate } from "@/lib/safe-revalidate";
 
 // ─── Invoice Number Generation ───────────────────────────────────────
 async function generateInvoiceNumber(): Promise<string> {
@@ -230,10 +222,27 @@ export async function createInvoice(data: CreateInvoiceData) {
       })
       .where(eq(customers.id, data.customerId));
 
+    // 5. Record in payments ledger if amountPaid > 0
+    if (data.amountPaid > 0) {
+      await tx.insert(payments).values({
+        invoiceId: inv.id,
+        amount: Math.round(data.amountPaid * 100),
+        paymentMethod: data.paymentMethod === "upi" ? "online" : "cash",
+        status: "success",
+        source: data.paymentMethod === "upi" ? "manual_upi" : "cash_manual",
+        gatewayMethod: data.paymentMethod === "upi" ? "upi" : null,
+        paidAt: new Date(),
+        notes: `Initial payment at invoice creation #${invoiceNumber}`,
+      });
+    }
+
     return inv;
   })();
 
   safeRevalidate("/", "layout");
+  safeRevalidate("/invoices");
+  safeRevalidate("/payments");
+  safeRevalidate("/customers");
   return invoice;
 }
 
@@ -385,7 +394,7 @@ export async function markInvoicesAsPartnerPaid(invoiceIds: number[]) {
     .update(invoices)
     .set({ partnerPaidAt: new Date(), updatedAt: new Date() })
     .where(inArray(invoices.id, invoiceIds));
-  revalidatePath("/", "layout");
+  safeRevalidate("/", "layout");
 }
 
 // ─── Record Partner Payout (atomic: create expense + mark invoices) ──
@@ -419,7 +428,7 @@ export async function recordPartnerPayout(data: {
     .set({ partnerPaidAt: new Date(), updatedAt: new Date() })
     .where(inArray(invoices.id, data.invoiceIds));
 
-  revalidatePath("/", "layout");
+  safeRevalidate("/", "layout");
 }
 
 // ─── Update Payment Status (with customer balance adjustment) ────────
@@ -490,7 +499,7 @@ export async function updatePaymentStatus(
     }
   })();
 
-  revalidatePath("/", "layout");
+  safeRevalidate("/", "layout");
 }
 
 // ─── Dashboard Stats (PARALLELIZED) ─────────────────────────────────
@@ -686,12 +695,30 @@ export async function updateInvoicePayment(id: number, data: { paymentStatus: st
         .where(eq(customers.id, currentInvoice.customerId));
     }
 
+    // Record payment in ledger if additional payment was made
+    if (balanceDiff > 0) {
+      await tx.insert(payments).values({
+        invoiceId: id,
+        amount: Math.round(balanceDiff * 100),
+        paymentMethod: data.paymentMethod === "upi" ? "online" : "cash",
+        status: "success",
+        source: data.paymentMethod === "upi" ? "manual_upi" : "cash_manual",
+        gatewayMethod: data.paymentMethod === "upi" ? "upi" : null,
+        paidAt: new Date(),
+        notes: `Manual payment recorded for Invoice #${id}`,
+      });
+    }
+
     if (isNowPaid) {
       await cancelPendingPaymentLinksForInvoice(id);
     }
   })();
 
   safeRevalidate("/", "layout");
+  safeRevalidate("/invoices");
+  safeRevalidate(`/invoices/${id}`);
+  safeRevalidate("/payments");
+  safeRevalidate("/customers");
 }
 
 export async function deleteInvoice(id: number) {

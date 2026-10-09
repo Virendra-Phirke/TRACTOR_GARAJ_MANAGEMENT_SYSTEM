@@ -1,9 +1,9 @@
 "use server";
 
 import { db } from "@/db";
-import { spareParts, categories, stockHistory } from "@/db/schema";
+import { spareParts, categories, stockHistory, invoiceParts } from "@/db/schema";
 import { eq, desc, ilike, or, lte, sql } from "drizzle-orm";
-import { revalidatePath } from "next/cache";
+import { safeRevalidate } from "@/lib/safe-revalidate";
 
 // ─── Categories ──────────────────────────────────────────────────────
 export async function getCategories() {
@@ -13,10 +13,32 @@ export async function getCategories() {
 export async function createCategory(name: string, description?: string) {
   const result = await db
     .insert(categories)
-    .values({ name, description: description || "" })
+    .values({ name: name.trim(), description: description?.trim() || "" })
     .returning();
-  revalidatePath("/", "layout");
+  safeRevalidate("/", "layout");
+  safeRevalidate("/inventory");
   return result[0];
+}
+
+export async function updateCategory(id: number, name: string, description?: string) {
+  const result = await db
+    .update(categories)
+    .set({ name: name.trim(), description: description?.trim() || "" })
+    .where(eq(categories.id, id))
+    .returning();
+  safeRevalidate("/", "layout");
+  safeRevalidate("/inventory");
+  return result[0];
+}
+
+export async function deleteCategory(id: number) {
+  await db
+    .update(spareParts)
+    .set({ categoryId: null, updatedAt: new Date() })
+    .where(eq(spareParts.categoryId, id));
+  await db.delete(categories).where(eq(categories.id, id));
+  safeRevalidate("/", "layout");
+  safeRevalidate("/inventory");
 }
 
 // ─── Spare Parts ─────────────────────────────────────────────────────
@@ -110,7 +132,8 @@ export async function createSparePart(data: {
     })
     .returning();
 
-  revalidatePath("/", "layout");
+  safeRevalidate("/", "layout");
+  safeRevalidate("/inventory");
   return result[0];
 }
 
@@ -129,18 +152,43 @@ export async function updateSparePart(
     isActive?: boolean;
   }
 ) {
+  const updateData: Record<string, unknown> = { updatedAt: new Date() };
+  if (data.name !== undefined) updateData.name = data.name.trim();
+  if (data.categoryId !== undefined) updateData.categoryId = data.categoryId;
+  if (data.partNumber !== undefined) updateData.partNumber = data.partNumber.trim();
+  if (data.unit !== undefined) updateData.unit = data.unit.trim();
+  if (data.description !== undefined) updateData.description = data.description.trim();
+  if (data.stock !== undefined) updateData.stock = data.stock;
+  if (data.minStockAlert !== undefined) updateData.minStockAlert = data.minStockAlert;
+  if (data.purchasePrice !== undefined) updateData.purchasePrice = data.purchasePrice;
+  if (data.sellingPrice !== undefined) updateData.sellingPrice = data.sellingPrice;
+  if (data.isActive !== undefined) updateData.isActive = data.isActive;
+
   const result = await db
     .update(spareParts)
-    .set({ ...data, updatedAt: new Date() })
+    .set(updateData)
     .where(eq(spareParts.id, id))
     .returning();
-  revalidatePath("/", "layout");
+  safeRevalidate("/", "layout");
+  safeRevalidate("/inventory");
   return result[0];
 }
 
 export async function deleteSparePart(id: number) {
+  // 1. Unlink any invoice line items referencing this spare part so invoice records remain intact without FK violation
+  await db
+    .update(invoiceParts)
+    .set({ sparePartId: null })
+    .where(eq(invoiceParts.sparePartId, id));
+
+  // 2. Delete stock history associated with this spare part
+  await db.delete(stockHistory).where(eq(stockHistory.sparePartId, id));
+
+  // 3. Delete the spare part
   await db.delete(spareParts).where(eq(spareParts.id, id));
-  revalidatePath("/", "layout");
+
+  safeRevalidate("/", "layout");
+  safeRevalidate("/inventory");
 }
 
 export async function getLowStockParts() {

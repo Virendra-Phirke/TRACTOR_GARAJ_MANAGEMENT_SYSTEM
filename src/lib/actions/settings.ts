@@ -3,7 +3,7 @@
 import { db } from "@/db";
 import { garageSettings, upiSettings, taxSettings } from "@/db/schema";
 import { eq } from "drizzle-orm";
-import { revalidatePath } from "next/cache";
+import { safeRevalidate } from "@/lib/safe-revalidate";
 
 // ─── Garage Settings ─────────────────────────────────────────────────
 export async function getGarageSettings() {
@@ -35,7 +35,7 @@ export async function updateGarageSettings(data: {
     .set({ ...data, updatedAt: new Date() })
     .where(eq(garageSettings.id, existing.id))
     .returning();
-  revalidatePath("/", "layout");
+  safeRevalidate("/", "layout");
   return result[0];
 }
 
@@ -64,7 +64,7 @@ export async function updateUpiSettings(data: {
     .set({ ...data, updatedAt: new Date() })
     .where(eq(upiSettings.id, existing.id))
     .returning();
-  revalidatePath("/", "layout");
+  safeRevalidate("/", "layout");
   return result[0];
 }
 
@@ -102,7 +102,7 @@ export async function setDefaultTax(id: number) {
     .update(taxSettings)
     .set({ isDefault: true })
     .where(eq(taxSettings.id, id));
-  revalidatePath("/", "layout");
+  safeRevalidate("/", "layout");
 }
 
 export async function updateCustomLayout(data: any) {
@@ -112,6 +112,6 @@ export async function updateCustomLayout(data: any) {
     .set({ customLayoutConfig: data, updatedAt: new Date() })
     .where(eq(garageSettings.id, existing.id))
     .returning();
-  revalidatePath("/", "layout");
+  safeRevalidate("/", "layout");
   return { success: true, data: result[0].customLayoutConfig };
 }

@@ -89,6 +89,7 @@ export function CustomersClient({
     const ids = Object.keys(rowSelection).map((idx) => optimisticCustomers[Number(idx)].id);
     if (ids.length === 0) return;
 
+    setDeleting(true);
     startTransition(() => {
       addOptimisticCustomer({ type: "delete", payload: ids });
     });
@@ -97,14 +98,17 @@ export function CustomersClient({
 
     try {
       await bulkDeleteCustomers(ids);
+      toast.success(`${ids.length} customer(s) deleted.`);
+      playSound("delete");
       router.refresh();
-    } catch {
-      toast.error("Failed to delete customers");
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Failed to delete customers";
+      toast.error(msg);
+      playSound("error");
       router.refresh();
+    } finally {
+      setDeleting(false);
     }
-
-    toast.success(`${ids.length} customer(s) deleted.`);
-    playSound("delete");
   };
 
   const handleCreate = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -138,8 +142,9 @@ export function CustomersClient({
       setVehicleBrand("");
       setVehicleModel("");
       router.refresh();
-    } catch {
-      toast.error("Failed to create customer. Phone may already exist.");
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Failed to create customer. Phone may already exist.";
+      toast.error(msg);
       playSound("error");
       router.refresh(); // Revert on failure
     } finally {
@@ -180,8 +185,9 @@ export function CustomersClient({
       playSound("create");
       setEditingCustomer(null);
       router.refresh();
-    } catch {
-      toast.error("Failed to update customer. Phone may already exist.");
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Failed to update customer. Phone may already exist.";
+      toast.error(msg);
       playSound("error");
       router.refresh(); // Revert on failure
     } finally {
